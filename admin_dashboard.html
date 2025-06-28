@@ -37,7 +37,28 @@
 
 <main class="p-8 max-w-5xl mx-auto">
   <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
-  <p class="text-gray-300">Welcome, Admin. This dashboard is protected and only accessible by logged-in admins. Further modules like employee management and payroll will be added here.</p>
+  <p class="text-gray-300">Welcome, Admin. Below is the list of registered employees.</p>
+
+  <div class="mt-8">
+    <h2 class="text-xl font-semibold mb-4">Employee Records</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-gray-800 border border-gray-600 text-sm rounded-lg overflow-hidden">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="py-2 px-4 text-left border-r">ID</th>
+            <th class="py-2 px-4 text-left border-r">Name</th>
+            <th class="py-2 px-4 text-left border-r">Phone</th>
+            <th class="py-2 px-4 text-left border-r">DOB</th>
+            <th class="py-2 px-4 text-left border-r">Role</th>
+            <th class="py-2 px-4 text-left">Department</th>
+          </tr>
+        </thead>
+        <tbody id="employeeTableBody">
+          <tr><td colspan="6" class="text-center py-4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </main>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-20">
@@ -49,6 +70,39 @@
     localStorage.removeItem("emp_session");
     window.location.href = "employee_portal.html";
   }
+
+  async function loadEmployees() {
+    const tbody = document.getElementById("employeeTableBody");
+    try {
+      const res = await fetch("/.netlify/functions/get_employees");
+      const data = await res.json();
+
+      if (!data.employees || data.employees.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' class='text-center py-4'>No employees found.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = "";
+      data.employees.forEach(emp => {
+        const row = `
+          <tr class="border-t border-gray-700">
+            <td class="py-2 px-4 border-r">${emp.emp_id}</td>
+            <td class="py-2 px-4 border-r">${emp.name}</td>
+            <td class="py-2 px-4 border-r">${emp.phone || '-'}</td>
+            <td class="py-2 px-4 border-r">${emp.dob || '-'}</td>
+            <td class="py-2 px-4 border-r">${emp.role}</td>
+            <td class="py-2 px-4">${emp.department || '-'}</td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-400">Error loading data</td></tr>`;
+      console.error("Error fetching employees:", err);
+    }
+  }
+
+  loadEmployees();
 </script>
 
 </body>
