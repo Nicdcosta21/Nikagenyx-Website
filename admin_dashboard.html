@@ -143,7 +143,21 @@ function edit(id) {
 
 function deleteUser(id) {
   if (confirm(`Are you sure you want to delete ${id}?`)) {
-    alert(`Delete logic for ${id}`);
+    fetch("/.netlify/functions/delete_employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || "Employee deleted.");
+      employees = employees.filter(e => e.emp_id !== id);
+      loadTable(document.getElementById("search").value);
+    })
+    .catch(err => {
+      console.error("Delete failed:", err);
+      alert("Failed to delete employee. Try again.");
+    });
   }
 }
 
