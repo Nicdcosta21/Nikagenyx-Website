@@ -174,7 +174,9 @@ function resetMFA(id) {
   }
 }
 
-function confirmRoleChange(id, newRole) {
+function confirmRoleChange(id) {
+  const newRole = document.getElementById(`role-${id}`).value;
+
   fetch("/.netlify/functions/update_role", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
