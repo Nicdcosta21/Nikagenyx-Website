@@ -30,21 +30,22 @@
     <p id="status" class="text-center mt-4 text-red-500 hidden"></p>
   </div>
 
-  <script>
-    document.getElementById('pinForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const empId = document.getElementById('empId').value.trim();
-      const pin = document.getElementById('pin').value.trim();
+<script>
+  document.getElementById('pinForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const empId = document.getElementById('empId').value.trim();
+    const pin = document.getElementById('pin').value.trim();
 
-      // Replace this with real validation later
-      if (empId === "EMP123" && pin === "4321") {
-        window.location.href = "https://nikagenyx.com/employee_dashboard.html"; // Or Google Apps Script page
-      } else {
-        document.getElementById('status').textContent = "Invalid ID or PIN.";
-        document.getElementById('status').classList.remove('hidden');
-      }
-    });
-  </script>
+    // Replace this with real validation later
+    if (empId === "EMP123" && pin === "4321") {
+      window.location.href = "https://nikagenyx.com/employee_dashboard.html"; // <--- RIGHT HERE
+    } else {
+      document.getElementById('status').textContent = "Invalid ID or PIN.";
+      document.getElementById('status').classList.remove('hidden');
+    }
+  });
+</script>
+
 
 </body>
 </html>
