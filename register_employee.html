@@ -11,6 +11,13 @@
       margin: 0;
       font-family: 'Questrial', sans-serif;
     }
+    #mfaSecret {
+      font-family: monospace;
+      background: #2d2d2d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-white flex flex-col min-h-screen">
@@ -45,18 +52,22 @@
         <canvas id="canvas" class="hidden"></canvas>
         <button type="button" id="captureBtn" class="bg-blue-600 px-4 py-1 rounded hover:bg-blue-700">Capture</button>
       </div>
-      <!-- MFA QR -->
-      <div id="qrSection" class="mb-4 hidden text-center">
-        <p class="text-sm mb-2">Scan this QR code in your authenticator app:</p>
-        <img id="qrImage" src="" alt="MFA QR Code" class="mx-auto w-40 h-40 border rounded" />
-      </div>
       <button type="submit" class="w-full bg-green-600 py-2 mt-4 rounded hover:bg-green-700">Register</button>
     </form>
+
+    <div id="qrSection" class="mt-6 hidden text-center">
+      <p class="text-sm mb-2">Scan this QR code in your authenticator app:</p>
+      <img id="qrImage" src="" alt="MFA QR Code" class="mx-auto w-40 h-40 border rounded mb-3" />
+      <p class="text-sm mb-1">Or enter this secret key manually:</p>
+      <p id="mfaSecret" class="text-sm mb-2 select-all"></p>
+      <button onclick="copySecret()" class="mt-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">Copy Secret Key</button>
+      <button onclick="window.location.href='employee_portal.html'" class="mt-4 block w-full bg-green-600 hover:bg-green-700 py-2 rounded">Finish</button>
+    </div>
+
     <p id="message" class="text-sm text-center mt-4"></p>
   </section>
 </main>
 
-<!-- Footer -->
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
@@ -69,6 +80,7 @@
   const message = document.getElementById('message');
   const qrSection = document.getElementById('qrSection');
   const qrImage = document.getElementById('qrImage');
+  const mfaSecretEl = document.getElementById('mfaSecret');
   let capturedPhoto = '';
 
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
@@ -110,22 +122,25 @@
     const result = await res.json();
 
     if (res.ok) {
-      message.textContent = `✅ Registered as ${result.emp_id}`;
-      message.classList.add('text-green-400');
-
-      if (result.qr_code_url) {
+      message.innerHTML = `<span class="text-green-400">✅ Registered as <strong>${result.emp_id}</strong></span>`;
+      
+      if (result.qr_code_url && result.mfa_secret) {
         qrImage.src = result.qr_code_url;
+        mfaSecretEl.textContent = result.mfa_secret;
         qrSection.classList.remove('hidden');
       }
-
-      setTimeout(() => {
-        window.location.href = "employee_login.html";
-      }, 2500); // Wait for QR visibility
     } else {
       message.textContent = `❌ Error: ${result.message}`;
       message.classList.add('text-red-400');
     }
   });
+
+  function copySecret() {
+    const secret = mfaSecretEl.textContent;
+    navigator.clipboard.writeText(secret).then(() => {
+      alert("MFA Secret copied to clipboard");
+    });
+  }
 </script>
 
 </body>
