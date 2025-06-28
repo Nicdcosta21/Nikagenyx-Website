@@ -152,11 +152,16 @@ function deleteUser(id) {
 document.getElementById("search").addEventListener("input", e => loadTable(e.target.value));
 
 window.onload = async () => {
-  const res = await fetch("/.netlify/functions/get_employees");
-  const data = await res.json();
-  employees = data;
-  loadTable();
+  try {
+    const res = await fetch("/.netlify/functions/get_employees");
+    const data = await res.json();
+    employees = data.employees || data; // Fallback for direct array
+    loadTable();
+  } catch (err) {
+    console.error("Failed to load employees:", err);
+  }
 };
+
 </script>
 </body>
 </html>
