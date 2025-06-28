@@ -105,12 +105,11 @@ function loadTable(filter = "") {
       </td>
     `;
 
-    // Button event handlers
+    // Attach button handlers
     tr.querySelector('.confirm-role').addEventListener('click', () => {
       const newRole = tr.querySelector('.role-select').value;
       confirmRoleChange(emp.emp_id, newRole);
     });
-
     tr.querySelector('.reset-pin').addEventListener('click', () => resetPIN(emp.emp_id));
     tr.querySelector('.reset-mfa').addEventListener('click', () => resetMFA(emp.emp_id));
     tr.querySelector('.edit').addEventListener('click', () => edit(emp.emp_id));
@@ -121,16 +120,15 @@ function loadTable(filter = "") {
   });
 }
 
-
 function viewProfile(id) {
   const user = employees.find(e => e.emp_id === id);
-  alert(`Name: ${user.name}\\nPhone: ${user.phone || '-'}\\nDOB: ${formatDate(user.dob)}\\nRole: ${user.role}`);
+  alert(`Name: ${user.name}\nPhone: ${user.phone || '-'}\nDOB: ${formatDate(user.dob)}\nRole: ${user.role}`);
 }
 
 function exportCSV() {
   const headers = ["ID", "Name", "Phone", "DOB", "Role", "Department"];
   const rows = employees.map(e => [e.emp_id, e.name, e.phone, formatDate(e.dob), e.role, e.department]);
-  let csv = headers.join(",") + "\\n" + rows.map(r => r.join(",")).join("\\n");
+  let csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -176,8 +174,16 @@ function resetMFA(id) {
       body: JSON.stringify({ emp_id: id })
     })
     .then(res => res.json())
-    .then(() => alert(`✅ MFA reset for ${id}`))
-    .catch(() => alert("❌ MFA reset failed"));
+    .then(data => {
+      alert(`✅ MFA reset for ${id}`);
+      console.log("QR:", data.qr_code_url);
+      console.log("Secret:", data.mfa_secret);
+      // Optionally: show QR and secret somewhere
+    })
+    .catch(err => {
+      console.error("Reset MFA failed:", err);
+      alert("❌ MFA reset failed.");
+    });
   }
 }
 
@@ -212,6 +218,7 @@ window.onload = async () => {
   }
 };
 </script>
+
 
 </body>
 </html>
