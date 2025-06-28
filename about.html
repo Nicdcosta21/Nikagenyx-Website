@@ -7,15 +7,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Questrial', sans-serif; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Questrial', sans-serif;
+    }
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: rgba(17, 24, 39, 0.8);
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-900 text-white flex flex-col min-h-screen">
 
+<!-- Navbar -->
 <nav class="w-full glass-nav shadow-lg px-6 py-4 flex items-center justify-between relative">
   <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
   <button id="nav-toggle" class="text-white md:hidden">
@@ -31,16 +36,22 @@
   </ul>
 </nav>
 
-<section class="py-20 px-6 max-w-4xl mx-auto text-center">
-  <h2 class="text-3xl font-bold mb-6">About Nikagenyx</h2>
-  <p class="text-gray-400 text-lg leading-relaxed">
-    Nikagenyx Vision Tech Private Limited is an innovation-first software company committed to reshaping industries through intelligent automation, cutting-edge facial recognition, and advanced AI applications.
-  </p>
-</section>
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-20">
+<!-- Main Content -->
+<main class="flex-grow">
+  <section class="py-20 px-6 max-w-4xl mx-auto text-center">
+    <h2 class="text-3xl font-bold mb-6">About Nikagenyx</h2>
+    <p class="text-gray-400 text-lg leading-relaxed">
+      Nikagenyx Vision Tech Private Limited is an innovation-first software company committed to reshaping industries through intelligent automation, cutting-edge facial recognition, and advanced AI applications.
+    </p>
+  </section>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
+<!-- JS for mobile menu -->
 <script>
   const toggleBtn = document.getElementById('nav-toggle');
   const menu = document.getElementById('nav-menu');
@@ -51,3 +62,4 @@
 
 </body>
 </html>
+
