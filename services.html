@@ -7,15 +7,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Questrial', sans-serif; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Questrial', sans-serif;
+    }
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: rgba(17, 24, 39, 0.8);
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-900 text-white flex flex-col min-h-screen">
 
+<!-- Navbar -->
 <nav class="w-full glass-nav shadow-lg px-6 py-4 flex items-center justify-between relative">
   <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
   <button id="nav-toggle" class="text-white md:hidden">
@@ -31,27 +36,33 @@
   </ul>
 </nav>
 
-<section class="py-20 px-6 max-w-6xl mx-auto">
-  <h2 class="text-3xl font-bold text-center mb-12">Our Solutions</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-    <div class="bg-gray-800 p-6 rounded-lg shadow-md">
-      <h3 class="text-xl font-semibold mb-2">AI Automation</h3>
-      <p class="text-gray-300">Smart business logic engines and automation tailored to enterprise workflows.</p>
+<!-- Main Content -->
+<main class="flex-grow">
+  <section class="py-20 px-6 max-w-6xl mx-auto">
+    <h2 class="text-3xl font-bold text-center mb-12">Our Solutions</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-2">AI Automation</h3>
+        <p class="text-gray-300">Smart business logic engines and automation tailored to enterprise workflows.</p>
+      </div>
+      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-2">Facial Recognition</h3>
+        <p class="text-gray-300">Real-time facial analysis and identity validation built with secure AI infrastructure.</p>
+      </div>
+      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-2">Photo Intelligence</h3>
+        <p class="text-gray-300">Revolutionizing cruise and event photography with face-matched sales systems.</p>
+      </div>
     </div>
-    <div class="bg-gray-800 p-6 rounded-lg shadow-md">
-      <h3 class="text-xl font-semibold mb-2">Facial Recognition</h3>
-      <p class="text-gray-300">Real-time facial analysis and identity validation built with secure AI infrastructure.</p>
-    </div>
-    <div class="bg-gray-800 p-6 rounded-lg shadow-md">
-      <h3 class="text-xl font-semibold mb-2">Photo Intelligence</h3>
-      <p class="text-gray-300">Revolutionizing cruise and event photography with face-matched sales systems.</p>
-    </div>
-  </div>
-</section>
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-20">
+  </section>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
+<!-- Mobile Menu Script -->
 <script>
   const toggleBtn = document.getElementById('nav-toggle');
   const menu = document.getElementById('nav-menu');
