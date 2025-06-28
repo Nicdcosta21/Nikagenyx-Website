@@ -48,8 +48,14 @@ exports.handler = async (event) => {
       body: JSON.stringify({ message: "Employee registered successfully", emp_id })
     };
 
-  } catch (err) {
-    console.error("Registration error:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringi
+} catch (err) {
+  console.error("Error during employee registration:", err);
+  return {
+    statusCode: 500,
+    body: JSON.stringify({
+      message: "Server error",
+      error: err.message || "Unknown error"
+    })
+  };
+}
+
