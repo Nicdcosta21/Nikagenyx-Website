@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+deepface
+pillow
