@@ -75,10 +75,15 @@ function formatDate(dob) {
 function loadTable(filter = "") {
   const table = document.getElementById("employeeTable");
   table.innerHTML = "";
-  const filtered = employees.filter(emp => emp.name.toLowerCase().includes(filter.toLowerCase()) || emp.emp_id.toLowerCase().includes(filter.toLowerCase()));
+
+  const filtered = employees.filter(emp =>
+    emp.name.toLowerCase().includes(filter.toLowerCase()) ||
+    emp.emp_id.toLowerCase().includes(filter.toLowerCase())
+  );
 
   filtered.forEach(emp => {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
       <td class="border p-2">${emp.name}</td>
@@ -100,6 +105,7 @@ function loadTable(filter = "") {
       </td>
     `;
 
+    // Button event handlers
     tr.querySelector('.confirm-role').addEventListener('click', () => {
       const newRole = tr.querySelector('.role-select').value;
       confirmRoleChange(emp.emp_id, newRole);
@@ -114,6 +120,7 @@ function loadTable(filter = "") {
     table.appendChild(tr);
   });
 }
+
 
 function viewProfile(id) {
   const user = employees.find(e => e.emp_id === id);
