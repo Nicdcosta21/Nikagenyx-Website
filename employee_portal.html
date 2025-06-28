@@ -10,50 +10,55 @@
     body { font-family: 'Questrial', sans-serif; }
   </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
-  <div class="min-h-screen flex items-center justify-center">
-    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-      <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
-      <form id="loginForm" class="space-y-4">
-        <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-        <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-        <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
-        <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
-      </form>
-    </div>
+<main class="flex-grow flex items-center justify-center">
+  <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
+    <form id="loginForm" class="space-y-4">
+      <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
+      <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
+    </form>
   </div>
+</main>
 
-  <script>
-    document.getElementById("loginForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const empId = document.getElementById("empId").value.trim();
-      const pin = document.getElementById("pin").value.trim();
-      const error = document.getElementById("error");
-      error.classList.add("hidden");
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
+  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+</footer>
 
-      const res = await fetch("/.netlify/functions/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empId, pin }),
-      });
+<script>
+  document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const empId = document.getElementById("empId").value.trim();
+    const pin = document.getElementById("pin").value.trim();
+    const error = document.getElementById("error");
+    error.classList.add("hidden");
 
-      if (res.status === 200) {
-        const result = await res.json();
-        localStorage.setItem("emp_session", JSON.stringify(result.user));
-
-        // REDIRECT based on role
-        if (result.user.role === "admin") {
-          window.location.href = "admin_dashboard.html";
-        } else {
-          window.location.href = "employee_dashboard.html";
-        }
-      } else {
-        error.textContent = "Invalid credentials. Please try again.";
-        error.classList.remove("hidden");
-      }
+    const res = await fetch("/.netlify/functions/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId, pin }),
     });
-  </script>
+
+    if (res.status === 200) {
+      const result = await res.json();
+      localStorage.setItem("emp_session", JSON.stringify(result.user));
+
+      // Redirect based on role
+      if (result.user.role === "admin") {
+        window.location.href = "admin_dashboard.html";
+      } else {
+        window.location.href = "employee_dashboard.html";
+      }
+    } else {
+      error.textContent = "Invalid credentials. Please try again.";
+      error.classList.remove("hidden");
+    }
+  });
+</script>
 
 </body>
+
 </html>
