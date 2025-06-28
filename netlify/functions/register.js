@@ -1,5 +1,7 @@
 // netlify/functions/register.js
 const { Pool } = require('pg');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -30,16 +32,31 @@ exports.handler = async (event) => {
     const emp_id = `NGX${Date.now().toString().slice(-6)}`;
     const fullName = `${firstName} ${lastName}`;
 
+    // Generate MFA secret
+    const secret = speakeasy.generateSecret({
+      name: `Nikagenyx (${fullName})`,
+    });
+
+    // Generate QR code from otpauth URL
+    const otpAuthURL = secret.otpauth_url;
+    const qr_code_url = await QRCode.toDataURL(otpAuthURL);
+
+    // Save employee + MFA secret
     await pool.query(
-      `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64)
-       VALUES ($1, $2, $3, 'employee', NULL, $4, $5, $6)`,
-      [emp_id, fullName, pin, phone, dob, photo]
+      `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64, mfa_secret)
+       VALUES ($1, $2, $3, 'employee', NULL, $4, $5, $6, $7)`,
+      [emp_id, fullName, pin, phone, dob, photo, secret.base32]
     );
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Employee registered successfully", emp_id })
+      body: JSON.stringify({
+        message: "Employee registered successfully",
+        emp_id,
+        qr_code_url
+      })
     };
+
   } catch (err) {
     console.error("❌ Register Error:", err.message);
     return {
