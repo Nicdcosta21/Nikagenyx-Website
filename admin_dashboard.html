@@ -181,23 +181,21 @@ function resetMFA(id) {
   }
 }
 
-function confirmRoleChange(id) {
-  const newRole = document.getElementById(`role-${id}`).value;
-
+function confirmRoleChange(emp_id, newRole) {
   fetch("/.netlify/functions/update_role", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: id, role: newRole })
+    body: JSON.stringify({ emp_id, role: newRole })
   })
   .then(res => res.json())
-  .then(() => {
-    alert(`Role updated to ${newRole.toUpperCase()} for ${id}`);
-    employees = employees.map(emp => emp.emp_id === id ? { ...emp, role: newRole } : emp);
+  .then(data => {
+    alert(`✅ Role updated to ${newRole.toUpperCase()} for ${emp_id}`);
+    employees = employees.map(emp => emp.emp_id === emp_id ? { ...emp, role: newRole } : emp);
     loadTable(document.getElementById("search").value);
   })
   .catch(err => {
-    alert("Failed to update role.");
-    console.error("Error:", err);
+    alert("❌ Failed to update role.");
+    console.error("Role update error:", err);
   });
 }
 
