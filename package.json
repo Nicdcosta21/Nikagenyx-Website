@@ -1,6 +1,9 @@
 {
   "name": "nikagenyx-site",
   "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'No build step required'"
+  },
   "dependencies": {
     "pg": "^8.11.0"
   }
