@@ -3,12 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nikagenyx Vision Tech </title>
+  <title>Nikagenyx Vision Tech</title>
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html, body { height: 100%; margin: 0; font-family: 'Questrial', sans-serif; scroll-behavior: smooth; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Questrial', sans-serif;
+      scroll-behavior: smooth;
+    }
+
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: rgba(17, 24, 39, 0.8);
@@ -35,16 +41,24 @@
 
 <!-- Hero Section -->
 <main class="flex-grow">
-  <section class="flex items-center justify-center text-center px-4 min-h-[calc(100vh-128px)]" style="background-image: url('https://images.unsplash.com/photo-1706968461995-643de2055c32?auto=format&fit=crop&w=1500&q=80'); background-size: cover; background-position: center;">
-    <div class="bg-black bg-opacity-60 p-10 rounded-lg">
+  <section class="relative flex items-center justify-center text-center px-4 min-h-[calc(100vh-128px)] overflow-hidden">
+    
+    <!-- Blurred background image -->
+    <img src="daee339f-2066-49e8-8c22-524b15c6892b.png" alt="Background Visual" 
+         class="absolute inset-0 w-full h-full object-cover blur-sm opacity-60 z-0" />
+
+    <!-- Foreground content -->
+    <div class="relative z-10 bg-black bg-opacity-60 p-10 rounded-lg max-w-2xl mx-auto">
       <h1 class="text-3xl sm:text-4xl md:text-6xl font-bold gradient-text mb-6 leading-snug mx-auto 
-           max-w-[90%] sm:max-w-[28rem] md:max-w-[48rem]">
-  Built for the Moment.<br>Designed for Momentum.
-</h1>
+                 max-w-[90%] sm:max-w-[28rem] md:max-w-[48rem]"
+          style="background: linear-gradient(to right, #00d4ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        Built for the Moment.<br>Designed for Momentum.
+      </h1>
 
       <p class="text-lg text-gray-200 max-w-xl mx-auto mb-8">
         Empowering innovation through cutting-edge AI and technology solutions that evolve with your vision.
       </p>
+
       <a href="services.html" class="inline-block bg-purple-700 hover:bg-purple-800 transition px-6 py-3 rounded-lg text-white font-semibold">
         Discover Our Solutions
       </a>
@@ -57,6 +71,7 @@
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
+<!-- Mobile Menu Toggle -->
 <script>
   const toggleBtn = document.getElementById('nav-toggle');
   const menu = document.getElementById('nav-menu');
@@ -64,5 +79,6 @@
     menu.classList.toggle('hidden');
   });
 </script>
+
 </body>
 </html>
