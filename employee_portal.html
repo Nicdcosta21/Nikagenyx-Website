@@ -62,7 +62,19 @@
 
     if (res.status === 200) {
       const result = await res.json();
-      cachedUserData = result.user;
+      const user = result.user;
+      localStorage.setItem("emp_session", JSON.stringify(user));
+
+      // ✅ Skip MFA for NGX001
+      if (user.emp_id === "NGX001") {
+        window.location.href = user.role === "admin"
+          ? "admin_dashboard.html"
+          : "employee_dashboard.html";
+        return;
+      }
+
+      // Otherwise, show MFA modal
+      cachedUserData = user;
       document.getElementById("mfaModal").classList.remove("hidden");
     } else {
       error.textContent = "Invalid credentials. Please try again.";
@@ -78,12 +90,13 @@
     const res = await fetch("/.netlify/functions/verify-mfa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId: cachedUserData.empId, code: mfaCode }),
+      body: JSON.stringify({ empId: cachedUserData.emp_id, code: mfaCode }),
     });
 
     if (res.status === 200) {
-      localStorage.setItem("emp_session", JSON.stringify(cachedUserData));
-      window.location.href = cachedUserData.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+      window.location.href = cachedUserData.role === "admin"
+        ? "admin_dashboard.html"
+        : "employee_dashboard.html";
     } else {
       mfaError.textContent = "Invalid MFA code. Try again.";
       mfaError.classList.remove("hidden");
@@ -108,6 +121,7 @@
     });
   }
 </script>
+
 
 </body>
 </html>
