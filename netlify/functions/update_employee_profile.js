@@ -1,4 +1,5 @@
 const { Pool } = require("pg");
+
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -13,23 +14,55 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { emp_id, name, phone, dob, role, department } = JSON.parse(event.body);
+    const data = JSON.parse(event.body);
+    const { emp_id, name, phone, dob, role, department } = data;
+
+    // Validation
     if (!emp_id || !name) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "emp_id and name are required." }),
+        body: JSON.stringify({ message: "Employee ID and Name are required." }),
       };
     }
 
-    await pool.query(
-      `UPDATE employees SET name=$1, phone=$2, dob=$3, role=$4, department=$5 WHERE emp_id=$6`,
-      [name, phone, dob, role, department, emp_id]
-    );
+    // Dynamic Update Builder
+    const updates = [];
+    const values = [];
+    let index = 1;
+
+    if (name) {
+      updates.push(`name = $${index++}`);
+      values.push(name);
+    }
+    if (phone) {
+      updates.push(`phone = $${index++}`);
+      values.push(phone);
+    }
+    if (dob) {
+      updates.push(`dob = $${index++}`);
+      values.push(dob);
+    }
+    if (role) {
+      updates.push(`role = $${index++}`);
+      values.push(role);
+    }
+    if (department) {
+      updates.push(`department = $${index++}`);
+      values.push(department);
+    }
+
+    // Final binding value
+    values.push(emp_id);
+
+    // Run query
+    const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
+    await pool.query(query, values);
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Profile updated successfully" }),
     };
+
   } catch (err) {
     console.error("❌ Update error:", err.message);
     return {
