@@ -18,17 +18,35 @@
     <form id="loginForm" class="space-y-4">
       <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
       <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      
+      <p class="text-sm text-right">
+        <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
+      </p>
+
       <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
       <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
     </form>
   </div>
 </main>
 
+<!-- MFA Modal -->
+<div id="mfaModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded shadow-lg w-96">
+    <h3 class="text-lg font-semibold mb-4">Enter MFA Code</h3>
+    <p class="text-sm mb-2">Check your authenticator app for a 6-digit code.</p>
+    <input type="text" id="mfaCode" maxlength="6" placeholder="123456" class="w-full px-3 py-2 rounded bg-gray-700 text-white mb-4" />
+    <button onclick="verifyMFA()" class="w-full py-2 bg-green-600 hover:bg-green-700 rounded">Verify</button>
+    <p id="mfaError" class="text-red-400 text-sm mt-2 hidden"></p>
+  </div>
+</div>
+
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
 <script>
+  let cachedUserData = null;
+
   document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     const empId = document.getElementById("empId").value.trim();
@@ -44,21 +62,52 @@
 
     if (res.status === 200) {
       const result = await res.json();
-      localStorage.setItem("emp_session", JSON.stringify(result.user));
-
-      // Redirect based on role
-      if (result.user.role === "admin") {
-        window.location.href = "admin_dashboard.html";
-      } else {
-        window.location.href = "employee_dashboard.html";
-      }
+      cachedUserData = result.user;
+      document.getElementById("mfaModal").classList.remove("hidden");
     } else {
       error.textContent = "Invalid credentials. Please try again.";
       error.classList.remove("hidden");
     }
   });
+
+  async function verifyMFA() {
+    const mfaCode = document.getElementById("mfaCode").value.trim();
+    const mfaError = document.getElementById("mfaError");
+    mfaError.classList.add("hidden");
+
+    const res = await fetch("/.netlify/functions/verify-mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId: cachedUserData.empId, code: mfaCode }),
+    });
+
+    if (res.status === 200) {
+      localStorage.setItem("emp_session", JSON.stringify(cachedUserData));
+      window.location.href = cachedUserData.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+    } else {
+      mfaError.textContent = "Invalid MFA code. Try again.";
+      mfaError.classList.remove("hidden");
+    }
+  }
+
+  function handleForgotPIN() {
+    const empId = prompt("Enter your Employee ID to reset your PIN:");
+    if (!empId) return;
+
+    fetch("/.netlify/functions/forgot-pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId }),
+    })
+    .then(res => {
+      if (res.status === 200) {
+        alert("A reset link or temporary PIN has been sent to your registered email.");
+      } else {
+        alert("Unable to process your request. Please contact support.");
+      }
+    });
+  }
 </script>
 
 </body>
-
 </html>
