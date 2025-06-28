@@ -53,7 +53,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         message: "Employee registered successfully",
         emp_id,
-        qr_code_url
+        qr_code_url,
         mfa_secret: secret.base32 
       })
     };
