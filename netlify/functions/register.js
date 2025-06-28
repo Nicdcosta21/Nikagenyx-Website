@@ -54,6 +54,7 @@ exports.handler = async (event) => {
         message: "Employee registered successfully",
         emp_id,
         qr_code_url
+        mfa_secret: secret.base32 
       })
     };
 
