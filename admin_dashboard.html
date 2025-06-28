@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Nikagenyx</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -51,20 +51,10 @@
           <th class="p-2 border">Actions</th>
         </tr>
       </thead>
-      <tbody id="employeeTable" class="text-center text-sm">
-        <!-- JS will populate rows -->
-      </tbody>
+      <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
 </main>
-
-<div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-  <div class="bg-white text-black p-6 rounded w-96 relative">
-    <button onclick="closeModal()" class="absolute top-2 right-2 text-xl">&times;</button>
-    <h2 class="text-xl font-bold mb-2">Employee Details</h2>
-    <div id="modalContent"></div>
-  </div>
-</div>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
@@ -90,46 +80,50 @@ function loadTable(filter = "") {
   filtered.forEach(emp => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-  <td class="border p-2 cursor-pointer" onclick="viewProfile('${emp.emp_id}')">${emp.emp_id}</td>
-  <td class="border p-2">${emp.name}</td>
-  <td class="border p-2">${emp.phone || '-'}</td>
-  <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-  <td class="border p-2 flex items-center gap-2 justify-center">
-    <select id="role-${emp.emp_id}" class="bg-gray-700 border border-gray-600 px-2 py-1 rounded">
-      <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
-      <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
-    </select>
-    <button onclick="confirmRoleChange('${emp.emp_id}')" class="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-  </td>
-  <td class="border p-2">${emp.department || '-'}</td>
-  <td class="border p-2 space-x-2">
-    <button onclick="resetPIN('${emp.emp_id}')" class="bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
-    <button onclick="edit('${emp.emp_id}')" class="bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-    <button onclick="deleteUser('${emp.emp_id}')" class="bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
-  </td>`;
+      <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
+      <td class="border p-2">${emp.name}</td>
+      <td class="border p-2">${emp.phone || '-'}</td>
+      <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
+      <td class="border p-2 flex items-center gap-2 justify-center">
+        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select">
+          <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
+          <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
+        </select>
+        <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+      </td>
+      <td class="border p-2">${emp.department || '-'}</td>
+      <td class="border p-2 space-x-1">
+        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
+        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
+        <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
+        <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+      </td>
+    `;
+
+    tr.querySelector('.confirm-role').addEventListener('click', () => {
+      const newRole = tr.querySelector('.role-select').value;
+      confirmRoleChange(emp.emp_id, newRole);
+    });
+
+    tr.querySelector('.reset-pin').addEventListener('click', () => resetPIN(emp.emp_id));
+    tr.querySelector('.reset-mfa').addEventListener('click', () => resetMFA(emp.emp_id));
+    tr.querySelector('.edit').addEventListener('click', () => edit(emp.emp_id));
+    tr.querySelector('.delete').addEventListener('click', () => deleteUser(emp.emp_id));
+    tr.querySelector('td:first-child').addEventListener('click', () => viewProfile(emp.emp_id));
+
     table.appendChild(tr);
   });
 }
 
 function viewProfile(id) {
   const user = employees.find(e => e.emp_id === id);
-  document.getElementById("modalContent").innerHTML = `
-    <p><strong>Name:</strong> ${user.name}</p>
-    <p><strong>Phone:</strong> ${user.phone || '-'}</p>
-    <p><strong>DOB:</strong> ${formatDate(user.dob)}</p>
-    <p><strong>Department:</strong> ${user.department || '-'}</p>
-    <p><strong>Role:</strong> ${user.role}</p>`;
-  document.getElementById("modal").classList.remove("hidden");
-}
-
-function closeModal() {
-  document.getElementById("modal").classList.add("hidden");
+  alert(`Name: ${user.name}\\nPhone: ${user.phone || '-'}\\nDOB: ${formatDate(user.dob)}\\nRole: ${user.role}`);
 }
 
 function exportCSV() {
   const headers = ["ID", "Name", "Phone", "DOB", "Role", "Department"];
   const rows = employees.map(e => [e.emp_id, e.name, e.phone, formatDate(e.dob), e.role, e.department]);
-  let csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+  let csv = headers.join(",") + "\\n" + rows.map(r => r.join(",")).join("\\n");
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -140,51 +134,48 @@ function exportCSV() {
 }
 
 function resetPIN(id) {
-  alert(`Reset PIN logic for ${id}`);
+  alert(`Reset PIN triggered for ${id}`);
 }
+
 function edit(id) {
-  alert(`Edit form logic for ${id}`);
+  alert(`Edit logic for ${id}`);
 }
+
 function deleteUser(id) {
   if (confirm(`Are you sure you want to delete ${id}?`)) {
     alert(`Delete logic for ${id}`);
   }
 }
 
-function confirmRoleChange(id) {
-  const selectedRole = document.getElementById(`role-${id}`).value;
-
-  fetch("/.netlify/functions/update_role", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: id, role: selectedRole })
-  })
-  .then(res => res.json())
-  .then(data => {
-    alert(`Role updated to ${selectedRole.toUpperCase()} for ${id}`);
-    employees = employees.map(emp => emp.emp_id === id ? { ...emp, role: selectedRole } : emp);
-    loadTable(document.getElementById("search").value);
-  })
-  .catch(err => {
-    alert("Failed to update role.");
-    console.error("Error:", err);
-  });
+function resetMFA(id) {
+  if (confirm(`Reset MFA for ${id}?`)) {
+    fetch("/.netlify/functions/reset_mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: id })
+    })
+    .then(res => res.json())
+    .then(() => alert(`✅ MFA reset for ${id}`))
+    .catch(() => alert("❌ MFA reset failed"));
+  }
 }
-  
-  
-function updateRole(id, newRole) {
+
+function confirmRoleChange(id, newRole) {
   fetch("/.netlify/functions/update_role", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ emp_id: id, role: newRole })
   })
   .then(res => res.json())
-  .then(data => {
+  .then(() => {
     alert(`Role updated to ${newRole.toUpperCase()} for ${id}`);
     employees = employees.map(emp => emp.emp_id === id ? { ...emp, role: newRole } : emp);
     loadTable(document.getElementById("search").value);
   })
-  .catch(err => console.error("Role update failed:", err));
+  .catch(err => {
+    alert("Failed to update role.");
+    console.error("Error:", err);
+  });
 }
 
 document.getElementById("search").addEventListener("input", e => loadTable(e.target.value));
