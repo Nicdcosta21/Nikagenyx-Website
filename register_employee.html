@@ -5,8 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Register New Employee</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Questrial', sans-serif;
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+<body class="bg-gray-900 text-white flex flex-col min-h-screen">
+
+<main class="flex-grow flex items-center justify-center">
   <section class="max-w-md w-full mx-auto p-6 bg-gray-800 text-white rounded-md shadow-lg mt-10">
     <h2 class="text-2xl font-bold mb-6 text-center">Register New Employee</h2>
     <form id="registerForm">
@@ -36,69 +45,88 @@
         <canvas id="canvas" class="hidden"></canvas>
         <button type="button" id="captureBtn" class="bg-blue-600 px-4 py-1 rounded hover:bg-blue-700">Capture</button>
       </div>
+      <!-- MFA QR -->
+      <div id="qrSection" class="mb-4 hidden text-center">
+        <p class="text-sm mb-2">Scan this QR code in your authenticator app:</p>
+        <img id="qrImage" src="" alt="MFA QR Code" class="mx-auto w-40 h-40 border rounded" />
+      </div>
       <button type="submit" class="w-full bg-green-600 py-2 mt-4 rounded hover:bg-green-700">Register</button>
     </form>
     <p id="message" class="text-sm text-center mt-4"></p>
   </section>
+</main>
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
-    const form = document.getElementById('registerForm');
-    const message = document.getElementById('message');
-    let capturedPhoto = '';
+<!-- Footer -->
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
+  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+</footer>
 
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const captureBtn = document.getElementById('captureBtn');
+  const form = document.getElementById('registerForm');
+  const message = document.getElementById('message');
+  const qrSection = document.getElementById('qrSection');
+  const qrImage = document.getElementById('qrImage');
+  let capturedPhoto = '';
+
+  navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+    video.srcObject = stream;
+  });
+
+  captureBtn.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    capturedPhoto = canvas.toDataURL('image/jpeg');
+    canvas.classList.remove('hidden');
+    captureBtn.textContent = 'Captured!';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!capturedPhoto) {
+      alert('Please capture a photo first.');
+      return;
+    }
+
+    const data = {
+      firstName: form.firstName.value,
+      lastName: form.lastName.value,
+      phone: form.phone.value,
+      dob: form.dob.value,
+      pin: form.pin.value,
+      photo: capturedPhoto
+    };
+
+    const res = await fetch('/.netlify/functions/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
 
-    captureBtn.addEventListener('click', () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      capturedPhoto = canvas.toDataURL('image/jpeg');
-      canvas.classList.remove('hidden');
-      captureBtn.textContent = 'Captured!';
-    });
+    const result = await res.json();
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!capturedPhoto) {
-        alert('Please capture a photo first.');
-        return;
+    if (res.ok) {
+      message.textContent = `✅ Registered as ${result.emp_id}`;
+      message.classList.add('text-green-400');
+
+      if (result.qr_code_url) {
+        qrImage.src = result.qr_code_url;
+        qrSection.classList.remove('hidden');
       }
 
-      const data = {
-        firstName: form.firstName.value,
-        lastName: form.lastName.value,
-        phone: form.phone.value,
-        dob: form.dob.value,
-        pin: form.pin.value,
-        photo: capturedPhoto
-      };
+      setTimeout(() => {
+        window.location.href = "employee_login.html";
+      }, 2500); // Wait for QR visibility
+    } else {
+      message.textContent = `❌ Error: ${result.message}`;
+      message.classList.add('text-red-400');
+    }
+  });
+</script>
 
-      const res = await fetch('/.netlify/functions/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await res.json();
-
-if (res.ok) {
-  message.textContent = `✅ Registered as ${result.emp_id}`;
-  message.classList.add('text-green-400');
-
-  setTimeout(() => {
-    window.location.href = "employee_portal.html";
-  }, 1500); // Delay for message visibility
-} else {
-  message.textContent = `❌ Error: ${result.message}`;
-  message.classList.add('text-red-400');
-}
-
-    });
-  </script>
 </body>
 </html>
