@@ -7,6 +7,8 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
+  console.log("🔁 Register function triggered");
+
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -18,7 +20,6 @@ exports.handler = async (event) => {
     const data = JSON.parse(event.body);
     const { firstName, lastName, phone, dob, pin, photo } = data;
 
-    // Validate all required fields
     if (!firstName || !lastName || !phone || !dob || !pin || !photo) {
       return {
         statusCode: 400,
@@ -26,20 +27,12 @@ exports.handler = async (event) => {
       };
     }
 
-    // Validate phone number format (10 digits only)
-    if (!/^\d{10}$/.test(phone)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Phone number must be exactly 10 digits." })
-      };
-    }
-
-    const emp_id = `NGX${Date.now().toString().slice(-6)}`; // Generate unique ID
-    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const emp_id = `NGX${Date.now().toString().slice(-6)}`;
+    const fullName = `${firstName} ${lastName}`;
 
     await pool.query(
       `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64)
-       VALUES ($1, $2, $3, 'employee', 'Tech Team', $4, $5, $6)`,
+       VALUES ($1, $2, $3, 'employee', NULL, $4, $5, $6)`,
       [emp_id, fullName, pin, phone, dob, photo]
     );
 
@@ -47,15 +40,11 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ message: "Employee registered successfully", emp_id })
     };
-
-} catch (err) {
-  console.error("Error during employee registration:", err);
-  return {
-    statusCode: 500,
-    body: JSON.stringify({
-      message: "Server error",
-      error: err.message || "Unknown error"
-    })
-  };
-}
-
+  } catch (err) {
+    console.error("❌ Register Error:", err.message);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Server error", error: err.message })
+    };
+  }
+};
