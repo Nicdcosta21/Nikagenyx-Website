@@ -2,50 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Employee Login – Nikagenyx</title>
-  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: 'Questrial', sans-serif; }
-  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
 
-  <div class="bg-gray-800 p-8 rounded-lg w-full max-w-md shadow-lg">
-    <h2 class="text-2xl font-bold text-center mb-6">Employee Login</h2>
+  <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
     <form id="pinForm" class="space-y-4">
-      <div>
-        <label class="block mb-1">Enter your Employee ID</label>
-        <input type="text" id="empId" required class="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded text-white">
-      </div>
-      <div>
-        <label class="block mb-1">PIN</label>
-        <input type="password" id="pin" required class="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded text-white">
-      </div>
-      <button type="submit" class="bg-purple-700 hover:bg-purple-800 w-full px-4 py-2 rounded text-white font-semibold">
-        Login
-      </button>
+      <input id="empId" type="text" placeholder="Employee ID" required class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded" />
+      <input id="pin" type="password" placeholder="PIN" required class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded" />
+      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded">Login</button>
     </form>
-    <p id="status" class="text-center mt-4 text-red-500 hidden"></p>
+    <p id="status" class="text-red-500 text-center mt-4 hidden">Invalid login. Try again.</p>
   </div>
 
-<script>
-  document.getElementById('pinForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const empId = document.getElementById('empId').value.trim();
-    const pin = document.getElementById('pin').value.trim();
+  <script>
+    document.getElementById('pinForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
 
-    // Replace this with real validation later
-    if (empId === "EMP123" && pin === "4321") {
-      window.location.href = "https://nikagenyx.com/employee_dashboard.html"; // <--- RIGHT HERE
-    } else {
-      document.getElementById('status').textContent = "Invalid ID or PIN.";
-      document.getElementById('status').classList.remove('hidden');
-    }
-  });
-</script>
+      const empId = document.getElementById('empId').value.trim();
+      const pin = document.getElementById('pin').value.trim();
 
+      const res = await fetch('/.netlify/functions/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empId, pin })
+      });
 
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        localStorage.setItem('empData', JSON.stringify(data.user));
+        const target = data.user.role === 'admin' ? 'admin_dashboard.html' : 'employee_dashboard.html';
+        window.location.href = target;
+      } else {
+        document.getElementById('status').classList.remove('hidden');
+      }
+    });
+  </script>
 </body>
 </html>
