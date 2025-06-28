@@ -33,17 +33,22 @@
 
 <section class="py-20 px-6 max-w-3xl mx-auto">
   <h2 class="text-3xl font-bold text-center mb-8">Contact Us</h2>
-  <form name="contact" netlify>
+  <form name="contact" method="POST" data-netlify="true">
+  <input type="hidden" name="form-name" value="contact" />
   <p>
-    <label>Name <input type="text" name="name" /></label>
+    <label>Name <input type="text" name="name" required /></label>
   </p>
   <p>
-    <label>Email <input type="email" name="email" /></label>
+    <label>Email <input type="email" name="email" required /></label>
   </p>
   <p>
-    <button type="submit">Send</button>
+    <label>Message <textarea name="message" rows="5" required></textarea></label>
+  </p>
+  <p>
+    <button type="submit" class="bg-purple-700 hover:bg-purple-800 px-6 py-2 rounded text-white">Send</button>
   </p>
 </form>
+
 </section>
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-20">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
