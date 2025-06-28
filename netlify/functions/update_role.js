@@ -1,9 +1,8 @@
-// 📁 netlify/functions/update_role.js
-const { Pool } = require("pg");
+const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }
 });
 
 exports.handler = async (event) => {
@@ -15,26 +14,25 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { emp_id, new_role } = JSON.parse(event.body);
-
-    if (!emp_id || !new_role) {
+    const { emp_id, role } = JSON.parse(event.body);
+    if (!emp_id || !role) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Missing required parameters" })
+        body: JSON.stringify({ message: "emp_id and role are required." })
       };
     }
 
-    await pool.query("UPDATE employees SET role = $1 WHERE emp_id = $2", [new_role, emp_id]);
+    await pool.query(`UPDATE employees SET role = $1 WHERE emp_id = $2`, [role, emp_id]);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Role updated successfully" })
+      body: JSON.stringify({ message: "Role updated successfully." })
     };
   } catch (err) {
-    console.error("Update Role Error:", err);
+    console.error("❌ Role Update Error:", err.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error", error: err.message })
+      body: JSON.stringify({ message: "Server error", error: err.message })
     };
   }
 };
