@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Profile - Nikagenyx</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+    label { font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+<nav class="bg-gray-800 px-6 py-4 flex items-center justify-between">
+  <h1 class="text-xl font-bold">Employee Profile</h1>
+  <button onclick="goBack()" class="bg-purple-600 hover:bg-purple-700 px-4 py-1 rounded">← Back</button>
+</nav>
+
+<main class="p-6 max-w-3xl mx-auto">
+  <div id="profileSection" class="bg-gray-800 rounded-lg p-6 shadow-lg">
+    <h2 class="text-2xl font-bold mb-4">Profile Details</h2>
+    <form id="profileForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label>Emp ID</label><input id="empId" class="w-full p-2 bg-gray-700 rounded" readonly></div>
+        <div><label>Full Name</label><input id="name" class="w-full p-2 bg-gray-700 rounded"></div>
+        <div><label>Phone</label><input id="phone" class="w-full p-2 bg-gray-700 rounded"></div>
+        <div><label>DOB</label><input id="dob" type="date" class="w-full p-2 bg-gray-700 rounded"></div>
+        <div>
+          <label>Role</label>
+          <select id="role" class="w-full p-2 bg-gray-700 rounded">
+            <option value="employee">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label>Department</label>
+          <select id="department" class="w-full p-2 bg-gray-700 rounded">
+            <option value="">-- Select --</option>
+            <option value="Tech Team">Tech Team</option>
+            <option value="Admin Team">Admin Team</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-4 mt-6">
+        <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded">💾 Save Changes</button>
+        <button type="button" onclick="resetPIN()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Reset PIN</button>
+        <button type="button" onclick="resetMFA()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">Reset MFA</button>
+      </div>
+    </form>
+
+    <p id="message" class="text-sm mt-4"></p>
+  </div>
+</main>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const empId = params.get("id");
+  const message = document.getElementById("message");
+
+  async function loadProfile() {
+    const res = await fetch(`/.netlify/functions/get_employee_profile?id=${empId}`);
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById("empId").value = data.emp_id;
+      document.getElementById("name").value = data.name;
+      document.getElementById("phone").value = data.phone;
+      document.getElementById("dob").value = data.dob;
+      document.getElementById("role").value = data.role;
+      document.getElementById("department").value = data.department || "";
+    } else {
+      message.textContent = "Error loading profile.";
+      message.classList.add("text-red-400");
+    }
+  }
+
+  document.getElementById("profileForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      emp_id: document.getElementById("empId").value,
+      name: document.getElementById("name").value,
+      phone: document.getElementById("phone").value,
+      dob: document.getElementById("dob").value,
+      role: document.getElementById("role").value,
+      department: document.getElementById("department").value,
+    };
+
+    const res = await fetch("/.netlify/functions/update_employee_profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    message.textContent = result.message;
+    message.className = res.ok ? "text-green-400" : "text-red-400";
+  });
+
+  function resetPIN() {
+    alert("Reset PIN logic here.");
+  }
+
+  function resetMFA() {
+    fetch("/.netlify/functions/reset_mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId })
+    })
+    .then(res => res.json())
+    .then(data => alert(data.message))
+    .catch(err => alert("Failed to reset MFA"));
+  }
+
+  function goBack() {
+    window.location.href = "admin_dashboard.html";
+  }
+
+  loadProfile();
+</script>
+
+</body>
+</html>
