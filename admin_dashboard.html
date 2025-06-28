@@ -4,12 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Nikagenyx</title>
-  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      font-family: 'Questrial', sans-serif;
-    }
+    body { font-family: 'Questrial', sans-serif; }
   </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -35,75 +32,131 @@
   </ul>
 </nav>
 
-<main class="p-8 max-w-5xl mx-auto">
-  <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
-  <p class="text-gray-300">Welcome, Admin. Below is the list of registered employees.</p>
-
-  <div class="mt-8">
-    <h2 class="text-xl font-semibold mb-4">Employee Records</h2>
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-gray-800 border border-gray-600 text-sm rounded-lg overflow-hidden">
-        <thead>
-          <tr class="bg-gray-700">
-            <th class="py-2 px-4 text-left border-r">ID</th>
-            <th class="py-2 px-4 text-left border-r">Name</th>
-            <th class="py-2 px-4 text-left border-r">Phone</th>
-            <th class="py-2 px-4 text-left border-r">DOB</th>
-            <th class="py-2 px-4 text-left border-r">Role</th>
-            <th class="py-2 px-4 text-left">Department</th>
-          </tr>
-        </thead>
-        <tbody id="employeeTableBody">
-          <tr><td colspan="6" class="text-center py-4">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
+<main class="p-6 max-w-7xl mx-auto">
+  <h1 class="text-3xl font-bold mb-4">Admin Dashboard</h1>
+  <div class="mb-4 flex flex-col md:flex-row gap-4">
+    <input id="search" type="text" placeholder="Search by name or ID" class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3">
+    <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full table-auto bg-gray-800 border border-gray-700">
+      <thead class="bg-gray-700">
+        <tr>
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Name</th>
+          <th class="p-2 border">Phone</th>
+          <th class="p-2 border">DOB</th>
+          <th class="p-2 border">Role</th>
+          <th class="p-2 border">Department</th>
+          <th class="p-2 border">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="employeeTable" class="text-center text-sm">
+        <!-- JS will populate rows -->
+      </tbody>
+    </table>
   </div>
 </main>
+
+<div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+  <div class="bg-white text-black p-6 rounded w-96 relative">
+    <button onclick="closeModal()" class="absolute top-2 right-2 text-xl">&times;</button>
+    <h2 class="text-xl font-bold mb-2">Employee Details</h2>
+    <div id="modalContent"></div>
+  </div>
+</div>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-20">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
 <script>
-  function logout() {
-    localStorage.removeItem("emp_session");
-    window.location.href = "employee_portal.html";
+function logout() {
+  localStorage.removeItem("emp_session");
+  window.location.href = "employee_portal.html";
+}
+
+let employees = [];
+
+function formatDate(dob) {
+  return new Date(dob).toISOString().split('T')[0];
+}
+
+function loadTable(filter = "") {
+  const table = document.getElementById("employeeTable");
+  table.innerHTML = "";
+  const filtered = employees.filter(emp => emp.name.toLowerCase().includes(filter.toLowerCase()) || emp.emp_id.toLowerCase().includes(filter.toLowerCase()));
+
+  filtered.forEach(emp => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="border p-2 cursor-pointer" onclick="viewProfile('${emp.emp_id}')">${emp.emp_id}</td>
+      <td class="border p-2">${emp.name}</td>
+      <td class="border p-2">${emp.phone || '-'}</td>
+      <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
+      <td class="border p-2">${emp.role}</td>
+      <td class="border p-2">${emp.department || '-'}</td>
+      <td class="border p-2 space-x-2">
+        <button onclick="resetPIN('${emp.emp_id}')" class="bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
+        <button onclick="promote('${emp.emp_id}')" class="bg-yellow-500 px-2 py-1 rounded text-xs">Promote</button>
+        <button onclick="edit('${emp.emp_id}')" class="bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
+        <button onclick="deleteUser('${emp.emp_id}')" class="bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+      </td>`;
+    table.appendChild(tr);
+  });
+}
+
+function viewProfile(id) {
+  const user = employees.find(e => e.emp_id === id);
+  document.getElementById("modalContent").innerHTML = `
+    <p><strong>Name:</strong> ${user.name}</p>
+    <p><strong>Phone:</strong> ${user.phone || '-'}</p>
+    <p><strong>DOB:</strong> ${formatDate(user.dob)}</p>
+    <p><strong>Department:</strong> ${user.department || '-'}</p>
+    <p><strong>Role:</strong> ${user.role}</p>`;
+  document.getElementById("modal").classList.remove("hidden");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.add("hidden");
+}
+
+function exportCSV() {
+  const headers = ["ID", "Name", "Phone", "DOB", "Role", "Department"];
+  const rows = employees.map(e => [e.emp_id, e.name, e.phone, formatDate(e.dob), e.role, e.department]);
+  let csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'employees.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetPIN(id) {
+  alert(`Reset PIN logic for ${id}`);
+}
+function promote(id) {
+  alert(`Promote to Admin logic for ${id}`);
+}
+function edit(id) {
+  alert(`Edit form logic for ${id}`);
+}
+function deleteUser(id) {
+  if (confirm(`Are you sure you want to delete ${id}?`)) {
+    alert(`Delete logic for ${id}`);
   }
+}
 
-  async function loadEmployees() {
-    const tbody = document.getElementById("employeeTableBody");
-    try {
-      const res = await fetch("/.netlify/functions/get_employees");
-      const data = await res.json();
+document.getElementById("search").addEventListener("input", e => loadTable(e.target.value));
 
-      if (!data.employees || data.employees.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6' class='text-center py-4'>No employees found.</td></tr>";
-        return;
-      }
-
-      tbody.innerHTML = "";
-      data.employees.forEach(emp => {
-        const row = `
-          <tr class="border-t border-gray-700">
-            <td class="py-2 px-4 border-r">${emp.emp_id}</td>
-            <td class="py-2 px-4 border-r">${emp.name}</td>
-            <td class="py-2 px-4 border-r">${emp.phone || '-'}</td>
-            <td class="py-2 px-4 border-r">${emp.dob || '-'}</td>
-            <td class="py-2 px-4 border-r">${emp.role}</td>
-            <td class="py-2 px-4">${emp.department || '-'}</td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-400">Error loading data</td></tr>`;
-      console.error("Error fetching employees:", err);
-    }
-  }
-
-  loadEmployees();
+window.onload = async () => {
+  const res = await fetch("/.netlify/functions/get_employees");
+  const data = await res.json();
+  employees = data;
+  loadTable();
+};
 </script>
-
 </body>
 </html>
