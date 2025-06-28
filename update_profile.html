@@ -2,95 +2,130 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Update Profile - Nikagenyx</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style> body { font-family: 'Questrial', sans-serif; } </style>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+    label { display: block; margin-top: 1rem; font-size: 0.9rem; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+<body class="bg-gray-900 text-white flex flex-col min-h-screen">
+  <main class="flex-grow flex items-center justify-center">
+    <section class="w-full max-w-xl bg-gray-800 p-8 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-4 text-center">Update Your Profile</h2>
+      <form id="profileForm" enctype="multipart/form-data">
+
+        <label>Phone Number</label>
+        <input type="text" name="phone" required pattern="[0-9]{10}" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
+
+        <label>Date of Birth</label>
+        <input type="date" name="dob" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
+
+        <label>Department</label>
+        <select name="department" id="department" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
+          <option value="">Select Department</option>
+          <option value="Tech Team">Tech Team</option>
+          <option value="Admin Team">Admin Team</option>
+        </select>
+
+        <label>Role</label>
+        <select name="role" id="role" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
+          <option value="">Select Role</option>
+        </select>
+
+        <label>New PIN <span class="text-sm text-gray-400">(Leave blank to keep current)</span></label>
+        <input type="password" name="new_pin" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
+
+        <label>PAN Card</label>
+        <input type="file" name="pan" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+
+        <label>Aadhaar Card</label>
+        <input type="file" name="aadhaar" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+
+        <label>Resume</label>
+        <input type="file" name="resume" accept=".pdf,.doc,.docx" required onchange="validateSize(this)"/>
+
+        <label>Qualification Certificate</label>
+        <input type="file" name="qualification" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+
+        <label>Passport-size Photo</label>
+        <input type="file" name="photo" accept=".jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+
+        <label>Passport <span class="text-sm text-gray-400">(Optional)</span></label>
+        <input type="file" name="passport" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
+
+        <button type="submit" class="w-full mt-6 bg-green-600 hover:bg-green-700 py-2 rounded">Save Changes</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
+    &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+  </footer>
 
 <script>
-  const session = localStorage.getItem("emp_session");
-  if (!session) {
-    window.location.href = "employee_portal.html";
+const rolesByDept = {
+  "Tech Team": [
+    "Frontend Developer (Jr. Developer)",
+    "Backend Developer (Jr. Developer)",
+    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+    "QA Engineer (Sr. Developer)",
+    "White labelling (UI/UX Designer)",
+    "DevOps Engineer (Infrastructure Engineer)",
+    "Data Analyst",
+    "Cybersecurity & Risk Analyst",
+    "IT Systems Administrator",
+    "IT Support Specialist"
+  ],
+  "Admin Team": [
+    "Human Resources Manager",
+    "Finance & Accounts Officer",
+    "Managing Director (MD)",
+    "Regulatory Compliance Officer",
+    "Client Relations Consultant",
+    "Administrative Coordinator",
+    "Customer Success Executive"
+  ]
+};
+
+document.getElementById("department").addEventListener("change", function () {
+  const roleSelect = document.getElementById("role");
+  const selectedDept = this.value;
+  roleSelect.innerHTML = `<option value="">Select Role</option>`;
+  if (rolesByDept[selectedDept]) {
+    rolesByDept[selectedDept].forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role;
+      opt.textContent = role;
+      roleSelect.appendChild(opt);
+    });
   }
-  const employee = JSON.parse(session);
-</script>
+});
 
-<main class="flex-grow flex items-center justify-center p-6">
-  <div class="bg-gray-800 p-6 rounded-lg w-full max-w-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4 text-center">Update Your Profile</h2>
-    <form id="updateForm" class="space-y-4">
-      <input type="hidden" name="emp_id" id="emp_id" />
-      
-      <div>
-        <label class="block text-sm mb-1">Phone Number</label>
-        <input type="tel" name="phone" id="phone" required pattern="[0-9]{10}"
-               class="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white" />
-      </div>
+function validateSize(input) {
+  const maxKB = 500;
+  if (input.files[0] && input.files[0].size > maxKB * 1024) {
+    alert("File size should not exceed 500KB.");
+    input.value = "";
+  }
+}
 
-      <div>
-        <label class="block text-sm mb-1">Date of Birth</label>
-        <input type="date" name="dob" id="dob" required
-               class="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white" />
-      </div>
-
-      <div>
-        <label class="block text-sm mb-1">Department</label>
-        <input type="text" name="department" id="department"
-               class="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white" />
-      </div>
-
-      <div>
-        <label class="block text-sm mb-1">New PIN (Leave blank to keep current)</label>
-        <input type="password" name="pin" id="pin"
-               class="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white" />
-      </div>
-
-      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded">Save Changes</button>
-      <p id="msg" class="text-center text-sm mt-2"></p>
-    </form>
-  </div>
-</main>
-
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
-  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
-</footer>
-
-<script>
-  const empData = JSON.parse(localStorage.getItem("emp_session"));
-  document.getElementById("emp_id").value = empData.emp_id;
-  document.getElementById("phone").value = empData.phone || "";
-  document.getElementById("dob").value = empData.dob ? empData.dob.split('T')[0] : "";
-  document.getElementById("department").value = empData.department || "";
-
-  document.getElementById("updateForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById("msg");
-
-    const data = {
-      emp_id: empData.emp_id,
-      phone: document.getElementById("phone").value,
-      dob: document.getElementById("dob").value,
-      department: document.getElementById("department").value,
-      pin: document.getElementById("pin").value
-    };
-
+document.getElementById("profileForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  try {
     const res = await fetch("/.netlify/functions/update_profile", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: formData
     });
-
     const result = await res.json();
-    if (res.ok) {
-      msg.textContent = "✅ Profile updated successfully";
-      msg.className = "text-green-400 text-sm text-center mt-2";
-    } else {
-      msg.textContent = "❌ Update failed: " + result.message;
-      msg.className = "text-red-400 text-sm text-center mt-2";
-    }
-  });
+    alert(result.message || "Profile updated successfully");
+  } catch (err) {
+    alert("Error updating profile");
+    console.error(err);
+  }
+});
 </script>
 
 </body>
