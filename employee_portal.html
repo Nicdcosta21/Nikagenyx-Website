@@ -2,45 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Employee Login – Nikagenyx</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Login - Nikagenyx</title>
+  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+<body class="bg-gray-900 text-white">
 
-  <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
-    <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
-    <form id="pinForm" class="space-y-4">
-      <input id="empId" type="text" placeholder="Employee ID" required class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded" />
-      <input id="pin" type="password" placeholder="PIN" required class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded" />
-      <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded">Login</button>
-    </form>
-    <p id="status" class="text-red-500 text-center mt-4 hidden">Invalid login. Try again.</p>
+  <div class="min-h-screen flex items-center justify-center">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
+      <form id="loginForm" class="space-y-4">
+        <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+        <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+        <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
+        <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
+      </form>
+    </div>
   </div>
 
   <script>
-    document.getElementById('pinForm').addEventListener('submit', async function (e) {
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
       e.preventDefault();
+      const empId = document.getElementById("empId").value.trim();
+      const pin = document.getElementById("pin").value.trim();
+      const error = document.getElementById("error");
+      error.classList.add("hidden");
 
-      const empId = document.getElementById('empId').value.trim();
-      const pin = document.getElementById('pin').value.trim();
-
-      const res = await fetch('/.netlify/functions/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empId, pin })
+      const res = await fetch("/.netlify/functions/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empId, pin }),
       });
 
-      const data = await res.json();
+      if (res.status === 200) {
+        const result = await res.json();
+        localStorage.setItem("emp_session", JSON.stringify(result.user));
 
-      if (data.status === 'success') {
-        localStorage.setItem('empData', JSON.stringify(data.user));
-        const target = data.user.role === 'admin' ? 'admin_dashboard.html' : 'employee_dashboard.html';
-        window.location.href = target;
+        // REDIRECT based on role
+        if (result.user.role === "admin") {
+          window.location.href = "admin_dashboard.html";
+        } else {
+          window.location.href = "employee_dashboard.html";
+        }
       } else {
-        document.getElementById('status').classList.remove('hidden');
+        error.textContent = "Invalid credentials. Please try again.";
+        error.classList.remove("hidden");
       }
     });
   </script>
+
 </body>
 </html>
