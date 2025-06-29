@@ -1,6 +1,8 @@
 const fetch = require("node-fetch");
 
 exports.handler = async (event) => {
+  console.log("📌 Function triggered: verify_face_replicate");
+
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -8,34 +10,38 @@ exports.handler = async (event) => {
     };
   }
 
-  const token = "r8_UYwueEtdEaZw23jXir2TpULqJxBDAA44ZhikM";
-  const body = JSON.parse(event.body);
-  const { emp_id, uploaded_image_base64, reference_image_base64, prediction_id } = body;
-
   try {
-    // 🔁 Polling Mode
+    const token = "r8_UYwueEtdEaZw23jXir2TpULqJxBDAA44ZhikM";
+    const { emp_id, uploaded_image_base64, reference_image_base64, prediction_id } = JSON.parse(event.body);
+
     if (prediction_id) {
+      console.log(`🔁 Polling Replicate for prediction_id: ${prediction_id}`);
       const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction_id}`, {
         headers: {
           Authorization: `Token ${token}`,
           "Content-Type": "application/json",
         },
       });
+
       const pollData = await pollRes.json();
+      console.log("📥 Polling response:", pollData);
       return {
         statusCode: 200,
         body: JSON.stringify(pollData),
       };
     }
 
-    // 🧠 Start Prediction
+    // Validate
     if (!uploaded_image_base64 || !reference_image_base64) {
+      console.error("❌ Missing base64 inputs.");
       return {
         statusCode: 400,
         body: JSON.stringify({ message: "Both base64 images are required." }),
       };
     }
 
+    // Start prediction
+    console.log("🧠 Sending to Replicate...");
     const startRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -52,9 +58,9 @@ exports.handler = async (event) => {
     });
 
     const data = await startRes.json();
+    console.log("📤 Replicate submission response:", data);
 
     if (startRes.status !== 201 || !data?.id) {
-      console.error("🚫 Prediction error:", data);
       return {
         statusCode: 500,
         body: JSON.stringify({ message: "Failed to start prediction", details: data }),
@@ -70,7 +76,7 @@ exports.handler = async (event) => {
       }),
     };
   } catch (err) {
-    console.error("❌ Server error:", err);
+    console.error("❌ Exception:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: "Internal error", error: err.message }),
