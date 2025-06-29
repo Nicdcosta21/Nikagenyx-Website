@@ -1,46 +1,50 @@
 const { Pool } = require("pg");
-
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, body: JSON.stringify({ message: "Method Not Allowed" }) };
   }
 
   try {
-    const { emp_id } = JSON.parse(event.body);
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const { emp_id, type } = JSON.parse(event.body);
+    const today = new Date().toISOString().split("T")[0];
+    const now = new Date().toISOString();
 
-    const { rows } = await pool.query("SELECT * FROM attendance WHERE emp_id=$1 AND date=$2", [emp_id, today]);
+    const existing = await pool.query(
+      "SELECT * FROM attendance WHERE emp_id = $1 AND date = $2",
+      [emp_id, today]
+    );
 
-    if (rows.length === 0) {
-      await pool.query("INSERT INTO attendance (emp_id, date, clock_in) VALUES ($1, $2, $3)", [emp_id, today, now]);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ status: "clocked_in", message: "Clock In recorded." })
-      };
+    if (type === "in") {
+      if (existing.rows.length > 0 && existing.rows[0].clock_in) {
+        return { statusCode: 200, body: JSON.stringify({ message: "Already clocked in." }) };
+      }
+      await pool.query(
+        "INSERT INTO attendance (emp_id, date, clock_in) VALUES ($1, $2, $3) ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3",
+        [emp_id, today, now]
+      );
+      return { statusCode: 200, body: JSON.stringify({ message: "Clocked in successfully." }) };
     }
 
-    const existing = rows[0];
-    if (!existing.clock_out) {
-      await pool.query("UPDATE attendance SET clock_out=$1 WHERE emp_id=$2 AND date=$3", [now, emp_id, today]);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ status: "clocked_out", message: "Clock Out recorded." })
-      };
+    if (type === "out") {
+      if (existing.rows.length === 0 || existing.rows[0].clock_out) {
+        return { statusCode: 200, body: JSON.stringify({ message: "Already clocked out or not clocked in yet." }) };
+      }
+      await pool.query(
+        "UPDATE attendance SET clock_out = $1 WHERE emp_id = $2 AND date = $3",
+        [now, emp_id, today]
+      );
+      return { statusCode: 200, body: JSON.stringify({ message: "Clocked out successfully." }) };
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ status: "complete", message: "You already clocked in and out today." })
-    };
+    return { statusCode: 400, body: JSON.stringify({ message: "Invalid action." }) };
 
   } catch (err) {
-    console.error("❌ Attendance error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error("❌ Error:", err);
+    return { statusCode: 500, body: JSON.stringify({ message: "Internal error", error: err.message }) };
   }
 };
