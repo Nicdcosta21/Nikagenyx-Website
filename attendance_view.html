@@ -7,74 +7,121 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
-    .day-box { width: 24px; height: 24px; border: 1px solid #4B5563; text-align: center; }
-    .legend span { display: inline-block; margin-right: 12px; }
-    .legend-box { width: 18px; height: 18px; display: inline-block; margin-right: 4px; border: 1px solid #4B5563; }
+    .day-label { width: 24px; text-align: center; font-size: 10px; color: #ccc; }
+    .half-hour-box { width: 6px; height: 24px; display: inline-block; margin: 0 0.5px; }
+    .P { background-color: #16a34a; }      /* Present */
+    .A { background-color: #dc2626; }      /* Absent */
+    .L { background-color: #facc15; }      /* Leave */
+    .H { background-color: #3b82f6; }      /* Holiday */
+    .NA { background-color: #374151; }     /* Not Available */
+    .month-btn { padding: 6px 12px; border-radius: 4px; }
+    .active-month { background-color: #4f46e5; }
   </style>
 </head>
-<body class="bg-gray-900 text-white p-6 min-h-screen">
+<body class="bg-gray-900 text-white p-6">
 
-  <h1 class="text-3xl font-bold mb-4 text-center">📅 Employee Attendance - June 2025</h1>
+  <h1 class="text-3xl font-bold mb-6 text-center">📅 Employee Attendance Viewer</h1>
 
-  <div class="legend mb-4 text-sm text-gray-300">
-    <span><span class="legend-box bg-green-600"></span>Present</span>
-    <span><span class="legend-box bg-yellow-400"></span>Leave</span>
-    <span><span class="legend-box bg-red-500"></span>Absent</span>
-    <span><span class="legend-box bg-blue-400"></span>Holiday</span>
-    <span><span class="legend-box bg-gray-700"></span>NA</span>
-  </div>
+  <div class="flex justify-center flex-wrap gap-2 mb-6" id="monthSelector"></div>
 
-  <div id="attendanceTable" class="space-y-6"></div>
+  <div id="attendanceGrid" class="space-y-8"></div>
 
   <script>
-    const dummyData = [
-      {
-        name: "NIKOLAS  SAMSON DCOSTA",
-        rank: "PHOTO - Photo Manager",
-        from: "2025-02-21",
-        status: ["P", "P", "P", "L", "A", "P", "P", "P", "P", "A", "P", "P", "P", "P", "H", "P", "P", "P", "P", "P", "L", "A", "P"]
-      },
-      {
-        name: "BARBOSA, PINKSON COLIN",
-        rank: "PHOTO - Photographer",
-        from: "2025-04-01",
-        status: ["P", "A", "P", "P", "L", "P", "P", "P", "P", "P", "P", "P", "H", "P", "P", "P", "A", "P", "P", "P", "P", "P", "P"]
-      }
-      // More records can be added here...
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
     ];
 
-    const monthDays = Array.from({ length: 30 }, (_, i) => i + 1); // For June
+    const today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
 
-    function renderAttendance() {
-      const container = document.getElementById("attendanceTable");
+    function daysInMonth(month, year) {
+      return new Date(year, month + 1, 0).getDate();
+    }
 
-      dummyData.forEach((emp, index) => {
-        const section = document.createElement("div");
-        section.className = "border border-gray-700 rounded-md p-4 bg-gray-800";
+    function renderMonthSelector() {
+      const selector = document.getElementById("monthSelector");
+      selector.innerHTML = "";
 
-        section.innerHTML = `
-          <p class="text-sm mb-2 font-semibold">
-            Name: ${emp.name} &nbsp;&nbsp;|&nbsp;&nbsp; Rank: ${emp.rank} &nbsp;&nbsp;|&nbsp;&nbsp; Active From: ${emp.from}
-          </p>
-          <div class="flex gap-1 flex-wrap items-center mb-2">
-            ${monthDays.map((d, i) => {
-              const status = emp.status[i] || "NA";
-              const bg = status === "P" ? "bg-green-600"
-                        : status === "L" ? "bg-yellow-400"
-                        : status === "A" ? "bg-red-500"
-                        : status === "H" ? "bg-blue-400"
-                        : "bg-gray-700";
-              return `<div class="day-box ${bg} text-xs">${d}</div>`;
-            }).join('')}
-          </div>
-          <div class="text-sm text-gray-400">NCs &nbsp; | &nbsp; Recall &nbsp; | &nbsp; Timesheet</div>
-        `;
-
-        container.appendChild(section);
+      months.forEach((m, i) => {
+        const btn = document.createElement("button");
+        btn.className = `month-btn ${i === currentMonth ? 'bg-indigo-700' : 'bg-gray-700 hover:bg-gray-600'}`;
+        btn.textContent = `${m} ${currentYear}`;
+        btn.onclick = () => {
+          currentMonth = i;
+          loadAttendance();
+          renderMonthSelector();
+        };
+        selector.appendChild(btn);
       });
     }
 
-    renderAttendance();
+    async function loadAttendance() {
+      const container = document.getElementById("attendanceGrid");
+      container.innerHTML = "";
+
+      const days = daysInMonth(currentMonth, currentYear);
+      const url = "/.netlify/functions/get_attendance_calendar";
+      let data = [];
+
+      try {
+        const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+        data = await res.json();
+      } catch (e) {
+        console.error("Error loading attendance, fallback to dummy data.");
+        data = [
+          {
+            name: "NIKOLAS  SAMSON DCOSTA",
+            role: "Photo Manager",
+            from: "2025-02-21",
+            status: Array.from({ length: days }, () => Array(48).fill("P"))
+          },
+          {
+            name: "BARBOSA, PINKSON COLIN",
+            role: "Photographer",
+            from: "2025-04-01",
+            status: Array.from({ length: days }, (_, i) => {
+              return Array(48).fill(i % 2 === 0 ? "P" : "A");
+            })
+          }
+        ];
+      }
+
+      data.forEach(emp => {
+        const row = document.createElement("div");
+        row.className = "bg-gray-800 p-4 rounded border border-gray-700";
+
+        const title = document.createElement("p");
+        title.className = "text-sm mb-2 font-semibold";
+        title.innerHTML = `Name: ${emp.name} | Role: ${emp.role} | Active From: ${emp.from}`;
+        row.appendChild(title);
+
+        for (let day = 0; day < days; day++) {
+          const dayRow = document.createElement("div");
+          dayRow.className = "flex items-center mb-1";
+
+          const label = document.createElement("div");
+          label.className = "w-10 text-xs text-gray-400 mr-2";
+          label.textContent = `${day + 1}`;
+          dayRow.appendChild(label);
+
+          const halfHours = emp.status[day] || Array(48).fill("NA");
+          halfHours.forEach(code => {
+            const box = document.createElement("div");
+            box.className = `half-hour-box ${code}`;
+            dayRow.appendChild(box);
+          });
+
+          row.appendChild(dayRow);
+        }
+
+        container.appendChild(row);
+      });
+    }
+
+    renderMonthSelector();
+    loadAttendance();
   </script>
 </body>
 </html>
