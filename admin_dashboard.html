@@ -168,10 +168,29 @@ window.onload = async () => {
       });
 
       tr.querySelector('.delete').addEventListener('click', () => {
-        if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
-          alert(`Deleted ${emp.emp_id}`);
-        }
-      });
+  if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
+    fetch(`/.netlify/functions/delete_employee`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ emp_id: emp.emp_id })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to delete");
+      return res.json();
+    })
+    .then(data => {
+      alert(data.message); // Example: "Employee NGX502389 deleted."
+      tr.remove();         // ✅ Remove the row visually
+    })
+    .catch(err => {
+      console.error("Delete failed:", err);
+      alert("❌ Failed to delete employee.");
+    });
+  }
+});
+
 
       // ✅ Mark Attendance
       tr.querySelector('.mark-attendance').addEventListener('click', () => {
