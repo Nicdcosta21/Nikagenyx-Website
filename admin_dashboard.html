@@ -67,6 +67,7 @@
   <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600 flex items-center gap-4">
   <label for="payrollToggle" class="text-white text-sm">Payroll Mode:</label>
   <select id="payrollToggle" class="bg-gray-700 text-white border border-gray-600 px-2 py-1 rounded">
+    <option value="">Select Mode</option>
     <option value="freelance">Freelance</option>
     <option value="fulltime">Full-Time</option>
   </select>
@@ -373,14 +374,20 @@ const roleOptions = {
     console.error("Failed to load employees:", err);
   }
 };
-function setupPayrollToggle() {
-  document.getElementById("payrollToggle").addEventListener("change", async (e) => {
-    const selected = e.target.value;
+function setupPayrollConfirm() {
+  document.getElementById("confirmPayroll").addEventListener("click", async () => {
+    const selected = document.getElementById("payrollToggle").value;
+    if (!selected) {
+      showToast("Please select a payroll mode first.");
+      return;
+    }
+
     const res = await fetch("/.netlify/functions/set_payroll_mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: selected }),
     });
+
     const data = await res.json();
     const status = document.getElementById("toggleStatus");
 
@@ -401,7 +408,7 @@ async function loadPayrollMode() {
   const data = await res.json();
   const toggle = document.getElementById("payrollToggle");
   const status = document.getElementById("toggleStatus");
-  
+
   toggle.value = data.mode || "freelance";
 
   if (toggle.value === "freelance") {
@@ -412,10 +419,10 @@ async function loadPayrollMode() {
     status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
   }
 
-  setupPayrollToggle(); // Attach listener only once
+  setupPayrollConfirm(); // Attach Confirm button listener
 }
 
-loadPayrollMode();  // ✅ Only call this once
+loadPayrollMode();
 
 
 </script>
