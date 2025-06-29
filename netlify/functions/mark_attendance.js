@@ -65,7 +65,7 @@ exports.handler = async (event) => {
      await pool.query(
   "UPDATE attendance SET clock_out = $1, updated_at = NOW() WHERE emp_id = $2 AND date = $3",
   [now, emp_id, today]
-);
+
 
       );
 
