@@ -370,15 +370,6 @@ const roleOptions = {
     console.error("Failed to load employees:", err);
   }
 };
-  async function loadPayrollMode() {
-  const res = await fetch("/.netlify/functions/get_payroll_mode");
-  const data = await res.json();
-  const toggle = document.getElementById("payrollToggle");
-  const status = document.getElementById("toggleStatus");
-  toggle.value = data.mode || "freelance";
-  status.textContent = `(${data.mode})`;
-}
-
 function setupPayrollToggle() {
   document.getElementById("payrollToggle").addEventListener("change", async (e) => {
     const selected = e.target.value;
@@ -402,24 +393,26 @@ function setupPayrollToggle() {
   });
 }
 
-
 async function loadPayrollMode() {
   const res = await fetch("/.netlify/functions/get_payroll_mode");
   const data = await res.json();
   const toggle = document.getElementById("payrollToggle");
   const status = document.getElementById("toggleStatus");
+
   toggle.value = data.mode || "freelance";
- if (data.mode === "freelance") {
-  status.textContent = "Freelance payroll mode is active";
-  status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black";
-} else {
-  status.textContent = "Full-time payroll mode is active";
-  status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+
+  if (data.mode === "freelance") {
+    status.textContent = "Freelance payroll mode is active";
+    status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black";
+  } else {
+    status.textContent = "Full-time payroll mode is active";
+    status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+  }
+
+  setupPayrollToggle(); // ✅ Attach toggle listener after setting the mode
 }
 
-  setupPayrollToggle(); // ✅ Attach only after DOM is ready
-}
-
+// ✅ Initial call on page load
 loadPayrollMode();
 
 
