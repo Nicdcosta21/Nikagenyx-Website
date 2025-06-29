@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DeepFace Verification Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #111827;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🎯 DeepFace Attendance Verification</h2>
+
+  <form id="verifyForm">
+    <input type="text" name="emp_id" id="emp_id" placeholder="Employee ID (e.g. NGX001)" required><br>
+    <input type="file" name="file" id="file" accept="image/*" required><br>
+    <button type="submit">Start Verification</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('verifyForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const emp_id = document.getElementById('emp_id').value;
+      const file = document.getElementById('file').files[0];
+      const formData = new FormData();
+      formData.append("emp_id", emp_id);
+      formData.append("file", file);
+
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerText = "⏳ Verifying...";
+
+      try {
+        const res = await fetch("https://deepface-attendance-api-production-ccfd.up.railway.app/verify", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        console.log("Response:", data);
+
+        if (data.status === "success") {
+          resultDiv.innerText = data.verified
+            ? `✅ Face Match! Distance: ${data.distance}`
+            : `❌ No Match. Distance: ${data.distance}`;
+        } else {
+          resultDiv.innerText = `⚠️ ${data.message || "Verification failed."}`;
+        }
+      } catch (err) {
+        console.error("Request failed", err);
+        resultDiv.innerText = "❌ Network or server error.";
+      }
+    });
+  </script>
+
+</body>
+</html>
