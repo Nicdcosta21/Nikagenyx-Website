@@ -68,7 +68,8 @@
     <option value="freelance">Freelance</option>
     <option value="fulltime">Full-Time</option>
   </select>
-  <span id="toggleStatus" class="ml-4 text-green-400 text-sm"></span>
+  <span id="toggleStatus" class="ml-4 px-3 py-1 rounded text-sm font-semibold"></span>
+
 </div>
 
 
@@ -387,10 +388,20 @@ function setupPayrollToggle() {
       body: JSON.stringify({ mode: selected }),
     });
     const data = await res.json();
-    document.getElementById("toggleStatus").textContent = `(${selected})`;
+    const status = document.getElementById("toggleStatus");
+
+    if (selected === "freelance") {
+      status.textContent = "Freelance payroll mode is active";
+      status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black";
+    } else {
+      status.textContent = "Full-time payroll mode is active";
+      status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+    }
+
     showToast(data.message || `Payroll mode updated`);
   });
 }
+
 
 async function loadPayrollMode() {
   const res = await fetch("/.netlify/functions/get_payroll_mode");
@@ -398,7 +409,14 @@ async function loadPayrollMode() {
   const toggle = document.getElementById("payrollToggle");
   const status = document.getElementById("toggleStatus");
   toggle.value = data.mode || "freelance";
-  status.textContent = `(${data.mode})`;
+ if (data.mode === "freelance") {
+  status.textContent = "Freelance payroll mode is active";
+  status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black";
+} else {
+  status.textContent = "Full-time payroll mode is active";
+  status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+}
+
   setupPayrollToggle(); // ✅ Attach only after DOM is ready
 }
 
