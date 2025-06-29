@@ -2,128 +2,128 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Attendance - Nikagenyx</title>
+  <title>Face Attendance</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: 'Questrial', sans-serif; }
-    video, canvas { display: block; margin: 0 auto; }
-  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+<body class="bg-gray-900 text-white flex flex-col items-center min-h-screen p-4">
+  <nav class="w-full flex justify-between px-6 py-4 bg-gray-800">
+    <a href="index.html" class="text-xl font-bold">Nikagenyx</a>
+    <div class="flex gap-4 text-sm">
+      <a href="employee_portal.html">Employee Portal</a>
+      <a href="update_profile.html">Update Profile</a>
+      <a href="payroll_portal.html">Payroll</a>
+      <a href="#" id="dashboardLink">Dashboard</a>
+      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+    </div>
+  </nav>
 
-<script>
-  const session = localStorage.getItem("emp_session");
-  let currentUser = session ? JSON.parse(session) : null;
-  const verifyEmpId = localStorage.getItem("verify_emp_id");
-  const empId = verifyEmpId || (currentUser ? currentUser.emp_id : null);
-  const isAdmin = currentUser && currentUser.role === "admin";
-  const dashboardLink = isAdmin ? "admin_dashboard.html" : "employee_dashboard.html";
+  <h1 class="text-xl font-bold mt-6 mb-4">Verify Face Attendance</h1>
 
-  if (!empId) {
-    alert("Session or employee ID not found.");
-    window.location.href = "employee_portal.html";
-  }
-</script>
-
-<nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
-  <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
-  <ul class="flex gap-6 text-sm">
-    <li><a href="employee_portal.html" class="hover:text-purple-400">Employee Portal</a></li>
-    <li><a href="update_profile.html" class="hover:text-purple-400">Update Profile</a></li>
-    <li><a href="payroll_portal.html" class="hover:text-purple-400">Payroll</a></li>
-    <li><a id="dashLink" href="#" class="hover:text-purple-400">Dashboard</a></li>
-    <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
-  </ul>
-</nav>
-
-<main class="flex-grow flex flex-col items-center justify-center text-center p-6">
-  <h1 class="text-xl font-bold mb-6">Verify Face Attendance</h1>
-  <video id="video" width="320" height="240" autoplay class="rounded-lg border border-gray-600 mb-4"></video>
+  <video id="video" width="320" height="240" autoplay class="rounded mb-3 border border-gray-600"></video>
   <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
-  <button onclick="captureAndVerify()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Start Verification</button>
-  <p id="statusMsg" class="mt-4 text-sm text-gray-300"></p>
-</main>
+  <button onclick="startVerification()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Start Verification</button>
 
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
-  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
-</footer>
+  <p id="status" class="text-red-400 mt-4 text-sm"></p>
 
-<script>
-document.getElementById("dashLink").href = dashboardLink;
+  <footer class="w-full text-center py-6 text-gray-500 mt-auto">
+    &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+  </footer>
 
-function logout() {
-  localStorage.removeItem("emp_session");
-  localStorage.removeItem("verify_emp_id");
-  window.location.href = "employee_portal.html";
-}
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    const statusText = document.getElementById("status");
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const statusMsg = document.getElementById("statusMsg");
-const context = canvas.getContext("2d");
+    const session = JSON.parse(localStorage.getItem("emp_session"));
+    const verifyEmpId = localStorage.getItem("verify_emp_id");
+    const emp_id = verifyEmpId || (session && session.emp_id);
 
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => {
-    console.error("Camera access denied:", err);
-    statusMsg.textContent = "❌ Camera access denied.";
-  });
-
-function captureAndVerify() {
-  statusMsg.textContent = "🔄 Capturing image and submitting for verification...";
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const base64Image = canvas.toDataURL("image/jpeg").split(',')[1];
-
-  fetch("/.netlify/functions/verify_face_replicate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: empId, image_base64: base64Image })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === "submitted" && data.prediction_id) {
-      statusMsg.textContent = "🕒 Submitted. Polling for result...";
-      pollPrediction(data.prediction_id);
-    } else {
-      statusMsg.textContent = "❌ Submission failed.";
+    if (!emp_id) {
+      alert("Employee session not found.");
+      window.location.href = "employee_portal.html";
     }
-  })
-  .catch(err => {
-    console.error(err);
-    statusMsg.textContent = "❌ Face verification error.";
-  });
-}
 
-function pollPrediction(predictionId) {
-  const interval = setInterval(() => {
-    fetch("/.netlify/functions/verify_face_replicate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prediction_id: predictionId })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.status === "succeeded") {
-        clearInterval(interval);
-        if (data.result.verified) {
-          statusMsg.textContent = `✅ Face Verified! Distance: ${data.result.distance.toFixed(4)}`;
-          localStorage.removeItem("verify_emp_id");
-        } else {
-          statusMsg.textContent = `❌ Face not matched. Distance: ${data.result.distance.toFixed(4)}`;
-        }
-      } else if (data.status === "failed") {
-        clearInterval(interval);
-        statusMsg.textContent = "❌ Prediction failed.";
+    document.getElementById("dashboardLink").href = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => {
+        console.error("Camera error:", err);
+        statusText.textContent = "❌ Unable to access camera.";
+      });
+
+    async function startVerification() {
+      statusText.textContent = "🔄 Capturing image...";
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const uploaded_image_base64 = canvas.toDataURL("image/jpeg").split(",")[1];
+
+      const photoRes = await fetch("/.netlify/functions/get_employee_photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id })
+      });
+
+      const photoData = await photoRes.json();
+
+      if (!photoData?.photo_base64) {
+        statusText.textContent = "❌ Failed to load stored image.";
+        return;
       }
-    })
-    .catch(() => {
-      clearInterval(interval);
-      statusMsg.textContent = "❌ Error during polling.";
-    });
-  }, 2500);
-}
-</script>
 
+      statusText.textContent = "🧠 Sending for verification...";
+
+      const res = await fetch("/.netlify/functions/verify_face_replicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emp_id,
+          uploaded_image_base64,
+          reference_image_base64: photoData.photo_base64
+        })
+      });
+
+      const data = await res.json();
+      if (data?.status === "submitted" && data.prediction?.urls?.get) {
+        pollPrediction(data.prediction.urls.get);
+      } else {
+        statusText.textContent = "❌ Submission failed.";
+        console.error(data);
+      }
+    }
+
+    async function pollPrediction(pollUrl) {
+      statusText.textContent = "⏳ Polling for result...";
+      const interval = setInterval(async () => {
+        const res = await fetch(pollUrl, {
+          headers: {
+            Authorization: "Token r8_25i8Vqts10lqAb4D597LcmD3kqIxGc43kOg5h",
+            "Content-Type": "application/json"
+          }
+        });
+        const prediction = await res.json();
+
+        if (prediction.status === "succeeded") {
+          clearInterval(interval);
+          const result = prediction.output;
+          if (result.verified) {
+            statusText.textContent = `✅ Match. Distance: ${result.distance}`;
+          } else {
+            statusText.textContent = `❌ No Match. Distance: ${result.distance}`;
+          }
+        } else if (prediction.status === "failed") {
+          clearInterval(interval);
+          statusText.textContent = "❌ Prediction failed.";
+        } else {
+          statusText.textContent = `⌛ ${prediction.status}...`;
+        }
+      }, 2000);
+    }
+
+    function logout() {
+      localStorage.removeItem("emp_session");
+      window.location.href = "employee_portal.html";
+    }
+  </script>
 </body>
 </html>
