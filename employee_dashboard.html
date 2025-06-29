@@ -1,151 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Dashboard - Nikagenyx</title>
-  <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Employee Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: 'Questrial', sans-serif; }
-    video, canvas { display: block; margin: 0 auto; }
-  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
+  <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
+    <div class="text-xl font-bold">Nikagenyx</div>
+    <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
+      <a href="update_profile.html">Update Profile</a>
+      <a href="view_attendance.html">My Attendance</a>
+      <a href="payroll_portal.html">Payroll</a>
+      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+    </div>
+  </nav>
+
+  <main class="flex-grow flex flex-col items-center justify-center text-center px-4 py-8">
+    <h2 class="text-2xl font-bold mb-4">Welcome to your Dashboard</h2>
+    <button onclick="handleAttendance()" id="clockBtn"
+      class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded mb-2 w-full max-w-xs">
+      Clock In
+    </button>
+    <p id="status" class="text-sm text-gray-400 mt-2"></p>
+  </main>
+
+  <footer class="text-gray-500 text-sm text-center py-6 bg-gray-800 mt-auto">
+    &copy; 2025 Nikagenyx Vision Tech Private Limited
+  </footer>
 
 <script>
-  const session = localStorage.getItem("emp_session");
-  if (!session) {
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  if (!session || !session.emp_id) {
+    alert("Session expired. Please log in again.");
     window.location.href = "employee_portal.html";
-  } else {
-    const user = JSON.parse(session);
-    if (user.role !== "employee") {
-      window.location.href = "admin_dashboard.html";
-    }
   }
-</script>
 
-<nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
-  <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
-  <ul class="flex gap-6 text-sm">
-    <li><a href="employee_portal.html" class="hover:text-purple-400">Employee Portal</a></li>
-    <li><a href="update_profile.html" class="hover:text-purple-400">Update Profile</a></li>
-    <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
-  </ul>
-</nav>
-
-<main class="p-8 max-w-3xl mx-auto flex-grow">
-  <h1 class="text-3xl font-bold mb-6 text-center">Employee Dashboard</h1>
-  <div class="text-gray-300 mb-6 text-center">Face Verification (2FA)</div>
-
-  <div class="text-center">
-    <video id="video" width="320" height="240" autoplay class="rounded-lg border border-gray-600 mb-4"></video>
-    <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
-    <button onclick="captureAndVerify()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Verify Face</button>
-    <p id="statusMsg" class="mt-4 text-sm text-gray-300"></p>
-  </div>
-
-  <section class="mt-10 bg-gray-800 rounded-lg p-6 border border-gray-700">
-    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">📨 Notifications</h2>
-    <ul id="notificationList" class="text-sm space-y-2 text-gray-300"></ul>
-  </section>
-</main>
-
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
-  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
-</footer>
-
-<script>
-function logout() {
-  localStorage.removeItem("emp_session");
-  window.location.href = "employee_portal.html";
-}
-
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const statusMsg = document.getElementById('statusMsg');
-const context = canvas.getContext('2d');
-const user = JSON.parse(localStorage.getItem("emp_session"));
-
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => alert("Camera access denied."));
-
-function captureAndVerify() {
-  statusMsg.textContent = "🔄 Capturing image and submitting for verification...";
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const base64Image = canvas.toDataURL("image/jpeg").split(',')[1];
-
-  fetch("/.netlify/functions/verify_face_replicate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: user.emp_id, image_base64: base64Image })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === "submitted" && data.prediction_id) {
-      statusMsg.textContent = "🕒 Submitted. Polling for result...";
-      pollPrediction(data.prediction_id);
-    } else {
-      statusMsg.textContent = "❌ Submission failed.";
-    }
-  })
-  .catch(err => {
-    console.error(err);
-    statusMsg.textContent = "❌ Face verification error.";
-  });
-}
-
-function pollPrediction(predictionId) {
-  const interval = setInterval(() => {
-    fetch("/.netlify/functions/verify_face_replicate", {
+  async function handleAttendance() {
+    const emp_id = session.emp_id;
+    const res = await fetch("/.netlify/functions/mark_attendance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prediction_id: predictionId })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.status === "succeeded") {
-        clearInterval(interval);
-        if (data.result.verified) {
-          statusMsg.textContent = `✅ Face Verified! Distance: ${data.result.distance.toFixed(4)}`;
-        } else {
-          statusMsg.textContent = `❌ Face not matched. Distance: ${data.result.distance.toFixed(4)}`;
-        }
-      } else if (data.status === "failed") {
-        clearInterval(interval);
-        statusMsg.textContent = "❌ Prediction failed.";
-      }
-    })
-    .catch(() => {
-      clearInterval(interval);
-      statusMsg.textContent = "❌ Error during polling.";
+      body: JSON.stringify({ emp_id })
     });
-  }, 2500);
-}
 
-window.onload = () => {
-  fetch("/.netlify/functions/get_notifications", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: user.emp_id })
-  })
-  .then(res => res.json())
-  .then(data => {
-    const list = document.getElementById("notificationList");
-    if (!data.notifications || data.notifications.length === 0) {
-      list.innerHTML = '<li class="text-gray-400">No notifications yet.</li>';
-    } else {
-      data.notifications.forEach(n => {
-        const item = document.createElement("li");
-        item.textContent = `📢 ${n.message} — ${new Date(n.timestamp).toLocaleString()}`;
-        list.appendChild(item);
-      });
-    }
-  })
-  .catch(err => console.error("Failed to load notifications", err));
-};
+    const result = await res.json();
+    document.getElementById("status").textContent = result.message;
+    document.getElementById("clockBtn").textContent = result.status === "clocked_in" ? "Clock Out" : "Clock In";
+  }
+
+  function logout() {
+    localStorage.removeItem("emp_session");
+    window.location.href = "employee_portal.html";
+  }
+
+  // Optional: auto-fetch attendance status
+  handleAttendance();
 </script>
-
 </body>
 </html>
