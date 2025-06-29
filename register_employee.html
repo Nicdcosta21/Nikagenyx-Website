@@ -47,6 +47,14 @@
         <input type="password" name="pin" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
       </div>
       <div class="mb-4">
+        <label class="block mb-1 text-sm">Department *</label>
+        <select name="department" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+          <option value="">-- Select Department --</option>
+          <option value="Tech Team">Tech Team</option>
+          <option value="Admin Team">Admin Team</option>
+        </select>
+      </div>
+      <div class="mb-4">
         <label class="block mb-1 text-sm">Capture Photo *</label>
         <video id="video" autoplay class="w-full rounded mb-2 border border-gray-700"></video>
         <canvas id="canvas" class="hidden"></canvas>
@@ -110,7 +118,8 @@
       phone: form.phone.value,
       dob: form.dob.value,
       pin: form.pin.value,
-      photo: capturedPhoto
+      photo: capturedPhoto,
+      department: form.department.value
     };
 
     const res = await fetch('/.netlify/functions/register', {
@@ -123,7 +132,6 @@
 
     if (res.ok) {
       message.innerHTML = `<span class="text-green-400">✅ Registered as <strong>${result.emp_id}</strong></span>`;
-      
       if (result.qr_code_url && result.mfa_secret) {
         qrImage.src = result.qr_code_url;
         mfaSecretEl.textContent = result.mfa_secret;
