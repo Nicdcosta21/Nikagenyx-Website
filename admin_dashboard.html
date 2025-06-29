@@ -401,10 +401,10 @@ async function loadPayrollMode() {
   const data = await res.json();
   const toggle = document.getElementById("payrollToggle");
   const status = document.getElementById("toggleStatus");
-
+  
   toggle.value = data.mode || "freelance";
 
-  if (data.mode === "freelance") {
+  if (toggle.value === "freelance") {
     status.textContent = "Freelance payroll mode is active";
     status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black";
   } else {
@@ -412,11 +412,10 @@ async function loadPayrollMode() {
     status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
   }
 
-  setupPayrollToggle(); // ✅ Attach toggle listener after setting the mode
+  setupPayrollToggle(); // Attach listener only once
 }
 
-// ✅ Initial call on page load
-loadPayrollMode();
+loadPayrollMode();  // ✅ Only call this once
 
 
 </script>
