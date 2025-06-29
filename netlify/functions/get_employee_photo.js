@@ -1,79 +1,61 @@
-const { Client } = require("pg");
+const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method Not Allowed" }),
-    };
+    return { statusCode: 405, body: JSON.stringify({ message: "Method Not Allowed" }) };
   }
 
   try {
-    const { emp_id } = JSON.parse(event.body);
-    console.log("📩 Incoming request for emp_id:", emp_id);
+    const { emp_id, uploaded_image_base64, reference_image_base64 } = JSON.parse(event.body);
 
-    if (!emp_id) {
+    if (!uploaded_image_base64 || !reference_image_base64) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "emp_id is required" }),
+        body: JSON.stringify({ message: "Both base64 images are required." }),
       };
     }
 
-    // ✅ Use Netlify's environment variable
-    const dbUrl = process.env.NETLIFY_DATABASE_URL;
-
-    if (!dbUrl) {
-      console.error("❌ Environment variable NETLIFY_DATABASE_URL is not set.");
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: "Database URL is not configured." }),
-      };
-    }
-
-    const client = new Client({
-      connectionString: dbUrl,
-      ssl: { rejectUnauthorized: false }
+    const response = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${process.env.REPLICATE_API_TOKEN || "r8_25i8Vqts10lqAb4D597LcmD3kqIxGc43kOg5h"}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "fb2d48e857b6c011fd9855f44f3412a9fd50d822ff14b743d0b99e4506d0c26f",
+        input: {
+          img1: uploaded_image_base64,
+          img2: reference_image_base64
+        }
+      }),
     });
 
-    await client.connect();
-    console.log("✅ Connected to database");
+    const data = await response.json();
 
-    const query = "SELECT photo_base64 FROM employees WHERE emp_id = $1";
-    const result = await client.query(query, [emp_id]);
-
-    await client.end();
-
-    if (result.rows.length === 0) {
-      console.warn("⚠️ No employee found with emp_id:", emp_id);
+    if (response.status !== 201 || !data?.urls?.get) {
+      console.error("🚫 Replicate API error:", data);
       return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "Employee not found." }),
-      };
-    }
-
-    const photo_base64 = result.rows[0].photo_base64;
-
-    if (!photo_base64 || !photo_base64.startsWith("data:image/")) {
-      console.warn("⚠️ No valid image found for:", emp_id);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "No valid photo found for employee." }),
+        statusCode: 500,
+        body: JSON.stringify({
+          message: "Failed to start prediction",
+          details: data
+        }),
       };
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ photo_base64 }),
+      body: JSON.stringify({
+        status: "submitted",
+        prediction: data,
+        prediction_id: data.id,
+      }),
     };
-
   } catch (err) {
-    console.error("❌ Server error:", err.message);
+    console.error("❌ Server error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        message: "Internal Server Error",
-        error: err.message
-      }),
+      body: JSON.stringify({ message: "Internal error", error: err.message }),
     };
   }
 };
