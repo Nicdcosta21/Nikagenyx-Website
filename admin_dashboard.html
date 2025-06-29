@@ -62,15 +62,18 @@
       <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
-  <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600">
-  <label for="payrollToggle" class="text-white text-sm mr-4">Payroll Mode:</label>
+  
+  
+  <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600 flex items-center gap-4">
+  <label for="payrollToggle" class="text-white text-sm">Payroll Mode:</label>
   <select id="payrollToggle" class="bg-gray-700 text-white border border-gray-600 px-2 py-1 rounded">
     <option value="freelance">Freelance</option>
     <option value="fulltime">Full-Time</option>
   </select>
-  <span id="toggleStatus" class="ml-4 px-3 py-1 rounded text-sm font-semibold"></span>
-
+  <button id="confirmPayroll" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm">Confirm</button>
+  <span id="toggleStatus"></span>
 </div>
+
 
 
   <section id="adminProfile" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
