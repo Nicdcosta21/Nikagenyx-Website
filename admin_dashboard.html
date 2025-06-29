@@ -263,29 +263,31 @@ tr.querySelector('.edit').addEventListener('click', () => {
     </div>`;
   document.body.appendChild(modal);
 
-  const roleOptions = {
-    "Tech Team": [
-      "Frontend Developer (Jr. Developer)",
-      "Backend Developer (Jr. Developer)",
-      "Full Stack Developer / Mobile App Developer (Sr. Developer)",
-      "QA Engineer (Sr. Developer)",
-      "White labelling (UI/UX Designer)",
-      "DevOps Engineer (Infrastructure Engineer)",
-      "Data Analyst",
-      "Cybersecurity & Risk Analyst",
-      "IT Systems Administrator",
-      "IT Support Specialist"
-    ],
-    "Admin Team": [
-      "Human Resources Manager",
-      "Finance & Accounts Officer",
-      "Managing Director (MD)",
-      "Regulatory Compliance Officer",
-      "Client Relations Consultant",
-      "Administrative Coordinator",
-      "Customer Success Executive"
-    ]
-  };
+const roleOptions = {
+  "Tech Team": [
+    "Frontend Developer (Jr. Developer)",
+    "Backend Developer (Jr. Developer)",
+    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+    "QA Engineer (Sr. Developer)",
+    "White labelling (UI/UX Designer)",
+    "DevOps Engineer (Infrastructure Engineer)",
+    "Data Analyst",
+    "Cybersecurity & Risk Analyst",
+    "IT Systems Administrator",
+    "IT Support Specialist"
+  ],
+  "Admin Team": [
+    "Human Resources Manager",
+    "Chief Executive Officer",
+    "Finance & Accounts Officer",
+    "Managing Director (MD)",
+    "Regulatory Compliance Officer",
+    "Client Relations Consultant",
+    "Administrative Coordinator",
+    "Customer Success Executive"
+  ]
+};
+
 
   const deptDropdown = document.getElementById("editDept");
   const roleDropdown = document.getElementById("editRole");
