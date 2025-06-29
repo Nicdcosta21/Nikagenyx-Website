@@ -113,24 +113,17 @@ function changeRole(empId, newRole) {
   });
 }
 
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.textContent = message;
-  toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
 function submitEdit(emp_id, name) {
   const phone = document.getElementById("editPhone").value;
   const dob = document.getElementById("editDob").value;
   const role = document.getElementById("editRole").value;
   const department = document.getElementById("editDept").value;
+  const base_salary = document.getElementById("editSalary").value;
 
   fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id, name, phone, dob, role, department })
+    body: JSON.stringify({ emp_id, name, phone, dob, role, department, base_salary })
   })
   .then(res => res.json())
   .then(data => {
@@ -234,6 +227,9 @@ window.onload = async () => {
               <label class="block mb-2">DOB: <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob || ''}"></label>
               <label class="block mb-2">Department: <input type="text" id="editDept" class="w-full border px-2 py-1" value="${emp.department || ''}"></label>
               <label class="block mb-2">Role: <input type="text" id="editRole" class="w-full border px-2 py-1" value="${emp.role || ''}"></label>
+              <label class="block mb-2">Base Salary: 
+  <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
+</label>
               <div class="flex justify-end gap-2 mt-4">
                 <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
                 <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
