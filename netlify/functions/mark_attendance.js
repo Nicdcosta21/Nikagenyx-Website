@@ -15,8 +15,9 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ message: "Missing parameters" }) };
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    const now = new Date().toISOString();
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];           // YYYY-MM-DD
+    const timeNow = now.toTimeString().split(" ")[0];        // HH:MM:SS
 
     const existing = await pool.query(
       "SELECT * FROM attendance WHERE emp_id = $1 AND date = $2",
@@ -36,15 +37,17 @@ exports.handler = async (event) => {
       }
 
       await pool.query(
-        "INSERT INTO attendance (emp_id, date, clock_in) VALUES ($1, $2, $3) ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3",
-        [emp_id, today, now]
+        `INSERT INTO attendance (emp_id, date, clock_in) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3`,
+        [emp_id, today, timeNow]
       );
 
       return {
         statusCode: 200,
         body: JSON.stringify({
           message: "Clocked in successfully.",
-          timestamp: now,
+          timestamp: timeNow,
           type: "in"
         })
       };
@@ -62,18 +65,16 @@ exports.handler = async (event) => {
         };
       }
 
-     await pool.query(
-  "UPDATE attendance SET clock_out = $1, updated_at = NOW() WHERE emp_id = $2 AND date = $3",
-  [now, emp_id, today]
-
-
+      await pool.query(
+        "UPDATE attendance SET clock_out = $1 WHERE emp_id = $2 AND date = $3",
+        [timeNow, emp_id, today]
       );
 
       return {
         statusCode: 200,
         body: JSON.stringify({
           message: "Clocked out successfully.",
-          timestamp: now,
+          timestamp: timeNow,
           type: "out"
         })
       };
