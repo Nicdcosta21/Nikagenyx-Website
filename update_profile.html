@@ -17,20 +17,20 @@
       <form id="profileForm" enctype="multipart/form-data">
 
         <label>Phone Number</label>
-        <input type="text" name="phone" required pattern="[0-9]{10}" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
+        <input type="text" name="phone" pattern="[0-9]{10}" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
 
         <label>Date of Birth</label>
-        <input type="date" name="dob" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
+        <input type="date" name="dob" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
 
         <label>Department</label>
-        <select name="department" id="department" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
+        <select name="department" id="department" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
           <option value="">Select Department</option>
           <option value="Tech Team">Tech Team</option>
           <option value="Admin Team">Admin Team</option>
         </select>
 
         <label>Role</label>
-        <select name="role" id="role" required class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
+        <select name="role" id="role" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600">
           <option value="">Select Role</option>
         </select>
 
@@ -38,24 +38,27 @@
         <input type="password" name="new_pin" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
 
         <label>PAN Card</label>
-        <input type="file" name="pan" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+        <input type="file" name="pan" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
         <label>Aadhaar Card</label>
-        <input type="file" name="aadhaar" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+        <input type="file" name="aadhaar" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
         <label>Resume</label>
-        <input type="file" name="resume" accept=".pdf,.doc,.docx" required onchange="validateSize(this)"/>
+        <input type="file" name="resume" accept=".pdf,.doc,.docx" onchange="validateSize(this)"/>
 
         <label>Qualification Certificate</label>
-        <input type="file" name="qualification" accept=".pdf,.jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+        <input type="file" name="qualification" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
         <label>Passport-size Photo</label>
-        <input type="file" name="photo" accept=".jpg,.jpeg,.png" required onchange="validateSize(this)"/>
+        <input type="file" name="photo" accept=".jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
         <label>Passport <span class="text-sm text-gray-400">(Optional)</span></label>
         <input type="file" name="passport" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
-        <button type="submit" class="w-full mt-6 bg-green-600 hover:bg-green-700 py-2 rounded">Save Changes</button>
+        <div class="flex justify-between mt-6">
+          <button type="submit" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Save Changes</button>
+          <button type="button" onclick="cancelUpdate()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Cancel</button>
+        </div>
       </form>
     </section>
   </main>
@@ -104,9 +107,9 @@ document.getElementById("department").addEventListener("change", function () {
 });
 
 function validateSize(input) {
-  const maxKB = 500;
+  const maxKB = 1024;
   if (input.files[0] && input.files[0].size > maxKB * 1024) {
-    alert("File size should not exceed 500KB.");
+    alert("File size should not exceed 1MB.");
     input.value = "";
   }
 }
@@ -114,6 +117,9 @@ function validateSize(input) {
 document.getElementById("profileForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   const formData = new FormData(this);
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  if (session?.emp_id) formData.append("emp_id", session.emp_id);
+
   try {
     const res = await fetch("/.netlify/functions/update_profile", {
       method: "POST",
@@ -126,6 +132,12 @@ document.getElementById("profileForm").addEventListener("submit", async function
     console.error(err);
   }
 });
+
+function cancelUpdate() {
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  const redirectTo = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+  window.location.href = redirectTo;
+}
 </script>
 
 </body>
