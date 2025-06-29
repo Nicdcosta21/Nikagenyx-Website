@@ -1,31 +1,79 @@
-exports.handler = async (event) => {
-  // Sample data — fetch from your database in real scenario
-  const attendanceRecords = [
-    {
-      emp_id: "NGX001",
-      name: "Nikolas D'Costa",
-      role: "Photo Manager",
-      from: "2025-02-21",
-      data: {
-        "2025-06-01": "P", "2025-06-02": "P", "2025-06-03": "A",
-        "2025-06-04": "L", "2025-06-05": "P", "2025-06-06": "H"
-      }
-    },
-    {
-      emp_id: "NGX002",
-      name: "Pinkson Barbosa",
-      role: "Photographer",
-      from: "2025-04-01",
-      data: {
-        "2025-06-01": "P", "2025-06-02": "P", "2025-06-03": "P",
-        "2025-06-04": "P", "2025-06-05": "L", "2025-06-06": "P"
-      }
-    }
-  ];
+const { Client } = require('pg');
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(attendanceRecords),
-    headers: { 'Content-Type': 'application/json' }
-  };
+exports.handler = async (event, context) => {
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  try {
+    await client.connect();
+
+    // Fetch all employees
+    const empRes = await client.query('SELECT emp_id, name, role, department FROM employees');
+    const employees = empRes.rows;
+
+    // We'll assume June 2025 for now (1st–30th)
+    const month = '2025-06';
+
+    // Fetch attendance logs for June
+    const attRes = await client.query(`
+      SELECT emp_id, date, clock_in, clock_out
+      FROM attendance
+      WHERE to_char(date, 'YYYY-MM') = $1
+    `, [month]);
+
+    // Create a map: { emp_id => [30-day status array] }
+    const logsByEmp = {};
+
+    employees.forEach(emp => {
+      logsByEmp[emp.emp_id] = Array(30).fill("NA");
+    });
+
+    attRes.rows.forEach(log => {
+      const empLogs = logsByEmp[log.emp_id];
+      if (empLogs) {
+        const day = new Date(log.date).getDate() - 1;
+        const hoursWorked = calcHours(log.clock_in, log.clock_out);
+
+        empLogs[day] =
+          hoursWorked >= 7 ? "P"
+          : hoursWorked >= 5 ? "L"
+          : "A";
+      }
+    });
+
+    const result = employees.map(emp => ({
+      name: emp.name,
+      rank: emp.role,
+      from: "", // Optional: can add join date from employee table if stored
+      status: logsByEmp[emp.emp_id]
+    }));
+
+    await client.end();
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ data: result })
+    };
+
+  } catch (err) {
+    console.error("Error fetching attendance:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Internal Server Error" })
+    };
+  }
 };
+
+// Helper to compute duration in hours from HH:MM:SS format
+function calcHours(inTime, outTime) {
+  try {
+    const [h1, m1] = inTime.split(":").map(Number);
+    const [h2, m2] = outTime.split(":").map(Number);
+    const t1 = h1 * 60 + m1;
+    const t2 = h2 * 60 + m2;
+    return ((t2 - t1) / 60).toFixed(1);
+  } catch {
+    return 0;
+  }
+}
