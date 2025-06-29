@@ -43,7 +43,7 @@ exports.handler = async (event) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "fb2d48e857b6c011fd9855f44f3412a9fd50d822ff14b743d0b99e4506d0c26f",
+        version: "cbebce49ce6469d1f32dc433efef3bb7d8d7f5a03874d16b9fd785f4f15f4c41",
         input: {
           img1: `data:image/jpeg;base64,${uploaded_image_base64}`,
           img2: `data:image/jpeg;base64,${reference_image_base64}`,
