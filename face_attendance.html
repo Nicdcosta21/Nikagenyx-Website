@@ -91,12 +91,18 @@
       });
 
       const data = await res.json();
-      if (data?.status === "submitted" && data.prediction?.urls?.get) {
-        pollPrediction(data.prediction.urls.get);
-      } else {
-        statusText.textContent = "❌ Submission failed.";
-        console.error(data);
-      }
+      if (res.status !== 200) {
+  statusText.textContent = `❌ Submission failed. Status: ${res.status}`;
+  console.error("❌ Backend error response:", data);
+  return;
+}
+
+if (data?.status === "submitted" && data.prediction?.urls?.get) {
+  pollPrediction(data.prediction.urls.get);
+} else {
+  statusText.textContent = `❌ Submission failed: ${data.message || "Unexpected error"}`;
+  console.error("🔍 Full response:", data);
+}
     }
 
     async function pollPrediction(pollUrl) {
