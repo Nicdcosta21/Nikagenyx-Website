@@ -40,6 +40,7 @@
   <h1 class="text-3xl font-bold mb-4">Admin Dashboard</h1>
   <p class="mb-4 text-gray-300">Welcome, <span id="adminName">Admin</span> 👋</p>
 
+  <!-- Admin Profile Panel -->
   <section id="adminProfile" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
     <h2 class="section-title border-b border-gray-600 pb-2 mb-4">👤 My Admin Profile</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -56,32 +57,36 @@
     </div>
   </section>
 
-  <section id="attendanceBlock" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
+  <!-- Attendance Summary -->
+  <section id="attendanceSummary" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
     <h2 class="section-title border-b border-gray-600 pb-2 mb-4">📅 Attendance Overview</h2>
-    <table class="min-w-full table-auto text-sm text-center bg-gray-900">
-      <thead class="bg-gray-700">
-        <tr>
-          <th class="p-2 border">Date</th>
-          <th class="p-2 border">Clock In</th>
-          <th class="p-2 border">Clock Out</th>
-          <th class="p-2 border">Hours Worked</th>
-        </tr>
-      </thead>
-      <tbody id="adminAttendanceTable" class="text-gray-300"></tbody>
-      <tfoot>
-        <tr class="bg-gray-800">
-          <td colspan="3" class="p-2 text-right font-semibold">Total Hours:</td>
-          <td class="p-2 font-bold" id="adminTotalHours">-</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div class="overflow-x-auto">
+      <table class="min-w-full table-auto text-sm">
+        <thead class="bg-gray-700">
+          <tr>
+            <th class="p-2 border">Date</th>
+            <th class="p-2 border">Clock In</th>
+            <th class="p-2 border">Clock Out</th>
+            <th class="p-2 border">Hours Worked</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceTable" class="text-center"></tbody>
+        <tfoot>
+          <tr class="bg-gray-700 text-sm">
+            <td colspan="3" class="p-2 text-right font-bold">Total Hours:</td>
+            <td id="totalHours" class="p-2">-</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </section>
 
-  <section id="pushNotifications" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
+  <!-- Notification Sender -->
+  <section id="notifyBox" class="bg-gray-800 border border-gray-700 rounded-lg p-6">
     <h2 class="section-title border-b border-gray-600 pb-2 mb-4">📢 Send Notification</h2>
-    <input id="notifyTarget" type="text" placeholder="Emp ID (or 'all')" class="bg-gray-700 p-2 rounded mb-3 w-full">
-    <textarea id="notifyMessage" rows="3" placeholder="Type your message here..." class="bg-gray-700 p-2 rounded w-full mb-3"></textarea>
-    <button onclick="sendNotification()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-black font-semibold">Send</button>
+    <input type="text" id="notifEmpId" placeholder="Emp ID (or 'all')" class="w-full mb-3 p-2 bg-gray-700 border border-gray-600 rounded text-sm" />
+    <textarea id="notifMessage" rows="3" placeholder="Type your message here..." class="w-full mb-4 p-2 bg-gray-700 border border-gray-600 rounded text-sm"></textarea>
+    <button onclick="sendNotification()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-sm">Send</button>
   </section>
 </main>
 
@@ -95,78 +100,71 @@ function logout() {
   window.location.href = "employee_portal.html";
 }
 
-async function loadAttendance() {
-  try {
-    const res = await fetch("/.netlify/functions/get_attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: currentUser.emp_id })
-    });
-    const data = await res.json();
-    const table = document.getElementById("adminAttendanceTable");
-    const totalHoursCell = document.getElementById("adminTotalHours");
-    table.innerHTML = "";
-    let total = 0;
-
-    data.records.forEach(entry => {
-      const row = document.createElement("tr");
-      const hrs = calculateHours(entry.clock_in, entry.clock_out);
-      total += hrs;
-      row.innerHTML = `
-        <td class="border p-2">${entry.date}</td>
-        <td class="border p-2">${entry.clock_in || '-'}</td>
-        <td class="border p-2">${entry.clock_out || '-'}</td>
-        <td class="border p-2">${hrs.toFixed(2)} hrs</td>
-      `;
-      table.appendChild(row);
-    });
-    totalHoursCell.textContent = `${total.toFixed(2)} hrs`;
-  } catch (err) {
-    console.error("Attendance fetch failed:", err);
-  }
-}
-
-function calculateHours(start, end) {
-  if (!start || !end) return 0;
-  const s = new Date(`1970-01-01T${start}Z`);
-  const e = new Date(`1970-01-01T${end}Z`);
-  return (e - s) / (1000 * 60 * 60);
-}
-
 function sendNotification() {
-  const id = document.getElementById("notifyTarget").value.trim();
-  const message = document.getElementById("notifyMessage").value.trim();
-  if (!id || !message) return alert("Please enter both ID and message");
+  const emp_id = document.getElementById("notifEmpId").value.trim();
+  const message = document.getElementById("notifMessage").value.trim();
+  if (!emp_id || !message) return alert("Fill in all fields");
+
   fetch("/.netlify/functions/send_notification", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ target: id, message })
+    body: JSON.stringify({ emp_id, message })
   })
   .then(res => res.json())
-  .then(data => alert(data.message || "Notification sent."))
-  .catch(err => alert("Failed to send notification."));
+  .then(data => {
+    alert(data.message || "Notification sent");
+    document.getElementById("notifEmpId").value = "";
+    document.getElementById("notifMessage").value = "";
+  })
+  .catch(err => {
+    console.error("Failed to send notification", err);
+    alert("Error sending notification");
+  });
 }
 
-window.onload = async () => {
-  try {
-    const res = await fetch("/.netlify/functions/get_employees");
-    const data = await res.json();
-    employees = data.employees || data;
-    loadTable();
-    loadAttendance();
-    const me = employees.find(e => e.emp_id === currentUser.emp_id);
-    if (me) {
-      document.getElementById("p_name").textContent = me.name || "-";
-      document.getElementById("p_phone").textContent = me.phone || "-";
-      document.getElementById("p_dob").textContent = me.dob ? me.dob.split("T")[0] : "-";
-      document.getElementById("p_dept").textContent = me.department || "-";
-      document.getElementById("p_role").textContent = me.role || "-";
-      document.getElementById("adminName").textContent = me.name || "Admin";
-    }
-  } catch (err) {
-    console.error("Failed to load employees:", err);
-  }
+window.onload = () => {
+  const user = JSON.parse(localStorage.getItem("emp_session"));
+
+  fetch("/.netlify/functions/get_employee_profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: user.emp_id })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("adminName").textContent = data.name;
+    document.getElementById("p_name").textContent = data.name || "-";
+    document.getElementById("p_phone").textContent = data.phone || "-";
+    document.getElementById("p_dob").textContent = data.dob || "-";
+    document.getElementById("p_dept").textContent = data.department || "-";
+    document.getElementById("p_role").textContent = data.role || "-";
+  });
+
+  fetch("/.netlify/functions/get_attendance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: user.emp_id })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const table = document.getElementById("attendanceTable");
+    let total = 0;
+    table.innerHTML = "";
+    data.attendance.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="border p-2">${row.date}</td>
+        <td class="border p-2">${row.clock_in || '-'}</td>
+        <td class="border p-2">${row.clock_out || '-'}</td>
+        <td class="border p-2">${row.hours_worked?.toFixed(2) || '-'}</td>
+      `;
+      if (row.hours_worked) total += parseFloat(row.hours_worked);
+      table.appendChild(tr);
+    });
+    document.getElementById("totalHours").textContent = total.toFixed(2);
+  });
 };
 </script>
+
 </body>
 </html>
