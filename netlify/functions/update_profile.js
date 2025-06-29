@@ -48,8 +48,13 @@ exports.handler = async (event, context) => {
         if (role)         { updates.push(`role = $${idx++}`); values.push(role); }
         if (new_pin)      { updates.push(`pin = $${idx++}`); values.push(new_pin); }
 
-        // You can store file paths in DB or upload to S3/Drive if needed
-        // const filePaths = Object.keys(files).map(key => files[key].filepath);
+        // ✅ Handle passport-size photo upload
+        if (files.photo && files.photo.filepath) {
+          const fileBuffer = fs.readFileSync(files.photo.filepath);
+          const base64 = fileBuffer.toString('base64');
+          updates.push(`photo_base64 = $${idx++}`);
+          values.push(base64);
+        }
 
         values.push(emp_id); // WHERE clause
         const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${idx}`;
