@@ -113,8 +113,35 @@ function changeRole(empId, newRole) {
   });
 }
 
-function showEmployeeInfo(id) {
-  // Placeholder: Expand if needed
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function submitEdit(emp_id, name) {
+  const phone = document.getElementById("editPhone").value;
+  const dob = document.getElementById("editDob").value;
+  const role = document.getElementById("editRole").value;
+  const department = document.getElementById("editDept").value;
+
+  fetch("/.netlify/functions/update_employee_profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id, name, phone, dob, role, department })
+  })
+  .then(res => res.json())
+  .then(data => {
+    showToast(data.message || "Profile updated");
+    document.querySelector(".fixed").remove();
+    setTimeout(() => location.reload(), 1000);
+  })
+  .catch(err => {
+    console.error("Edit failed:", err);
+    alert("❌ Failed to update profile");
+  });
 }
 
 window.onload = async () => {
@@ -126,8 +153,9 @@ window.onload = async () => {
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
+      tr.id = `row-${emp.emp_id}`;
       tr.innerHTML = `
-        <td class="border p-2 cursor-pointer" onclick="showEmployeeInfo('${emp.emp_id}')">${emp.emp_id}</td>
+        <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
         <td class="border p-2">${emp.name}</td>
         <td class="border p-2">${emp.phone || '-'}</td>
         <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
@@ -149,50 +177,100 @@ window.onload = async () => {
       `;
       table.appendChild(tr);
 
-      // Event bindings
       tr.querySelector('.confirm-role').addEventListener('click', () => {
         const newRole = tr.querySelector('.role-select').value;
         changeRole(emp.emp_id, newRole);
       });
 
       tr.querySelector('.reset-pin').addEventListener('click', () => {
-        alert(`Reset PIN for ${emp.emp_id}`);
+        fetch("/.netlify/functions/reset_pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        })
+        .then(res => res.json())
+        .then(data => {
+          showToast(data.message || `PIN reset for ${emp.emp_id}`);
+        })
+        .catch(err => {
+          console.error("Reset PIN failed:", err);
+          alert("❌ Failed to reset PIN.");
+        });
       });
 
       tr.querySelector('.reset-mfa').addEventListener('click', () => {
-        alert(`Reset MFA for ${emp.emp_id}`);
+        fetch("/.netlify/functions/reset_mfa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        })
+        .then(res => res.json())
+        .then(data => {
+          showToast(`MFA reset for ${emp.emp_id}`);
+          const qrModal = document.createElement('div');
+          qrModal.innerHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
+                <h2 class="text-lg font-bold mb-2">Scan New MFA QR for ${emp.name}</h2>
+                <img src="${data.qr_code_url}" alt="MFA QR Code" class="mx-auto mb-4 w-40 h-40" />
+                <button onclick="this.parentElement.parentElement.remove()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+              </div>
+            </div>`;
+          document.body.appendChild(qrModal);
+        })
+        .catch(err => {
+          console.error("Reset MFA failed:", err);
+          alert("❌ Failed to reset MFA.");
+        });
       });
 
       tr.querySelector('.edit').addEventListener('click', () => {
-        alert(`Edit ${emp.emp_id}`);
+        const modal = document.createElement("div");
+        modal.innerHTML = `
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+              <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
+              <label class="block mb-2">Phone: <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}"></label>
+              <label class="block mb-2">DOB: <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob || ''}"></label>
+              <label class="block mb-2">Department: <input type="text" id="editDept" class="w-full border px-2 py-1" value="${emp.department || ''}"></label>
+              <label class="block mb-2">Role: <input type="text" id="editRole" class="w-full border px-2 py-1" value="${emp.role || ''}"></label>
+              <div class="flex justify-end gap-2 mt-4">
+                <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+                <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
+              </div>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
       });
 
-      tr.querySelector('.delete').addEventListener('click', () => {
-  if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
-    fetch(`/.netlify/functions/delete_employee`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ emp_id: emp.emp_id })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to delete");
-      return res.json();
-    })
-    .then(data => {
-      alert(data.message); // Example: "Employee NGX502389 deleted."
-      tr.remove();         // ✅ Remove the row visually
-    })
-    .catch(err => {
-      console.error("Delete failed:", err);
-      alert("❌ Failed to delete employee.");
-    });
-  }
-});
+      const deleteBtn = tr.querySelector('.delete');
+      if (emp.emp_id === currentUser.emp_id) {
+        deleteBtn.disabled = true;
+        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        deleteBtn.addEventListener('click', () => {
+          if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
+            fetch("/.netlify/functions/delete_employee", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ emp_id: emp.emp_id })
+            })
+            .then(res => {
+              if (!res.ok) throw new Error("Failed to delete");
+              return res.json();
+            })
+            .then(data => {
+              showToast(data.message);
+              tr.remove();
+            })
+            .catch(err => {
+              console.error("Delete failed:", err);
+              alert("❌ Failed to delete employee.");
+            });
+          }
+        });
+      }
 
-
-      // ✅ Mark Attendance
       tr.querySelector('.mark-attendance').addEventListener('click', () => {
         localStorage.setItem("verify_emp_id", emp.emp_id);
         window.open("face_attendance.html", "_blank");
