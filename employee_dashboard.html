@@ -7,6 +7,95 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+  <nav class="bg-gray-800 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Nikagenyx</h1>
+    <div class="space-x-4 text-sm">
+      <a href="update_profile.html">Update Profile</a>
+      <a href="view_attendance.html">My Attendance</a>
+      <a href="view_payroll.html">Payroll</a>
+      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+    </div>
+  </nav>
+
+  <main class="flex-grow flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+      <h2 class="text-2xl font-bold mb-6">Clock In / Clock Out</h2>
+      <button id="clockInBtn" onclick="markAttendance('in')" class="bg-green-600 px-4 py-2 rounded mb-4 w-full">Clock In</button>
+      <button id="clockOutBtn" onclick="markAttendance('out')" class="bg-yellow-600 px-4 py-2 rounded w-full">Clock Out</button>
+      <p id="status" class="text-sm mt-4 text-gray-300"></p>
+    </div>
+  </main>
+
+  <footer class="bg-gray-800 text-gray-500 text-center py-4 text-xs">
+    &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
+  </footer>
+
+  <script>
+    const empSession = JSON.parse(localStorage.getItem("emp_session"));
+    const empId = empSession?.emp_id;
+    if (!empId) window.location.href = "employee_portal.html";
+
+    const clockInBtn = document.getElementById("clockInBtn");
+    const clockOutBtn = document.getElementById("clockOutBtn");
+    const status = document.getElementById("status");
+
+    function updateButtonState(lastAction) {
+      if (lastAction === "in") {
+        clockInBtn.disabled = true;
+        clockInBtn.classList.add("opacity-50");
+        clockOutBtn.disabled = false;
+        clockOutBtn.classList.remove("opacity-50");
+      } else if (lastAction === "out") {
+        clockOutBtn.disabled = true;
+        clockOutBtn.classList.add("opacity-50");
+        clockInBtn.disabled = false;
+        clockInBtn.classList.remove("opacity-50");
+      }
+    }
+
+    function markAttendance(type) {
+      fetch("/.netlify/functions/mark_attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id: empId, type })
+      })
+      .then(res => res.json())
+      .then(data => {
+        status.textContent = data.message || "Action completed.";
+        updateButtonState(type);
+        localStorage.setItem("last_action", type);
+        localStorage.setItem("last_activity", Date.now());
+      });
+    }
+
+    function autoClockOutCheck() {
+      const lastAction = localStorage.getItem("last_action");
+      const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
+      if (lastAction === "in" && Date.now() - lastActivity > 1800000) { // 30 mins
+        markAttendance("out");
+        status.textContent = "Auto clocked out due to inactivity.";
+      }
+    }
+
+    document.addEventListener("mousemove", () => localStorage.setItem("last_activity", Date.now()));
+    document.addEventListener("keydown", () => localStorage.setItem("last_activity", Date.now()));
+
+    setInterval(autoClockOutCheck, 60000); // check every 1 minute
+
+    updateButtonState(localStorage.getItem("last_action"));
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Employee Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
   <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
     <div class="text-xl font-bold">Nikagenyx</div>
     <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
