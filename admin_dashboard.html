@@ -133,6 +133,10 @@ function showToast(msg) {
   setTimeout(() => toast.remove(), 3000);
 }
 
+ function viewEmployeeDetails(empId) {
+  localStorage.setItem("selected_emp_id", empId);
+  window.location.href = "employee_profile.html"; // or create a new `employee_detail.html`
+} 
   
 function submitEdit(emp_id, name) {
   const phone = document.getElementById("editPhone").value;
@@ -170,7 +174,7 @@ window.onload = async () => {
       const tr = document.createElement("tr");
       tr.id = `row-${emp.emp_id}`;
       tr.innerHTML = `
-        <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
+        <td class="border p-2 cursor-pointer text-blue-400 underline" onclick="viewEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
         <td class="border p-2">${emp.name}</td>
         <td class="border p-2">${emp.phone || '-'}</td>
         <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
