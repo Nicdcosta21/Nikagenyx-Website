@@ -89,6 +89,33 @@
     function clockIn() { markAttendance("in"); }
     function clockOut() { markAttendance("out"); }
 
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toISOString().split("T")[0]; // returns YYYY-MM-DD
+}
+
+function formatTime(timeString) {
+  return timeString ? timeString : "-";
+}
+
+function calculateHours(clockIn, clockOut) {
+  if (!clockIn || !clockOut) return "-";
+
+  const [h1, m1, s1] = clockIn.split(":").map(Number);
+  const [h2, m2, s2] = clockOut.split(":").map(Number);
+
+  const inSeconds = h1 * 3600 + m1 * 60 + s1;
+  const outSeconds = h2 * 3600 + m2 * 60 + s2;
+  const diffSeconds = outSeconds - inSeconds;
+
+  if (diffSeconds < 0) return "-";
+
+  const hours = Math.floor(diffSeconds / 3600);
+  const minutes = Math.floor((diffSeconds % 3600) / 60);
+  return `${hours}h ${minutes}m`;
+}
+
+    
     // Auto clock-out after 30 min inactivity
     function autoClockOutCheck() {
       const lastAction = localStorage.getItem("last_action");
@@ -109,7 +136,13 @@
     }
 
     updateButtonState(localStorage.getItem("last_action"));
+
+
+
+    
   </script>
+
+  
 
 </body>
 </html>
