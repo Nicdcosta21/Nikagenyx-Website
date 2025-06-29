@@ -56,27 +56,33 @@
     </div>
   </section>
 
-  <div class="mb-4 flex flex-col md:flex-row gap-4">
-    <input id="search" type="text" placeholder="Search by name or ID" class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3">
-    <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
-  </div>
-
-  <div class="overflow-x-auto mb-10">
-    <table class="min-w-full table-auto bg-gray-800 border border-gray-700">
+  <section id="attendanceBlock" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
+    <h2 class="section-title border-b border-gray-600 pb-2 mb-4">📅 Attendance Overview</h2>
+    <table class="min-w-full table-auto text-sm text-center bg-gray-900">
       <thead class="bg-gray-700">
         <tr>
-          <th class="p-2 border">ID</th>
-          <th class="p-2 border">Name</th>
-          <th class="p-2 border">Phone</th>
-          <th class="p-2 border">DOB</th>
-          <th class="p-2 border">Role</th>
-          <th class="p-2 border">Department</th>
-          <th class="p-2 border">Actions</th>
+          <th class="p-2 border">Date</th>
+          <th class="p-2 border">Clock In</th>
+          <th class="p-2 border">Clock Out</th>
+          <th class="p-2 border">Hours Worked</th>
         </tr>
       </thead>
-      <tbody id="employeeTable" class="text-center text-sm"></tbody>
+      <tbody id="adminAttendanceTable" class="text-gray-300"></tbody>
+      <tfoot>
+        <tr class="bg-gray-800">
+          <td colspan="3" class="p-2 text-right font-semibold">Total Hours:</td>
+          <td class="p-2 font-bold" id="adminTotalHours">-</td>
+        </tr>
+      </tfoot>
     </table>
-  </div>
+  </section>
+
+  <section id="pushNotifications" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
+    <h2 class="section-title border-b border-gray-600 pb-2 mb-4">📢 Send Notification</h2>
+    <input id="notifyTarget" type="text" placeholder="Emp ID (or 'all')" class="bg-gray-700 p-2 rounded mb-3 w-full">
+    <textarea id="notifyMessage" rows="3" placeholder="Type your message here..." class="bg-gray-700 p-2 rounded w-full mb-3"></textarea>
+    <button onclick="sendNotification()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-black font-semibold">Send</button>
+  </section>
 </main>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
@@ -89,140 +95,57 @@ function logout() {
   window.location.href = "employee_portal.html";
 }
 
-let employees = [];
-
-function formatDate(dob) {
-  return new Date(dob).toISOString().split('T')[0];
-}
-
-function loadTable(filter = "") {
-  const table = document.getElementById("employeeTable");
-  table.innerHTML = "";
-
-  const filtered = employees.filter(emp =>
-    emp.name.toLowerCase().includes(filter.toLowerCase()) ||
-    emp.emp_id.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  filtered.forEach(emp => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="border p-2 cursor-pointer" onclick="showEmployeeInfo('${emp.emp_id}')">${emp.emp_id}</td>
-      <td class="border p-2">${emp.name}</td>
-      <td class="border p-2">${emp.phone || '-'}</td>
-      <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-      <td class="border p-2 flex items-center gap-2 justify-center">
-        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
-          <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
-          <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
-        </select>
-        <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-      </td>
-      <td class="border p-2">${emp.department || '-'}</td>
-      <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
-        <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
-      </td>
-    `;
-
-    tr.querySelector('.confirm-role').addEventListener('click', () => {
-      const newRole = tr.querySelector('.role-select').value;
-      confirmRoleChange(emp.emp_id, newRole);
-    });
-
-    tr.querySelector('.reset-pin').addEventListener('click', () => resetPIN(emp.emp_id));
-    tr.querySelector('.reset-mfa').addEventListener('click', () => resetMFA(emp.emp_id));
-    tr.querySelector('.edit').addEventListener('click', () => edit(emp.emp_id));
-    tr.querySelector('.delete').addEventListener('click', () => deleteUser(emp.emp_id));
-
-    table.appendChild(tr);
-  });
-}
-
-function exportCSV() {
-  const headers = ["ID", "Name", "Phone", "DOB", "Role", "Department"];
-  const rows = employees.map(e => [e.emp_id, e.name, e.phone, formatDate(e.dob), e.role, e.department]);
-  const csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'employees.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function showEmployeeInfo(id) {
-  const user = employees.find(e => e.emp_id === id);
-  if (!user) return;
-  document.getElementById("p_name").textContent = user.name || "-";
-  document.getElementById("p_phone").textContent = user.phone || "-";
-  document.getElementById("p_dob").textContent = user.dob ? formatDate(user.dob) : "-";
-  document.getElementById("p_dept").textContent = user.department || "-";
-  document.getElementById("p_role").textContent = user.role || "-";
-}
-
-function resetPIN(id) {
-  alert(`Reset PIN triggered for ${id}`);
-}
-
-function resetMFA(id) {
-  if (confirm(`Reset MFA for ${id}?`)) {
-    fetch("/.netlify/functions/reset_mfa", {
+async function loadAttendance() {
+  try {
+    const res = await fetch("/.netlify/functions/get_attendance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: id })
-    })
-    .then(res => res.json())
-    .then(data => alert(`✅ MFA reset for ${id}`))
-    .catch(err => {
-      console.error("Reset MFA failed:", err);
-      alert("❌ MFA reset failed.");
+      body: JSON.stringify({ emp_id: currentUser.emp_id })
     });
+    const data = await res.json();
+    const table = document.getElementById("adminAttendanceTable");
+    const totalHoursCell = document.getElementById("adminTotalHours");
+    table.innerHTML = "";
+    let total = 0;
+
+    data.records.forEach(entry => {
+      const row = document.createElement("tr");
+      const hrs = calculateHours(entry.clock_in, entry.clock_out);
+      total += hrs;
+      row.innerHTML = `
+        <td class="border p-2">${entry.date}</td>
+        <td class="border p-2">${entry.clock_in || '-'}</td>
+        <td class="border p-2">${entry.clock_out || '-'}</td>
+        <td class="border p-2">${hrs.toFixed(2)} hrs</td>
+      `;
+      table.appendChild(row);
+    });
+    totalHoursCell.textContent = `${total.toFixed(2)} hrs`;
+  } catch (err) {
+    console.error("Attendance fetch failed:", err);
   }
 }
 
-function confirmRoleChange(emp_id, newRole) {
-  fetch("/.netlify/functions/update_role", {
+function calculateHours(start, end) {
+  if (!start || !end) return 0;
+  const s = new Date(`1970-01-01T${start}Z`);
+  const e = new Date(`1970-01-01T${end}Z`);
+  return (e - s) / (1000 * 60 * 60);
+}
+
+function sendNotification() {
+  const id = document.getElementById("notifyTarget").value.trim();
+  const message = document.getElementById("notifyMessage").value.trim();
+  if (!id || !message) return alert("Please enter both ID and message");
+  fetch("/.netlify/functions/send_notification", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id, role: newRole })
+    body: JSON.stringify({ target: id, message })
   })
   .then(res => res.json())
-  .then(data => {
-    alert(`✅ Role updated to ${newRole.toUpperCase()} for ${emp_id}`);
-    employees = employees.map(emp => emp.emp_id === emp_id ? { ...emp, role: newRole } : emp);
-    loadTable(document.getElementById("search").value);
-  })
-  .catch(err => {
-    alert("❌ Failed to update role.");
-    console.error("Role update error:", err);
-  });
+  .then(data => alert(data.message || "Notification sent."))
+  .catch(err => alert("Failed to send notification."));
 }
-
-function deleteUser(id) {
-  if (confirm(`Are you sure you want to delete ${id}?`)) {
-    fetch("/.netlify/functions/delete_employee", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: id })
-    })
-    .then(res => res.json())
-    .then(data => {
-      alert(data.message || "Employee deleted.");
-      employees = employees.filter(e => e.emp_id !== id);
-      loadTable(document.getElementById("search").value);
-    })
-    .catch(err => {
-      console.error("Delete failed:", err);
-      alert("Failed to delete employee. Try again.");
-    });
-  }
-}
-
-document.getElementById("search").addEventListener("input", e => loadTable(e.target.value));
 
 window.onload = async () => {
   try {
@@ -230,12 +153,12 @@ window.onload = async () => {
     const data = await res.json();
     employees = data.employees || data;
     loadTable();
-
+    loadAttendance();
     const me = employees.find(e => e.emp_id === currentUser.emp_id);
     if (me) {
       document.getElementById("p_name").textContent = me.name || "-";
       document.getElementById("p_phone").textContent = me.phone || "-";
-      document.getElementById("p_dob").textContent = me.dob ? formatDate(me.dob) : "-";
+      document.getElementById("p_dob").textContent = me.dob ? me.dob.split("T")[0] : "-";
       document.getElementById("p_dept").textContent = me.department || "-";
       document.getElementById("p_role").textContent = me.role || "-";
       document.getElementById("adminName").textContent = me.name || "Admin";
@@ -245,6 +168,5 @@ window.onload = async () => {
   }
 };
 </script>
-
 </body>
 </html>
