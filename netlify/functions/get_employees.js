@@ -14,7 +14,11 @@ exports.handler = async (event) => {
   }
 
   try {
-    const result = await pool.query(`SELECT emp_id, name, role, department, phone, dob FROM employees ORDER BY name ASC`);
+    const result = await pool.query(`
+      SELECT emp_id, name, role, department, phone, dob, base_salary
+      FROM employees
+      ORDER BY name ASC
+    `);
     return {
       statusCode: 200,
       body: JSON.stringify({ employees: result.rows })
