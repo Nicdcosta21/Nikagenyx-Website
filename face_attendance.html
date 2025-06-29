@@ -6,6 +6,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white flex flex-col items-center min-h-screen p-4">
+
   <nav class="w-full flex justify-between px-6 py-4 bg-gray-800">
     <a href="index.html" class="text-xl font-bold">Nikagenyx</a>
     <div class="flex gap-4 text-sm">
@@ -44,7 +45,9 @@
       window.location.href = "employee_portal.html";
     }
 
-    document.getElementById("dashboardLink").href = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+    document.getElementById("dashboardLink").href = session?.role === "admin"
+      ? "admin_dashboard.html"
+      : "employee_dashboard.html";
 
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => { video.srcObject = stream; })
@@ -71,6 +74,10 @@
         return;
       }
 
+      const reference_image_base64 = photoData.photo_base64.startsWith("data:")
+        ? photoData.photo_base64
+        : `data:image/jpeg;base64,${photoData.photo_base64}`;
+
       statusText.textContent = "🧠 Sending for verification...";
 
       const res = await fetch("/.netlify/functions/verify_face_replicate", {
@@ -79,7 +86,7 @@
         body: JSON.stringify({
           emp_id,
           uploaded_image_base64,
-          reference_image_base64: photoData.photo_base64
+          reference_image_base64
         })
       });
 
@@ -97,10 +104,11 @@
       const interval = setInterval(async () => {
         const res = await fetch(pollUrl, {
           headers: {
-            Authorization: "Token r8_25i8Vqts10lqAb4D597LcmD3kqIxGc43kOg5h",
+            Authorization: "Token r8_UYwueEtdEaZw23jXir2TpULqJxBDAA44ZhikM",
             "Content-Type": "application/json"
           }
         });
+
         const prediction = await res.json();
 
         if (prediction.status === "succeeded") {
