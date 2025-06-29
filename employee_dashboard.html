@@ -44,6 +44,11 @@
     <button onclick="captureAndVerify()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Verify Face</button>
     <p id="statusMsg" class="mt-4 text-sm text-gray-300"></p>
   </div>
+
+  <section class="mt-10 bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">📨 Notifications</h2>
+    <ul id="notificationList" class="text-sm space-y-2 text-gray-300"></ul>
+  </section>
 </main>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
@@ -118,6 +123,28 @@ function pollPrediction(predictionId) {
     });
   }, 2500);
 }
+
+window.onload = () => {
+  fetch("/.netlify/functions/get_notifications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: user.emp_id })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById("notificationList");
+    if (!data.notifications || data.notifications.length === 0) {
+      list.innerHTML = '<li class="text-gray-400">No notifications yet.</li>';
+    } else {
+      data.notifications.forEach(n => {
+        const item = document.createElement("li");
+        item.textContent = `📢 ${n.message} — ${new Date(n.timestamp).toLocaleString()}`;
+        list.appendChild(item);
+      });
+    }
+  })
+  .catch(err => console.error("Failed to load notifications", err));
+};
 </script>
 
 </body>
