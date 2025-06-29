@@ -62,6 +62,15 @@
       <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
+  <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600">
+  <label for="payrollToggle" class="text-white text-sm mr-4">Payroll Mode:</label>
+  <select id="payrollToggle" class="bg-gray-700 text-white border border-gray-600 px-2 py-1 rounded">
+    <option value="freelance">Freelance</option>
+    <option value="fulltime">Full-Time</option>
+  </select>
+  <span id="toggleStatus" class="ml-4 text-green-400 text-sm"></span>
+</div>
+
 
   <section id="adminProfile" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
     <h2 class="section-title border-b border-gray-600 pb-2 mb-4">👤 My Admin Profile</h2>
@@ -360,6 +369,29 @@ const roleOptions = {
     console.error("Failed to load employees:", err);
   }
 };
+  async function loadPayrollMode() {
+  const res = await fetch("/.netlify/functions/get_payroll_mode");
+  const data = await res.json();
+  const toggle = document.getElementById("payrollToggle");
+  const status = document.getElementById("toggleStatus");
+  toggle.value = data.mode || "freelance";
+  status.textContent = `(${data.mode})`;
+}
+
+document.getElementById("payrollToggle").addEventListener("change", async (e) => {
+  const selected = e.target.value;
+  const res = await fetch("/.netlify/functions/set_payroll_mode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: selected }),
+  });
+  const data = await res.json();
+  document.getElementById("toggleStatus").textContent = `(${selected})`;
+  showToast(data.message || `Payroll mode updated`);
+});
+
+loadPayrollMode();
+
 </script>
 
 </body>
