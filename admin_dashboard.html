@@ -8,14 +8,6 @@
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
-    select { position: relative; z-index: 10; }
-    select {
-  appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1rem;
-}
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -70,16 +62,14 @@
       <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
- <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600 flex items-center gap-4">
-  <label for="payrollToggle" class="text-white text-sm">Payroll Mode:</label>
-  <select id="payrollToggle" class="bg-gray-900 text-white border border-gray-600 px-3 py-2 rounded outline-none focus:ring-2 focus:ring-purple-500 appearance-none">
-  <option value="freelance">Freelance</option>
-  <option value="fulltime">Full-Time</option>
-</select>
-  <button id="confirmPayroll" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm">Confirm</button>
+  <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600">
+  <label for="payrollToggle" class="text-white text-sm mr-4">Payroll Mode:</label>
+  <select id="payrollToggle" class="bg-gray-700 text-white border border-gray-600 px-2 py-1 rounded">
+    <option value="freelance">Freelance</option>
+    <option value="fulltime">Full-Time</option>
+  </select>
   <span id="toggleStatus" class="ml-4 text-green-400 text-sm"></span>
 </div>
-
 
 
   <section id="adminProfile" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
@@ -104,8 +94,6 @@
 </footer>
 
 <script>
-// JavaScript for Admin Dashboard
-
 function logout() {
   localStorage.removeItem("emp_session");
   window.location.href = "employee_portal.html";
@@ -143,11 +131,7 @@ function showToast(msg) {
   setTimeout(() => toast.remove(), 3000);
 }
 
-function viewEmployeeDetails(empId) {
-  localStorage.setItem("selected_emp_id", empId);
-  window.location.href = "employee_profile.html";
-}
-
+  
 function submitEdit(emp_id, name) {
   const phone = document.getElementById("editPhone").value;
   const dob = document.getElementById("editDob").value;
@@ -172,62 +156,6 @@ function submitEdit(emp_id, name) {
   });
 }
 
-  
-
-function setupPayrollConfirm() {
-  document.getElementById("confirmPayroll").addEventListener("click", async () => {
-    const selected = document.getElementById("payrollToggle").value;
-    const res = await fetch("/.netlify/functions/set_payroll_mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: selected })
-    });
-    const data = await res.json();
-    document.getElementById("toggleStatus").textContent = `${selected}`;
-    showToast(data.message || `Payroll mode updated`);
-  });
-}
-
-async function loadPayrollMode() {
-  const res = await fetch("/.netlify/functions/get_payroll_mode");
-  const data = await res.json();
-  const toggle = document.getElementById("payrollToggle");
-  const status = document.getElementById("toggleStatus");
-  toggle.value = data.mode || "freelance";
-  status.textContent = `${data.mode === 'freelance' ? 'Freelance payroll mode is currently active' : 'Full-time payroll mode is currently active'}`;
-  setupPayrollConfirm();
-}
-
-function showProfilePopup(empId) {
-  fetch("/.netlify/functions/get_employee_profile?emp_id=" + empId)
-    .then(res => res.json())
-    .then(emp => {
-      const modal = document.createElement("div");
-      modal.className = "fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center";
-      modal.innerHTML = `
-        <div class="bg-white text-black p-6 rounded shadow-lg max-w-lg w-full">
-          <h2 class="text-xl font-semibold mb-4">Employee: ${emp.name}</h2>
-          <p><strong>ID:</strong> ${emp.emp_id}</p>
-          <p><strong>Phone:</strong> ${emp.phone}</p>
-          <p><strong>Date of Birth:</strong> ${emp.dob}</p>
-          <p><strong>Role:</strong> ${emp.role}</p>
-          <p><strong>Department:</strong> ${emp.department}</p>
-          <p><strong>Total Pay:</strong> ₹${emp.total_pay || 0}</p>
-          <p><strong>Total Worked Days:</strong> ${emp.total_days || 0}</p>
-          <div class="mt-4">
-            <h3 class="font-semibold">Uploaded Files:</h3>
-            <ul class="list-disc list-inside text-sm text-blue-600">
-              ${(emp.files || []).map(file => `<li><a href="${file.url}" target="_blank">${file.name}</a></li>`).join("")}
-            </ul>
-          </div>
-          <div class="mt-6 text-right">
-            <button onclick="this.closest('.fixed').remove()" class="bg-red-600 text-white px-4 py-2 rounded">Close</button>
-          </div>
-        </div>`;
-      document.body.appendChild(modal);
-    })
-    .catch(() => alert("Failed to load employee details."));
-}
 
 window.onload = async () => {
   try {
@@ -236,32 +164,196 @@ window.onload = async () => {
     const employees = data.employees || data;
     const table = document.getElementById("employeeTable");
 
-    if (!Array.isArray(employees) || employees.length === 0) {
-      showToast("No employees found.");
-      return;
-    }
-
     employees.forEach(emp => {
-      console.log("Rendering employee:", emp);
       const tr = document.createElement("tr");
-tr.innerHTML = `
-  <td class="border p-2 text-blue-400 underline cursor-pointer" onclick="showProfilePopup('${emp.emp_id}')">${emp.emp_id}</td>
-  <td class="border p-2">${emp.name}</td>
-  <td class="border p-2">${emp.phone || '-'}</td>
-  <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-  <td class="border p-2">${emp.role}</td>
-  <td class="border p-2">${emp.department || '-'}</td>
-  <td class="border p-2">
-    <div class="flex flex-col sm:flex-row gap-1 justify-center items-center">
-      <button onclick="viewEmployeeDetails('${emp.emp_id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs w-20">View</button>
-      <button onclick="changeRole('${emp.emp_id}', '${emp.role === 'admin' ? 'employee' : 'admin'}')" class="bg-yellow-500 text-black font-semibold px-2 py-1 rounded text-xs w-20">Toggle</button>
-    </div>
-  </td>
-`;
+      tr.id = `row-${emp.emp_id}`;
+      tr.innerHTML = `
+        <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
+        <td class="border p-2">${emp.name}</td>
+        <td class="border p-2">${emp.phone || '-'}</td>
+        <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
+        <td class="border p-2 flex items-center gap-2 justify-center">
+          <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
+            <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
+            <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
+          </select>
+          <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+        </td>
+        <td class="border p-2">${emp.department || '-'}</td>
+        <td class="border p-2 space-x-1">
+          <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
+          <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
+          <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
+          <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+          <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
+        </td>
+      `;
+      table.appendChild(tr);
 
-table.appendChild(tr);
+      tr.querySelector('.confirm-role').addEventListener('click', () => {
+        const newRole = tr.querySelector('.role-select').value;
+        changeRole(emp.emp_id, newRole);
+      });
 
-      // Rendering code for table row is handled inside HTML
+      tr.querySelector('.reset-pin').addEventListener('click', () => {
+        fetch("/.netlify/functions/reset_pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        })
+        .then(res => res.json())
+        .then(data => {
+          showToast(data.message || `PIN reset for ${emp.emp_id}`);
+        })
+        .catch(err => {
+          console.error("Reset PIN failed:", err);
+          alert("❌ Failed to reset PIN.");
+        });
+      });
+
+      tr.querySelector('.reset-mfa').addEventListener('click', () => {
+        fetch("/.netlify/functions/reset_mfa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        })
+        .then(res => res.json())
+        .then(data => {
+          showToast(`MFA reset for ${emp.emp_id}`);
+          const qrModal = document.createElement('div');
+          qrModal.innerHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
+                <h2 class="text-lg font-bold mb-2">Scan New MFA QR for ${emp.name}</h2>
+                <img src="${data.qr_code_url}" alt="MFA QR Code" class="mx-auto mb-4 w-40 h-40" />
+                <button onclick="this.parentElement.parentElement.remove()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+              </div>
+            </div>`;
+          document.body.appendChild(qrModal);
+        })
+        .catch(err => {
+          console.error("Reset MFA failed:", err);
+          alert("❌ Failed to reset MFA.");
+        });
+      });
+
+tr.querySelector('.edit').addEventListener('click', () => {
+  const modal = document.createElement("div");
+  modal.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
+        <label class="block mb-2">Phone: 
+          <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}">
+        </label>
+        <label class="block mb-2">DOB: 
+          <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob ? formatDate(emp.dob) : ''}">
+        </label>
+        <label class="block mb-2">Department:
+          <select id="editDept" class="w-full border px-2 py-1">
+            <option value="">Select Department</option>
+            <option value="Tech Team">Tech Team</option>
+            <option value="Admin Team">Admin Team</option>
+          </select>
+        </label>
+        <label class="block mb-2">Role:
+          <select id="editRole" class="w-full border px-2 py-1">
+            <option value="">Select Role</option>
+          </select>
+        </label>
+        <label class="block mb-2">Base Salary: 
+          <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
+        </label>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+const roleOptions = {
+  "Tech Team": [
+    "Frontend Developer (Jr. Developer)",
+    "Backend Developer (Jr. Developer)",
+    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+    "QA Engineer (Sr. Developer)",
+    "White labelling (UI/UX Designer)",
+    "DevOps Engineer (Infrastructure Engineer)",
+    "Data Analyst",
+    "Cybersecurity & Risk Analyst",
+    "IT Systems Administrator",
+    "IT Support Specialist"
+  ],
+  "Admin Team": [
+    "Human Resources Manager",
+    "Chief Executive Officer",
+    "Finance & Accounts Officer",
+    "Managing Director (MD)",
+    "Regulatory Compliance Officer",
+    "Client Relations Consultant",
+    "Administrative Coordinator",
+    "Customer Success Executive"
+  ]
+};
+
+
+  const deptDropdown = document.getElementById("editDept");
+  const roleDropdown = document.getElementById("editRole");
+
+    function updateRoleDropdown(dept) {
+    roleDropdown.innerHTML = `<option value="">Select Role</option>`;
+    (roleOptions[dept] || []).forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role;
+      opt.textContent = role;
+      roleDropdown.appendChild(opt);
+    });
+  }
+
+  // Pre-fill current values
+  deptDropdown.value = emp.department || "";
+  updateRoleDropdown(emp.department);
+  roleDropdown.value = emp.role || "";
+
+  deptDropdown.addEventListener("change", (e) => {
+    updateRoleDropdown(e.target.value);
+  });
+
+
+});
+      const deleteBtn = tr.querySelector('.delete');
+      if (emp.emp_id === currentUser.emp_id) {
+        deleteBtn.disabled = true;
+        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        deleteBtn.addEventListener('click', () => {
+          if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
+            fetch("/.netlify/functions/delete_employee", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ emp_id: emp.emp_id })
+            })
+            .then(res => {
+              if (!res.ok) throw new Error("Failed to delete");
+              return res.json();
+            })
+            .then(data => {
+              showToast(data.message);
+              tr.remove();
+            })
+            .catch(err => {
+              console.error("Delete failed:", err);
+              alert("❌ Failed to delete employee.");
+            });
+          }
+        });
+      }
+
+      tr.querySelector('.mark-attendance').addEventListener('click', () => {
+        localStorage.setItem("verify_emp_id", emp.emp_id);
+        window.open("face_attendance.html", "_blank");
+      });
     });
 
     const me = employees.find(e => e.emp_id === currentUser.emp_id);
@@ -277,9 +369,44 @@ table.appendChild(tr);
     console.error("Failed to load employees:", err);
   }
 };
+  async function loadPayrollMode() {
+  const res = await fetch("/.netlify/functions/get_payroll_mode");
+  const data = await res.json();
+  const toggle = document.getElementById("payrollToggle");
+  const status = document.getElementById("toggleStatus");
+  toggle.value = data.mode || "freelance";
+  status.textContent = `(${data.mode})`;
+}
 
-  
+function setupPayrollToggle() {
+  document.getElementById("payrollToggle").addEventListener("change", async (e) => {
+    const selected = e.target.value;
+    const res = await fetch("/.netlify/functions/set_payroll_mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: selected }),
+    });
+    const data = await res.json();
+    document.getElementById("toggleStatus").textContent = `(${selected})`;
+    showToast(data.message || `Payroll mode updated`);
+  });
+}
+
+async function loadPayrollMode() {
+  const res = await fetch("/.netlify/functions/get_payroll_mode");
+  const data = await res.json();
+  const toggle = document.getElementById("payrollToggle");
+  const status = document.getElementById("toggleStatus");
+  toggle.value = data.mode || "freelance";
+  status.textContent = `(${data.mode})`;
+  setupPayrollToggle(); // ✅ Attach only after DOM is ready
+}
+
+loadPayrollMode();
+
+
 </script>
 
 </body>
 </html>
+
