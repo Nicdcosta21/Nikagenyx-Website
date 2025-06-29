@@ -217,28 +217,88 @@ window.onload = async () => {
         });
       });
 
-      tr.querySelector('.edit').addEventListener('click', () => {
-        const modal = document.createElement("div");
-        modal.innerHTML = `
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
-              <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
-              <label class="block mb-2">Phone: <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}"></label>
-              <label class="block mb-2">DOB: <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob || ''}"></label>
-              <label class="block mb-2">Department: <input type="text" id="editDept" class="w-full border px-2 py-1" value="${emp.department || ''}"></label>
-              <label class="block mb-2">Role: <input type="text" id="editRole" class="w-full border px-2 py-1" value="${emp.role || ''}"></label>
-              <label class="block mb-2">Base Salary: 
-  <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
-</label>
-              <div class="flex justify-end gap-2 mt-4">
-                <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-                <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.appendChild(modal);
+tr.querySelector('.edit').addEventListener('click', () => {
+  const modal = document.createElement("div");
+  modal.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
+        <label class="block mb-2">Phone: 
+          <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}">
+        </label>
+        <label class="block mb-2">DOB: 
+          <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob ? formatDate(emp.dob) : ''}">
+        </label>
+        <label class="block mb-2">Department:
+          <select id="editDept" class="w-full border px-2 py-1">
+            <option value="">Select Department</option>
+            <option value="Tech Team">Tech Team</option>
+            <option value="Admin Team">Admin Team</option>
+          </select>
+        </label>
+        <label class="block mb-2">Role:
+          <select id="editRole" class="w-full border px-2 py-1">
+            <option value="">Select Role</option>
+          </select>
+        </label>
+        <label class="block mb-2">Base Salary: 
+          <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
+        </label>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
       });
+  // ✅ Role options by department
+  const roleOptions = {
+    "Tech Team": [
+      "Frontend Developer (Jr. Developer)",
+      "Backend Developer (Jr. Developer)",
+      "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+      "QA Engineer (Sr. Developer)",
+      "White labelling (UI/UX Designer)",
+      "DevOps Engineer (Infrastructure Engineer)",
+      "Data Analyst",
+      "Cybersecurity & Risk Analyst",
+      "IT Systems Administrator",
+      "IT Support Specialist"
+    ],
+    "Admin Team": [
+      "Human Resources Manager",
+      "Finance & Accounts Officer",
+      "Managing Director (MD)",
+      "Regulatory Compliance Officer",
+      "Client Relations Consultant",
+      "Administrative Coordinator",
+      "Customer Success Executive"
+    ]
+  };
 
+  const deptDropdown = document.getElementById("editDept");
+  const roleDropdown = document.getElementById("editRole");
+
+  // Pre-fill current values
+  deptDropdown.value = emp.department || "";
+  updateRoleDropdown(emp.department);
+  roleDropdown.value = emp.role || "";
+
+  deptDropdown.addEventListener("change", (e) => {
+    updateRoleDropdown(e.target.value);
+  });
+
+  function updateRoleDropdown(dept) {
+    roleDropdown.innerHTML = `<option value="">Select Role</option>`;
+    (roleOptions[dept] || []).forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role;
+      opt.textContent = role;
+      roleDropdown.appendChild(opt);
+    });
+  }
+});
       const deleteBtn = tr.querySelector('.delete');
       if (emp.emp_id === currentUser.emp_id) {
         deleteBtn.disabled = true;
