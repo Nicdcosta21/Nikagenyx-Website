@@ -7,9 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      font-family: 'Questrial', sans-serif;
-    }
+    body { font-family: 'Questrial', sans-serif; }
+    video, canvas { display: block; margin: 0 auto; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -35,9 +34,16 @@
   </ul>
 </nav>
 
-<main class="p-8 max-w-5xl mx-auto flex-grow">
-  <h1 class="text-3xl font-bold mb-6">Employee Dashboard</h1>
-  <p class="text-gray-300">Welcome! This page will soon display your attendance, salary slips, and work updates. All data will be securely fetched from your assigned account.</p>
+<main class="p-8 max-w-3xl mx-auto flex-grow">
+  <h1 class="text-3xl font-bold mb-6 text-center">Employee Dashboard</h1>
+  <div class="text-gray-300 mb-6 text-center">Face Verification (2FA)</div>
+
+  <div class="text-center">
+    <video id="video" width="320" height="240" autoplay class="rounded-lg border border-gray-600 mb-4"></video>
+    <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
+    <button onclick="captureAndVerify()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Verify Face</button>
+    <p id="statusMsg" class="mt-4 text-sm text-gray-300"></p>
+  </div>
 </main>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
@@ -45,10 +51,73 @@
 </footer>
 
 <script>
-  function logout() {
-    localStorage.removeItem("emp_session");
-    window.location.href = "employee_portal.html";
-  }
+function logout() {
+  localStorage.removeItem("emp_session");
+  window.location.href = "employee_portal.html";
+}
+
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const statusMsg = document.getElementById('statusMsg');
+const context = canvas.getContext('2d');
+const user = JSON.parse(localStorage.getItem("emp_session"));
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => alert("Camera access denied."));
+
+function captureAndVerify() {
+  statusMsg.textContent = "🔄 Capturing image and submitting for verification...";
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const base64Image = canvas.toDataURL("image/jpeg").split(',')[1];
+
+  fetch("/.netlify/functions/verify_face_replicate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: user.emp_id, image_base64: base64Image })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "submitted" && data.prediction_id) {
+      statusMsg.textContent = "🕒 Submitted. Polling for result...";
+      pollPrediction(data.prediction_id);
+    } else {
+      statusMsg.textContent = "❌ Submission failed.";
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    statusMsg.textContent = "❌ Face verification error.";
+  });
+}
+
+function pollPrediction(predictionId) {
+  const interval = setInterval(() => {
+    fetch("/.netlify/functions/verify_face_replicate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prediction_id: predictionId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === "succeeded") {
+        clearInterval(interval);
+        if (data.result.verified) {
+          statusMsg.textContent = `✅ Face Verified! Distance: ${data.result.distance.toFixed(4)}`;
+        } else {
+          statusMsg.textContent = `❌ Face not matched. Distance: ${data.result.distance.toFixed(4)}`;
+        }
+      } else if (data.status === "failed") {
+        clearInterval(interval);
+        statusMsg.textContent = "❌ Prediction failed.";
+      }
+    })
+    .catch(() => {
+      clearInterval(interval);
+      statusMsg.textContent = "❌ Error during polling.";
+    });
+  }, 2500);
+}
 </script>
 
 </body>
