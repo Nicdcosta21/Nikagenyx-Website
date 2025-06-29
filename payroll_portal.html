@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll Portal - Nikagenyx</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+
+  <h1 class="text-3xl font-bold mb-6">📊 Payroll Report Generator</h1>
+  <p class="mb-4 text-gray-300 text-center max-w-xl">
+    This tool will calculate salary payouts based on attendance logs and role-wise base salaries. Click below to download the payroll report in Excel format.
+  </p>
+
+  <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-lg font-medium">
+    ⬇️ Download Payroll Report
+  </button>
+
+  <p id="status" class="mt-6 text-sm text-gray-400"></p>
+
+  <script>
+    document.getElementById("downloadBtn").addEventListener("click", async () => {
+      const status = document.getElementById("status");
+      status.textContent = "Generating report... please wait...";
+      try {
+        const res = await fetch("/.netlify/functions/payroll");
+        if (!res.ok) throw new Error("Failed to generate report");
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "payroll.xlsx";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        status.textContent = "✅ Report downloaded successfully.";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Failed to generate payroll report.";
+      }
+    });
+  </script>
+
+</body>
+</html>
+
