@@ -35,11 +35,12 @@ exports.handler = async (event) => {
     }
 
     return {
-      statusCode: 200,
-      body: JSON.stringify({
-        photo_base64: result.rows[0].photo_base64.replace(/^data:image\/[a-z]+;base64,/, "")
-      }),
-    };
+  statusCode: 200,
+  body: JSON.stringify({
+    photo_base64: result.rows[0].photo_base64
+  }),
+};
+
   } catch (err) {
     console.error("❌ DB Error:", err.message);
     return {
