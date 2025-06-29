@@ -1,1 +1,84 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8" /> <title>My Payroll</title> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <script src="https://cdn.tailwindcss.com"></script> </head> <body class="bg-gray-900 text-white min-h-screen flex flex-col"> <nav class="bg-gray-800 p-4 flex justify-between items-center"> <h1 class="text-xl font-bold">Nikagenyx</h1> <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded text-sm">Logout</button> </nav> <main class="flex-grow p-6"> <h2 class="text-2xl font-semibold mb-4">My Payroll</h2> <div id="payrollSummary" class="bg-gray-800 p-4 rounded text-sm"> <p><strong>Name:</strong> <span id="empName">-</span></p> <p><strong>Role:</strong> <span id="empRole">-</span></p> <p><strong>Base Salary (per day):</strong> ₹<span id="empSalary">-</span></p> <hr class="my-3 border-gray-600" /> <p><strong>Days Present (P):</strong> <span id="daysPresent">0</span></p> <p><strong>Half Days (L):</strong> <span id="halfDays">0</span></p> <p><strong>Absent Days (A):</strong> <span id="absentDays">0</span></p> <p class="mt-3 text-lg font-bold">Total Salary: ₹<span id="totalSalary">0</span></p> </div> </main> <footer class="bg-gray-800 text-center text-xs text-gray-500 py-4"> &copy; 2025 Nikagenyx Vision Tech Private Limited </footer> <script> const session = JSON.parse(localStorage.getItem("emp_session")); if (!session?.emp_id) { window.location.href = "employee_portal.html"; } document.getElementById("empName").textContent = session.name || "-"; fetch("/.netlify/functions/get_employee_payroll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ emp_id: session.emp_id }) }) .then(res => res.json()) .then(data => { if (data.success) { document.getElementById("empRole").textContent = data.role; document.getElementById("empSalary").textContent = data.base_salary; document.getElementById("daysPresent").textContent = data.days_present; document.getElementById("halfDays").textContent = data.half_days; document.getElementById("absentDays").textContent = data.absent_days; document.getElementById("totalSalary").textContent = data.total_salary; } }); function logout() { localStorage.removeItem("emp_session"); window.location.href = "employee_portal.html"; } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Payroll</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Nikagenyx</h1>
+    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded text-sm">Logout</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-6">
+    <h2 class="text-2xl font-semibold mb-4">My Payroll</h2>
+
+    <div id="payrollSummary" class="bg-gray-800 p-4 rounded text-sm space-y-2">
+      <p><strong>Name:</strong> <span id="empName">-</span></p>
+      <p><strong>Role:</strong> <span id="empRole">-</span></p>
+      <p><strong>Base Salary (per day):</strong> ₹<span id="empSalary">-</span></p>
+      <hr class="my-3 border-gray-600" />
+      <p><strong>Days Present (P):</strong> <span id="daysPresent">0</span></p>
+      <p><strong>Half Days (L):</strong> <span id="halfDays">0</span></p>
+      <p><strong>Absent Days (A):</strong> <span id="absentDays">0</span></p>
+      <p class="mt-3 text-lg font-bold">Total Salary: ₹<span id="totalSalary">0</span></p>
+    </div>
+
+    <p id="errorMessage" class="text-red-400 mt-4 hidden"></p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-center text-xs text-gray-500 py-4">
+    &copy; 2025 Nikagenyx Vision Tech Private Limited
+  </footer>
+
+  <!-- Script -->
+  <script>
+    const session = JSON.parse(localStorage.getItem("emp_session"));
+    if (!session?.emp_id) {
+      window.location.href = "employee_portal.html";
+    }
+
+    document.getElementById("empName").textContent = session.name || "-";
+
+    fetch("/.netlify/functions/get_employee_payroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: session.emp_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.name) {
+        document.getElementById("empRole").textContent = data.role;
+        document.getElementById("empSalary").textContent = Number(data.base_salary).toFixed(2);
+        document.getElementById("daysPresent").textContent = data.days_present;
+        document.getElementById("halfDays").textContent = data.half_days;
+        document.getElementById("absentDays").textContent = data.absent_days;
+        document.getElementById("totalSalary").textContent = Number(data.final_salary).toFixed(2);
+      } else {
+        showError("Could not retrieve payroll data.");
+      }
+    })
+    .catch(err => {
+      console.error("Payroll fetch failed:", err);
+      showError("Something went wrong. Please try again later.");
+    });
+
+    function showError(msg) {
+      const el = document.getElementById("errorMessage");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+    }
+
+    function logout() {
+      localStorage.removeItem("emp_session");
+      window.location.href = "employee_portal.html";
+    }
+  </script>
+</body>
+</html>
