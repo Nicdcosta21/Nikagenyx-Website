@@ -2,79 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>DeepFace Verification Test</title>
+  <title>DeepFace Attendance Test</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #111827;
+      background: #0f172a;
       color: white;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 40px;
     }
+
     input, button {
       margin: 10px;
       padding: 10px;
-      border-radius: 6px;
+      font-size: 1rem;
+      border-radius: 5px;
     }
+
     button {
-      background-color: #2563eb;
+      background-color: #3b82f6;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     #result {
       margin-top: 20px;
       font-weight: bold;
+      font-size: 1.1rem;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎯 DeepFace Attendance Verification</h2>
+  <h2>🔍 Verify Face Attendance</h2>
 
   <form id="verifyForm">
-    <input type="text" name="emp_id" id="emp_id" placeholder="Employee ID (e.g. NGX001)" required><br>
-    <input type="file" name="file" id="file" accept="image/*" required><br>
+    <input type="text" id="emp_id" name="emp_id" placeholder="Employee ID (e.g. NGX001)" required><br>
+    <input type="file" id="file" name="file" accept="image/*" required><br>
     <button type="submit">Start Verification</button>
   </form>
 
   <div id="result"></div>
 
   <script>
-    document.getElementById('verifyForm').addEventListener('submit', async function (e) {
+    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const emp_id = document.getElementById('emp_id').value;
       const file = document.getElementById('file').files[0];
+
       const formData = new FormData();
       formData.append("emp_id", emp_id);
       formData.append("file", file);
 
       const resultDiv = document.getElementById("result");
-      resultDiv.innerText = "⏳ Verifying...";
+      resultDiv.textContent = "⏳ Processing...";
 
       try {
         const res = await fetch("https://deepface-attendance-api-production-ccfd.up.railway.app/verify", {
           method: "POST",
           body: formData
         });
+
         const data = await res.json();
-        console.log("Response:", data);
 
         if (data.status === "success") {
-          resultDiv.innerText = data.verified
-            ? `✅ Face Match! Distance: ${data.distance}`
+          resultDiv.textContent = data.verified
+            ? `✅ Match! Distance: ${data.distance}`
             : `❌ No Match. Distance: ${data.distance}`;
         } else {
-          resultDiv.innerText = `⚠️ ${data.message || "Verification failed."}`;
+          resultDiv.textContent = `⚠️ ${data.message}`;
         }
-      } catch (err) {
-        console.error("Request failed", err);
-        resultDiv.innerText = "❌ Network or server error.";
+
+      } catch (error) {
+        console.error("Error:", error);
+        resultDiv.textContent = "❌ Request failed.";
       }
     });
   </script>
 
 </body>
 </html>
+
