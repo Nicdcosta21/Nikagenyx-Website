@@ -7,27 +7,20 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
+    .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
 <script>
   const session = localStorage.getItem("emp_session");
+  let currentUser = null;
   if (!session) {
     window.location.href = "employee_portal.html";
   } else {
-    const user = JSON.parse(session);
-    if (user.role !== "admin") {
+    currentUser = JSON.parse(session);
+    if (currentUser.role !== "admin") {
       window.location.href = "employee_dashboard.html";
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById("adminName").textContent = user.name || "Admin";
-        document.getElementById("empInfoName").textContent = user.name;
-        document.getElementById("empInfoPhone").textContent = user.phone || "-";
-        document.getElementById("empInfoDOB").textContent = user.dob || "-";
-        document.getElementById("empInfoDept").textContent = user.department || "-";
-        document.getElementById("empInfoRole").textContent = user.role;
-      });
     }
   }
 </script>
@@ -38,22 +31,37 @@
     <li><a href="employee_portal.html" class="hover:text-purple-400">Employee Portal</a></li>
     <li><a href="register_employee.html" class="hover:text-purple-400">Register</a></li>
     <li><a href="update_profile.html" class="hover:text-purple-400">Update Profile</a></li>
+    <li><a href="payroll_portal.html" class="hover:text-purple-400">Payroll</a></li>
     <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
   </ul>
 </nav>
 
 <main class="p-6 max-w-7xl mx-auto flex-grow">
+  <h1 class="text-3xl font-bold mb-4">Admin Dashboard</h1>
+  <p class="mb-4 text-gray-300">Welcome, <span id="adminName">Admin</span> 👋</p>
 
-  <!-- Admin Section -->
-  <h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
-  <p class="text-sm text-gray-400 mb-6">Welcome, <span id="adminName"></span> 👋</p>
+  <section id="adminProfile" class="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-10">
+    <h2 class="section-title border-b border-gray-600 pb-2 mb-4">👤 My Admin Profile</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div><strong>Name:</strong> <span id="p_name">-</span></div>
+      <div><strong>Phone:</strong> <span id="p_phone">-</span></div>
+      <div><strong>Date of Birth:</strong> <span id="p_dob">-</span></div>
+      <div><strong>Department:</strong> <span id="p_dept">-</span></div>
+      <div><strong>Role:</strong> <span id="p_role">-</span></div>
+    </div>
+    <div class="mt-4 space-x-3">
+      <a href="update_profile.html" class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm">Update Profile</a>
+      <a href="index.html" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">View Attendance</a>
+      <a href="payroll_portal.html" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Payroll Portal</a>
+    </div>
+  </section>
 
   <div class="mb-4 flex flex-col md:flex-row gap-4">
     <input id="search" type="text" placeholder="Search by name or ID" class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3">
     <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
   </div>
 
-  <div class="overflow-x-auto mb-12">
+  <div class="overflow-x-auto mb-10">
     <table class="min-w-full table-auto bg-gray-800 border border-gray-700">
       <thead class="bg-gray-700">
         <tr>
@@ -69,22 +77,9 @@
       <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
-
-  <!-- Embedded Employee Dashboard Info -->
-  <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2">My Employee Info</h2>
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <p><strong>Name:</strong> <span id="empInfoName"></span></p>
-      <p><strong>Phone:</strong> <span id="empInfoPhone"></span></p>
-      <p><strong>Date of Birth:</strong> <span id="empInfoDOB"></span></p>
-      <p><strong>Department:</strong> <span id="empInfoDept"></span></p>
-      <p><strong>Role:</strong> <span id="empInfoRole"></span></p>
-    </div>
-    <p class="mt-6 text-gray-300 text-sm">You can update your profile info from the <a href="update_profile.html" class="text-purple-400 underline">Update Profile</a> section.</p>
-  </div>
 </main>
 
-<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
@@ -111,14 +106,13 @@ function loadTable(filter = "") {
 
   filtered.forEach(emp => {
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
-      <td class="border p-2">${emp.emp_id}</td>
+      <td class="border p-2 cursor-pointer" onclick="showEmployeeInfo('${emp.emp_id}')">${emp.emp_id}</td>
       <td class="border p-2">${emp.name}</td>
       <td class="border p-2">${emp.phone || '-'}</td>
       <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
       <td class="border p-2 flex items-center gap-2 justify-center">
-        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select">
+        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
           <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
           <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
@@ -133,22 +127,24 @@ function loadTable(filter = "") {
       </td>
     `;
 
-    // Attach button handlers
     tr.querySelector('.confirm-role').addEventListener('click', () => {
       const newRole = tr.querySelector('.role-select').value;
       confirmRoleChange(emp.emp_id, newRole);
     });
+
     tr.querySelector('.reset-pin').addEventListener('click', () => resetPIN(emp.emp_id));
     tr.querySelector('.reset-mfa').addEventListener('click', () => resetMFA(emp.emp_id));
     tr.querySelector('.edit').addEventListener('click', () => edit(emp.emp_id));
     tr.querySelector('.delete').addEventListener('click', () => deleteUser(emp.emp_id));
+
+    table.appendChild(tr);
   });
 }
 
 function exportCSV() {
   const headers = ["ID", "Name", "Phone", "DOB", "Role", "Department"];
   const rows = employees.map(e => [e.emp_id, e.name, e.phone, formatDate(e.dob), e.role, e.department]);
-  let csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+  const csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -158,18 +154,36 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+function showEmployeeInfo(id) {
+  const user = employees.find(e => e.emp_id === id);
+  if (!user) return;
+  document.getElementById("p_name").textContent = user.name || "-";
+  document.getElementById("p_phone").textContent = user.phone || "-";
+  document.getElementById("p_dob").textContent = user.dob ? formatDate(user.dob) : "-";
+  document.getElementById("p_dept").textContent = user.department || "-";
+  document.getElementById("p_role").textContent = user.role || "-";
+}
+
 function resetPIN(id) {
-  alert(`Reset PIN for ${id}`);
+  alert(`Reset PIN triggered for ${id}`);
 }
+
 function resetMFA(id) {
-  alert(`Reset MFA for ${id}`);
+  if (confirm(`Reset MFA for ${id}?`)) {
+    fetch("/.netlify/functions/reset_mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: id })
+    })
+    .then(res => res.json())
+    .then(data => alert(`✅ MFA reset for ${id}`))
+    .catch(err => {
+      console.error("Reset MFA failed:", err);
+      alert("❌ MFA reset failed.");
+    });
+  }
 }
-function edit(id) {
-  alert(`Edit action for ${id}`);
-}
-function deleteUser(id) {
-  alert(`Delete user ${id}`);
-}
+
 function confirmRoleChange(emp_id, newRole) {
   fetch("/.netlify/functions/update_role", {
     method: "POST",
@@ -188,6 +202,26 @@ function confirmRoleChange(emp_id, newRole) {
   });
 }
 
+function deleteUser(id) {
+  if (confirm(`Are you sure you want to delete ${id}?`)) {
+    fetch("/.netlify/functions/delete_employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || "Employee deleted.");
+      employees = employees.filter(e => e.emp_id !== id);
+      loadTable(document.getElementById("search").value);
+    })
+    .catch(err => {
+      console.error("Delete failed:", err);
+      alert("Failed to delete employee. Try again.");
+    });
+  }
+}
+
 document.getElementById("search").addEventListener("input", e => loadTable(e.target.value));
 
 window.onload = async () => {
@@ -196,6 +230,16 @@ window.onload = async () => {
     const data = await res.json();
     employees = data.employees || data;
     loadTable();
+
+    const me = employees.find(e => e.emp_id === currentUser.emp_id);
+    if (me) {
+      document.getElementById("p_name").textContent = me.name || "-";
+      document.getElementById("p_phone").textContent = me.phone || "-";
+      document.getElementById("p_dob").textContent = me.dob ? formatDate(me.dob) : "-";
+      document.getElementById("p_dept").textContent = me.department || "-";
+      document.getElementById("p_role").textContent = me.role || "-";
+      document.getElementById("adminName").textContent = me.name || "Admin";
+    }
   } catch (err) {
     console.error("Failed to load employees:", err);
   }
