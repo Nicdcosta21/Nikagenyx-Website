@@ -8,38 +8,40 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
-  <nav class="bg-gray-800 p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Nikagenyx</h1>
-    <div class="space-x-4 text-sm">
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
+    <div class="text-xl font-bold">Nikagenyx</div>
+    <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
       <a href="update_profile.html">Update Profile</a>
       <a href="view_attendance.html">My Attendance</a>
-      <a href="view_payroll.html">Payroll</a>
+      <a href="payroll_portal.html">Payroll</a>
       <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
     </div>
   </nav>
 
-<main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
-  <h1 class="text-2xl font-semibold mb-4">
-    Welcome, <span id="empName">Employee</span>
-  </h1>
+  <!-- Main Content -->
+  <main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
+    <h1 class="text-2xl font-semibold mb-4">
+      Welcome, <span id="empName">Employee</span>
+    </h1>
 
-  <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center">
-    <h2 class="text-lg font-bold mb-4">Clock In / Clock Out</h2>
+    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center">
+      <h2 class="text-lg font-bold mb-4">Clock In / Clock Out</h2>
 
-    <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 mb-3 rounded disabled:opacity-50">
-      Clock In
-    </button>
-    <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded disabled:opacity-50">
-      Clock Out
-    </button>
+      <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 mb-3 rounded disabled:opacity-50">
+        Clock In
+      </button>
+      <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded disabled:opacity-50">
+        Clock Out
+      </button>
 
-    <p id="statusMessage" class="text-sm text-gray-400 mt-3">
-      Already clocked out or not clocked in yet.
-    </p>
-  </div>
-</main>
+      <p id="statusMessage" class="text-sm text-gray-400 mt-3">
+        Already clocked out or not clocked in yet.
+      </p>
+    </div>
+  </main>
 
-
+  <!-- Footer -->
   <footer class="bg-gray-800 text-gray-500 text-center py-4 text-xs">
     &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
   </footer>
@@ -47,11 +49,13 @@
   <script>
     const empSession = JSON.parse(localStorage.getItem("emp_session"));
     const empId = empSession?.emp_id;
+    document.getElementById("empName").textContent = empSession?.name || "Employee";
+
     if (!empId) window.location.href = "employee_portal.html";
 
     const clockInBtn = document.getElementById("clockInBtn");
     const clockOutBtn = document.getElementById("clockOutBtn");
-    const status = document.getElementById("status");
+    const status = document.getElementById("statusMessage");
 
     function updateButtonState(lastAction) {
       if (lastAction === "in") {
@@ -59,7 +63,7 @@
         clockInBtn.classList.add("opacity-50");
         clockOutBtn.disabled = false;
         clockOutBtn.classList.remove("opacity-50");
-      } else if (lastAction === "out") {
+      } else {
         clockOutBtn.disabled = true;
         clockOutBtn.classList.add("opacity-50");
         clockInBtn.disabled = false;
@@ -82,10 +86,14 @@
       });
     }
 
+    function clockIn() { markAttendance("in"); }
+    function clockOut() { markAttendance("out"); }
+
+    // Auto clock-out after 30 min inactivity
     function autoClockOutCheck() {
       const lastAction = localStorage.getItem("last_action");
       const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
-      if (lastAction === "in" && Date.now() - lastActivity > 1800000) { // 30 mins
+      if (lastAction === "in" && Date.now() - lastActivity > 1800000) {
         markAttendance("out");
         status.textContent = "Auto clocked out due to inactivity.";
       }
@@ -93,72 +101,15 @@
 
     document.addEventListener("mousemove", () => localStorage.setItem("last_activity", Date.now()));
     document.addEventListener("keydown", () => localStorage.setItem("last_activity", Date.now()));
-
     setInterval(autoClockOutCheck, 60000); // check every 1 minute
+
+    function logout() {
+      localStorage.removeItem("emp_session");
+      window.location.href = "employee_portal.html";
+    }
 
     updateButtonState(localStorage.getItem("last_action"));
   </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Employee Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
-  <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
-    <div class="text-xl font-bold">Nikagenyx</div>
-    <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
-      <a href="update_profile.html">Update Profile</a>
-      <a href="view_attendance.html">My Attendance</a>
-      <a href="payroll_portal.html">Payroll</a>
-      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
-    </div>
-  </nav>
 
-  <main class="flex-grow flex flex-col items-center justify-center text-center px-4 py-8">
-    <h2 class="text-2xl font-bold mb-4">Welcome to your Dashboard</h2>
-    <button onclick="handleAttendance()" id="clockBtn"
-      class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded mb-2 w-full max-w-xs">
-      Clock In
-    </button>
-    <p id="status" class="text-sm text-gray-400 mt-2"></p>
-  </main>
-
-  <footer class="text-gray-500 text-sm text-center py-6 bg-gray-800 mt-auto">
-    &copy; 2025 Nikagenyx Vision Tech Private Limited
-  </footer>
-
-<script>
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-  if (!session || !session.emp_id) {
-    alert("Session expired. Please log in again.");
-    window.location.href = "employee_portal.html";
-  }
-
-  async function handleAttendance() {
-    const emp_id = session.emp_id;
-    const res = await fetch("/.netlify/functions/mark_attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id })
-    });
-
-    const result = await res.json();
-    document.getElementById("status").textContent = result.message;
-    document.getElementById("clockBtn").textContent = result.status === "clocked_in" ? "Clock Out" : "Clock In";
-  }
-
-  function logout() {
-    localStorage.removeItem("emp_session");
-    window.location.href = "employee_portal.html";
-  }
-
-  // Optional: auto-fetch attendance status
-  handleAttendance();
-</script>
 </body>
 </html>
