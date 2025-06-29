@@ -30,18 +30,25 @@ exports.handler = async (event) => {
       })
     });
 
-    const data = await res.json();
+    const prediction = await res.json();
 
-    if (res.status !== 201) {
+    if (res.status !== 201 || !prediction?.id || !prediction?.urls?.get) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: "Failed to start prediction", details: data }),
+        body: JSON.stringify({
+          message: "Failed to start prediction",
+          details: prediction
+        }),
       };
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Prediction started", prediction: data })
+      body: JSON.stringify({
+        status: "submitted",
+        prediction_id: prediction.id,
+        prediction: prediction
+      })
     };
 
   } catch (err) {
