@@ -1,52 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payroll Portal - Nikagenyx</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
+    .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
   </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
-  <h1 class="text-3xl font-bold mb-6">📊 Payroll Report Generator</h1>
-  <p class="mb-4 text-gray-300 text-center max-w-xl">
-    This tool will calculate salary payouts based on attendance logs and role-wise base salaries. Click below to download the payroll report in Excel format.
-  </p>
+<nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
+  <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
+  <ul class="flex gap-6 text-sm">
+    <li><a href="admin_dashboard.html" class="hover:text-purple-400">Dashboard</a></li>
+    <li><a href="update_profile.html" class="hover:text-purple-400">Update Profile</a></li>
+    <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
+  </ul>
+</nav>
 
-  <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-lg font-medium">
-    ⬇️ Download Payroll Report
-  </button>
+<main class="p-6 max-w-6xl mx-auto flex-grow">
+  <h1 class="text-3xl font-bold mb-6">Payroll Portal</h1>
 
-  <p id="status" class="mt-6 text-sm text-gray-400"></p>
+  <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+    <h2 class="section-title border-b border-gray-600 pb-2 mb-4">Generate Payroll Report</h2>
+    <label class="block mb-2 text-sm">Select Month:</label>
+    <input type="month" id="monthPicker" class="bg-gray-700 text-white px-4 py-2 rounded mb-4">
+    <button onclick="generatePayroll()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Generate Report</button>
+  </div>
 
-  <script>
-    document.getElementById("downloadBtn").addEventListener("click", async () => {
-      const status = document.getElementById("status");
-      status.textContent = "Generating report... please wait...";
-      try {
-        const res = await fetch("/.netlify/functions/payroll");
-        if (!res.ok) throw new Error("Failed to generate report");
+  <div id="payrollResult" class="bg-gray-800 p-6 rounded-lg border border-gray-700 hidden">
+    <h2 class="section-title border-b border-gray-600 pb-2 mb-4">Payroll Summary</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full table-auto text-sm text-center">
+        <thead class="bg-gray-700">
+          <tr>
+            <th class="p-2 border">Employee ID</th>
+            <th class="p-2 border">Name</th>
+            <th class="p-2 border">Role</th>
+            <th class="p-2 border">Worked Days</th>
+            <th class="p-2 border">Salary (INR)</th>
+            <th class="p-2 border">Action</th>
+          </tr>
+        </thead>
+        <tbody id="payrollTable" class="text-gray-300"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
 
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "payroll.xlsx";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-        status.textContent = "✅ Report downloaded successfully.";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "❌ Failed to generate payroll report.";
-      }
-    });
-  </script>
+<footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
+  &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+</footer>
+
+<script>
+function logout() {
+  localStorage.removeItem("emp_session");
+  window.location.href = "employee_portal.html";
+}
+
+async function generatePayroll() {
+  const month = document.getElementById("monthPicker").value;
+  if (!month) return alert("Please select a month first.");
+
+  const res = await fetch("/.netlify/functions/generate_payroll", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ month })
+  });
+
+  const data = await res.json();
+  const table = document.getElementById("payrollTable");
+  const resultBox = document.getElementById("payrollResult");
+  table.innerHTML = "";
+  resultBox.classList.remove("hidden");
+
+  data.payroll.forEach(emp => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="border p-2 text-blue-400 underline cursor-pointer" onclick="window.location.href='employee_profile.html?emp_id=${emp.emp_id}'">${emp.emp_id}</td>
+      <td class="border p-2">${emp.name}</td>
+      <td class="border p-2">${emp.role}</td>
+      <td class="border p-2">${emp.days}</td>
+      <td class="border p-2">₹${emp.salary}</td>
+      <td class="border p-2">
+        <button onclick="emailSlip('${emp.emp_id}')" class="bg-blue-600 px-2 py-1 rounded text-xs">Email Slip</button>
+      </td>`;
+    table.appendChild(tr);
+  });
+}
+
+function emailSlip(emp_id) {
+  fetch("/.netlify/functions/email_payslip", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id })
+  })
+  .then(res => res.json())
+  .then(data => alert(data.message || "Payslip sent."))
+  .catch(() => alert("❌ Failed to send email"));
+}
+</script>
 
 </body>
 </html>
-
