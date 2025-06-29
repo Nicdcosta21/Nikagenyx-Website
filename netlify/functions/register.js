@@ -1,4 +1,3 @@
-// netlify/functions/register.js
 const { Pool } = require('pg');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
@@ -20,9 +19,9 @@ exports.handler = async (event) => {
 
   try {
     const data = JSON.parse(event.body);
-    const { firstName, lastName, phone, dob, pin, photo } = data;
+    const { firstName, lastName, phone, dob, pin, photo, department } = data;
 
-    if (!firstName || !lastName || !phone || !dob || !pin || !photo) {
+    if (!firstName || !lastName || !phone || !dob || !pin || !photo || !department) {
       return {
         statusCode: 400,
         body: JSON.stringify({ message: "All fields are required." })
@@ -44,8 +43,8 @@ exports.handler = async (event) => {
     // Save employee + MFA secret
     await pool.query(
       `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64, mfa_secret)
-       VALUES ($1, $2, $3, 'employee', NULL, $4, $5, $6, $7)`,
-      [emp_id, fullName, pin, phone, dob, photo, secret.base32]
+       VALUES ($1, $2, $3, 'employee', $4, $5, $6, $7, $8)`,
+      [emp_id, fullName, pin, department, phone, dob, photo, secret.base32]
     );
 
     return {
@@ -54,7 +53,7 @@ exports.handler = async (event) => {
         message: "Employee registered successfully",
         emp_id,
         qr_code_url,
-        mfa_secret: secret.base32 
+        mfa_secret: secret.base32
       })
     };
 
