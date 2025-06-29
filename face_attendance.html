@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Attendance - Nikagenyx</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+  <h2 class="text-xl font-bold mb-4">Verify Face Attendance</h2>
+
+  <input type="file" accept="image/*" id="upload" class="mb-3" />
+  <button onclick="startVerification()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Start Verification</button>
+
+  <div id="status" class="mt-4 text-sm text-gray-300"></div>
+
+  <script>
+    const knownFaceBase64 = "data:image/jpeg;base64,..."; // Replace with base64 of stored image (e.g. NGX001.jpg)
+
+    function readAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function startVerification() {
+      const file = document.getElementById("upload").files[0];
+      if (!file) return alert("Please upload your photo.");
+
+      const uploadedBase64 = await readAsBase64(file);
+
+      document.getElementById("status").innerText = "🟡 Starting verification...";
+
+      const startRes = await fetch("/.netlify/functions/verify_face_replicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emp_id: "NGX001", // or dynamic
+          uploaded_image_base64: uploadedBase64,
+          reference_image_base64: knownFaceBase64
+        })
+      });
+
+      const data = await startRes.json();
+      if (!data?.prediction?.urls?.get) {
+        document.getElementById("status").innerText = "❌ Failed to start prediction.";
+        return;
+      }
+
+      const pollUrl = data.prediction.urls.get;
+
+      async function poll() {
+        const res = await fetch(pollUrl, {
+          headers: {
+            Authorization: "Token r8_25i8Vqts10lqAb4D597LcmD3kqIxGc43kOg5h",
+            "Content-Type": "application/json"
+          }
+        });
+        const prediction = await res.json();
+
+        if (prediction.status === "succeeded") {
+          const result = prediction.output;
+          document.getElementById("status").innerText =
+            result.verified
+              ? `✅ Match! Distance: ${result.distance}`
+              : `❌ No Match. Distance: ${result.distance}`;
+        } else if (prediction.status === "failed") {
+          document.getElementById("status").innerText = "❌ Prediction failed.";
+        } else {
+          document.getElementById("status").innerText = `⌛ Waiting... Status: ${prediction.status}`;
+          setTimeout(poll, 2000);
+        }
+      }
+
+      poll();
+    }
+  </script>
+</body>
+</html>
