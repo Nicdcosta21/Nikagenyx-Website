@@ -2,45 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Attendance - Nikagenyx</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Attendance - Nikagenyx</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
-    video, canvas { display: block; margin: auto; }
+    video, canvas { display: block; margin: 0 auto; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
 <script>
   const session = localStorage.getItem("emp_session");
-  let currentUser = null;
-  if (!session) {
+  let currentUser = session ? JSON.parse(session) : null;
+  const verifyEmpId = localStorage.getItem("verify_emp_id");
+  const empId = verifyEmpId || (currentUser ? currentUser.emp_id : null);
+  const isAdmin = currentUser && currentUser.role === "admin";
+  const dashboardLink = isAdmin ? "admin_dashboard.html" : "employee_dashboard.html";
+
+  if (!empId) {
+    alert("Session or employee ID not found.");
     window.location.href = "employee_portal.html";
-  } else {
-    currentUser = JSON.parse(session);
   }
 </script>
 
-<!-- Navbar -->
 <nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
   <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
   <ul class="flex gap-6 text-sm">
     <li><a href="employee_portal.html" class="hover:text-purple-400">Employee Portal</a></li>
     <li><a href="update_profile.html" class="hover:text-purple-400">Update Profile</a></li>
     <li><a href="payroll_portal.html" class="hover:text-purple-400">Payroll</a></li>
-    <li><a href="#" onclick="goToDashboard()" class="hover:text-purple-400">Dashboard</a></li>
+    <li><a id="dashLink" href="#" class="hover:text-purple-400">Dashboard</a></li>
     <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
   </ul>
 </nav>
 
-<!-- Main -->
 <main class="flex-grow flex flex-col items-center justify-center text-center p-6">
-  <h2 class="text-2xl font-bold mb-4">Verify Face Attendance</h2>
-  <video id="video" width="320" height="240" autoplay class="rounded border border-gray-600 mb-4"></video>
+  <h1 class="text-xl font-bold mb-6">Verify Face Attendance</h1>
+  <video id="video" width="320" height="240" autoplay class="rounded-lg border border-gray-600 mb-4"></video>
   <canvas id="canvas" width="320" height="240" class="hidden"></canvas>
-  <button onclick="startVerification()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Start Verification</button>
-  <p id="status" class="mt-4 text-sm text-gray-300"></p>
+  <button onclick="captureAndVerify()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Start Verification</button>
+  <p id="statusMsg" class="mt-4 text-sm text-gray-300"></p>
 </main>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm">
@@ -48,53 +50,48 @@
 </footer>
 
 <script>
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const statusMsg = document.getElementById("status");
-
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => { video.srcObject = stream; })
-  .catch(err => {
-    statusMsg.textContent = "❌ Camera access denied.";
-    console.error("Camera error:", err);
-  });
+document.getElementById("dashLink").href = dashboardLink;
 
 function logout() {
   localStorage.removeItem("emp_session");
+  localStorage.removeItem("verify_emp_id");
   window.location.href = "employee_portal.html";
 }
 
-function goToDashboard() {
-  const role = currentUser?.role || "employee";
-  window.location.href = role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
-}
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const statusMsg = document.getElementById("statusMsg");
+const context = canvas.getContext("2d");
 
-function startVerification() {
-  statusMsg.textContent = "📸 Capturing image...";
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const frameBase64 = canvas.toDataURL("image/jpeg").split(',')[1];
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => {
+    console.error("Camera access denied:", err);
+    statusMsg.textContent = "❌ Camera access denied.";
+  });
+
+function captureAndVerify() {
+  statusMsg.textContent = "🔄 Capturing image and submitting for verification...";
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const base64Image = canvas.toDataURL("image/jpeg").split(',')[1];
 
   fetch("/.netlify/functions/verify_face_replicate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      emp_id: currentUser.emp_id,
-      image_base64: frameBase64
-    })
+    body: JSON.stringify({ emp_id: empId, image_base64: base64Image })
   })
   .then(res => res.json())
   .then(data => {
     if (data.status === "submitted" && data.prediction_id) {
-      statusMsg.textContent = "🕒 Verification started...";
+      statusMsg.textContent = "🕒 Submitted. Polling for result...";
       pollPrediction(data.prediction_id);
     } else {
-      statusMsg.textContent = "❌ Failed to start prediction.";
+      statusMsg.textContent = "❌ Submission failed.";
     }
   })
   .catch(err => {
     console.error(err);
-    statusMsg.textContent = "❌ Verification error.";
+    statusMsg.textContent = "❌ Face verification error.";
   });
 }
 
@@ -109,22 +106,20 @@ function pollPrediction(predictionId) {
     .then(data => {
       if (data.status === "succeeded") {
         clearInterval(interval);
-        const match = data.result?.verified;
-        const dist = data.result?.distance?.toFixed(4);
-        statusMsg.textContent = match
-          ? `✅ Face Verified! Distance: ${dist}`
-          : `❌ No Match. Distance: ${dist}`;
+        if (data.result.verified) {
+          statusMsg.textContent = `✅ Face Verified! Distance: ${data.result.distance.toFixed(4)}`;
+          localStorage.removeItem("verify_emp_id");
+        } else {
+          statusMsg.textContent = `❌ Face not matched. Distance: ${data.result.distance.toFixed(4)}`;
+        }
       } else if (data.status === "failed") {
         clearInterval(interval);
         statusMsg.textContent = "❌ Prediction failed.";
-      } else {
-        statusMsg.textContent = "⌛ Verifying...";
       }
     })
-    .catch(err => {
+    .catch(() => {
       clearInterval(interval);
-      console.error(err);
-      statusMsg.textContent = "❌ Polling error.";
+      statusMsg.textContent = "❌ Error during polling.";
     });
   }, 2500);
 }
