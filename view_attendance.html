@@ -8,11 +8,13 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
+  <!-- Navbar -->
   <nav class="bg-gray-800 p-4 flex justify-between items-center">
     <h1 class="text-xl font-bold">Nikagenyx</h1>
     <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded text-sm">Logout</button>
   </nav>
 
+  <!-- Main Content -->
   <main class="flex-grow p-6">
     <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
     <table class="w-full text-left text-sm bg-gray-800 rounded">
@@ -22,20 +24,49 @@
           <th class="p-2">Clock In</th>
           <th class="p-2">Clock Out</th>
           <th class="p-2">Hours</th>
+          <th class="p-2">Status</th>
         </tr>
       </thead>
       <tbody id="attendanceTableBody"></tbody>
+      <tfoot>
+        <tr class="bg-gray-700 text-white text-sm">
+          <td colspan="3" class="p-2 font-bold">Weekly Total</td>
+          <td colspan="2" id="weeklyTotal" class="p-2"></td>
+        </tr>
+      </tfoot>
     </table>
   </main>
 
+  <!-- Footer -->
   <footer class="bg-gray-800 text-center text-xs text-gray-500 py-4">
     &copy; 2025 Nikagenyx Vision Tech Private Limited
   </footer>
 
+  <!-- Script -->
   <script>
     const session = JSON.parse(localStorage.getItem("emp_session"));
-    if (!session?.emp_id) {
+    if (!session?.emp_id) window.location.href = "employee_portal.html";
+
+    function logout() {
+      localStorage.removeItem("emp_session");
       window.location.href = "employee_portal.html";
+    }
+
+    function timeDiff(clockIn, clockOut) {
+      if (!clockIn || !clockOut) return { label: "-", hours: 0, status: "NA" };
+
+      const [h1, m1, s1] = clockIn.split(":").map(Number);
+      const [h2, m2, s2] = clockOut.split(":").map(Number);
+      const inSecs = h1 * 3600 + m1 * 60 + s1;
+      const outSecs = h2 * 3600 + m2 * 60 + s2;
+      const total = outSecs - inSecs;
+      if (total <= 0) return { label: "-", hours: 0, status: "NA" };
+
+      const hrs = Math.floor(total / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      const hoursFloat = total / 3600;
+      const status = hoursFloat < 5 ? "A" : hoursFloat < 7 ? "L" : "P";
+      return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
     }
 
     fetch("/.netlify/functions/get_employee_attendance", {
@@ -46,24 +77,28 @@
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("attendanceTableBody");
+      let totalHours = 0;
+
       if (Array.isArray(data.attendance)) {
         data.attendance.forEach(entry => {
+          const result = timeDiff(entry.clock_in, entry.clock_out);
+          totalHours += result.hours;
+
           const row = document.createElement("tr");
           row.innerHTML = `
             <td class="p-2">${entry.date}</td>
             <td class="p-2">${entry.clock_in || '-'}</td>
             <td class="p-2">${entry.clock_out || '-'}</td>
-            <td class="p-2">${entry.total_hours || '-'}</td>
+            <td class="p-2">${result.label}</td>
+            <td class="p-2">${result.status}</td>
           `;
           tbody.appendChild(row);
         });
       }
-    });
 
-    function logout() {
-      localStorage.removeItem("emp_session");
-      window.location.href = "employee_portal.html";
-    }
+      document.getElementById("weeklyTotal").textContent = `${totalHours.toFixed(2)} hours`;
+    });
   </script>
+
 </body>
 </html>
