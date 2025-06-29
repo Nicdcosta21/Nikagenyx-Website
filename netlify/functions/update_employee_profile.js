@@ -15,9 +15,8 @@ exports.handler = async (event) => {
 
   try {
     const data = JSON.parse(event.body);
-    const { emp_id, name, phone, dob, role, department } = data;
+    const { emp_id, name, phone, dob, role, department, base_salary } = data;
 
-    // Validation
     if (!emp_id || !name) {
       return {
         statusCode: 400,
@@ -25,7 +24,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // Dynamic Update Builder
     const updates = [];
     const values = [];
     let index = 1;
@@ -50,11 +48,12 @@ exports.handler = async (event) => {
       updates.push(`department = $${index++}`);
       values.push(department);
     }
+    if (base_salary !== undefined) {
+      updates.push(`base_salary = $${index++}`);
+      values.push(parseInt(base_salary));
+    }
 
-    // Final binding value
     values.push(emp_id);
-
-    // Run query
     const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
     await pool.query(query, values);
 
