@@ -11,7 +11,7 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
-
+  
 <script>
   const session = localStorage.getItem("emp_session");
   let currentUser = null;
@@ -25,6 +25,7 @@
   }
 </script>
 
+
 <nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
   <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
   <ul class="flex gap-6 text-sm">
@@ -35,7 +36,7 @@
     <li><button onclick="logout()" class="bg-red-600 px-4 py-1 rounded">Logout</button></li>
   </ul>
 </nav>
-
+  
 <main class="p-6 max-w-7xl mx-auto flex-grow">
   <h1 class="text-3xl font-bold mb-4">Admin Dashboard</h1>
   <p class="mb-4 text-gray-300">Welcome, <span id="adminName">Admin</span> 👋</p>
@@ -113,6 +114,15 @@ function changeRole(empId, newRole) {
   });
 }
 
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+  
 function submitEdit(emp_id, name) {
   const phone = document.getElementById("editPhone").value;
   const dob = document.getElementById("editDob").value;
@@ -136,6 +146,7 @@ function submitEdit(emp_id, name) {
     alert("❌ Failed to update profile");
   });
 }
+
 
 window.onload = async () => {
   try {
@@ -251,8 +262,7 @@ tr.querySelector('.edit').addEventListener('click', () => {
       </div>
     </div>`;
   document.body.appendChild(modal);
-      });
-  // ✅ Role options by department
+
   const roleOptions = {
     "Tech Team": [
       "Frontend Developer (Jr. Developer)",
@@ -280,6 +290,16 @@ tr.querySelector('.edit').addEventListener('click', () => {
   const deptDropdown = document.getElementById("editDept");
   const roleDropdown = document.getElementById("editRole");
 
+    function updateRoleDropdown(dept) {
+    roleDropdown.innerHTML = `<option value="">Select Role</option>`;
+    (roleOptions[dept] || []).forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role;
+      opt.textContent = role;
+      roleDropdown.appendChild(opt);
+    });
+  }
+
   // Pre-fill current values
   deptDropdown.value = emp.department || "";
   updateRoleDropdown(emp.department);
@@ -289,15 +309,7 @@ tr.querySelector('.edit').addEventListener('click', () => {
     updateRoleDropdown(e.target.value);
   });
 
-  function updateRoleDropdown(dept) {
-    roleDropdown.innerHTML = `<option value="">Select Role</option>`;
-    (roleOptions[dept] || []).forEach(role => {
-      const opt = document.createElement("option");
-      opt.value = role;
-      opt.textContent = role;
-      roleDropdown.appendChild(opt);
-    });
-  }
+
 });
       const deleteBtn = tr.querySelector('.delete');
       if (emp.emp_id === currentUser.emp_id) {
