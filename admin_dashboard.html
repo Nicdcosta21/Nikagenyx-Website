@@ -8,6 +8,10 @@
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
+    select {
+  position: relative;
+  z-index: 10;
+}
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -64,7 +68,7 @@
   </div>
  <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600 flex items-center gap-4">
   <label for="payrollToggle" class="text-white text-sm">Payroll Mode:</label>
-  <select id="payrollToggle" class="bg-gray-700 text-white border border-gray-600 px-2 py-1 rounded">
+  <select id="payrollToggle" class="bg-gray-800 text-white border border-gray-500 px-3 py-2 rounded outline-none focus:ring-2 focus:ring-purple-500">
     <option value="freelance">Freelance</option>
     <option value="fulltime">Full-Time</option>
   </select>
