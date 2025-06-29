@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance View - Nikagenyx</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+    .day-box { width: 24px; height: 24px; border: 1px solid #4B5563; text-align: center; }
+    .legend span { display: inline-block; margin-right: 12px; }
+    .legend-box { width: 18px; height: 18px; display: inline-block; margin-right: 4px; border: 1px solid #4B5563; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white p-6 min-h-screen">
+
+  <h1 class="text-3xl font-bold mb-4 text-center">📅 Employee Attendance - June 2025</h1>
+
+  <div class="legend mb-4 text-sm text-gray-300">
+    <span><span class="legend-box bg-green-600"></span>Present</span>
+    <span><span class="legend-box bg-yellow-400"></span>Leave</span>
+    <span><span class="legend-box bg-red-500"></span>Absent</span>
+    <span><span class="legend-box bg-blue-400"></span>Holiday</span>
+    <span><span class="legend-box bg-gray-700"></span>NA</span>
+  </div>
+
+  <div id="attendanceTable" class="space-y-6"></div>
+
+  <script>
+    const dummyData = [
+      {
+        name: "NIKOLAS  SAMSON DCOSTA",
+        rank: "PHOTO - Photo Manager",
+        from: "2025-02-21",
+        status: ["P", "P", "P", "L", "A", "P", "P", "P", "P", "A", "P", "P", "P", "P", "H", "P", "P", "P", "P", "P", "L", "A", "P"]
+      },
+      {
+        name: "BARBOSA, PINKSON COLIN",
+        rank: "PHOTO - Photographer",
+        from: "2025-04-01",
+        status: ["P", "A", "P", "P", "L", "P", "P", "P", "P", "P", "P", "P", "H", "P", "P", "P", "A", "P", "P", "P", "P", "P", "P"]
+      }
+      // More records can be added here...
+    ];
+
+    const monthDays = Array.from({ length: 30 }, (_, i) => i + 1); // For June
+
+    function renderAttendance() {
+      const container = document.getElementById("attendanceTable");
+
+      dummyData.forEach((emp, index) => {
+        const section = document.createElement("div");
+        section.className = "border border-gray-700 rounded-md p-4 bg-gray-800";
+
+        section.innerHTML = `
+          <p class="text-sm mb-2 font-semibold">
+            Name: ${emp.name} &nbsp;&nbsp;|&nbsp;&nbsp; Rank: ${emp.rank} &nbsp;&nbsp;|&nbsp;&nbsp; Active From: ${emp.from}
+          </p>
+          <div class="flex gap-1 flex-wrap items-center mb-2">
+            ${monthDays.map((d, i) => {
+              const status = emp.status[i] || "NA";
+              const bg = status === "P" ? "bg-green-600"
+                        : status === "L" ? "bg-yellow-400"
+                        : status === "A" ? "bg-red-500"
+                        : status === "H" ? "bg-blue-400"
+                        : "bg-gray-700";
+              return `<div class="day-box ${bg} text-xs">${d}</div>`;
+            }).join('')}
+          </div>
+          <div class="text-sm text-gray-400">NCs &nbsp; | &nbsp; Recall &nbsp; | &nbsp; Timesheet</div>
+        `;
+
+        container.appendChild(section);
+      });
+    }
+
+    renderAttendance();
+  </script>
+</body>
+</html>
