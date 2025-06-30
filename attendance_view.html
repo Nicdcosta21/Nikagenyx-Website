@@ -212,16 +212,17 @@
       border-radius: 3px;
     }
     /* Individual time slot styling */
-    .time-slot {
-      flex-shrink: 0;
-      width: 14px; /* same as half-hour box width */
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      padding-top: 2px;
-      display: inline-block;
-      user-select: none;
-    }
+.time-slot {
+  flex-shrink: 0;
+  width: 34px;  /* 14px block width * 2 + 2*2px margins = 34px approx */
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding-top: 2px;
+  display: inline-block;
+  user-select: none;
+}
+
 
     /* Responsive tweaks for smaller screens */
     @media (max-width: 768px) {
@@ -319,22 +320,18 @@
   }
 
   // Render the time header above attendance blocks
-  function renderTimeHeader() {
-    const container = document.getElementById("timeHeader");
-    container.innerHTML = "";
+ function renderTimeHeader() {
+  const container = document.getElementById("timeHeader");
+  container.innerHTML = "";
 
-    // Each hour has two half-hour slots: 00:00, 00:30, ..., 23:30 = 48 total
-    for(let i = 0; i < 48; i++) {
-      const timeSlot = document.createElement("div");
-      const hour = Math.floor(i / 2);
-      const min = i % 2 === 0 ? "00" : "30";
-
-      timeSlot.textContent = `${hour.toString().padStart(2, "0")}:${min}`;
-      timeSlot.className = "time-slot";
-
-      container.appendChild(timeSlot);
-    }
+  // Only render full hours, 24 labels
+  for (let h = 0; h < 24; h++) {
+    const label = document.createElement("div");
+    label.textContent = h.toString().padStart(2, "0"); // "00", "01", ...
+    label.className = "time-slot";
+    container.appendChild(label);
   }
+}
 
   // Load and display attendance data for selected month and date
   async function loadAttendance() {
