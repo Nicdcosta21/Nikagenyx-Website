@@ -139,6 +139,7 @@ document.getElementById("profileForm").addEventListener("submit", async function
     const contentType = res.headers.get("content-type");
     const result = contentType && contentType.includes("application/json") ? await res.json() : {};
     alert(result.message || "Profile updated successfully");
+    location.reload();  // Reload page after success
   } catch (err) {
     alert("Error updating profile");
     console.error(err);
