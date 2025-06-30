@@ -16,23 +16,29 @@ exports.handler = async (event, context) => {
     const targetMonth = `${year}-${paddedMonth}`;
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    // Fetch employees
-    const empRes = await client.query('SELECT emp_id, name, role, department, join_date FROM employees');
+    // Fetch employees (no join_date to avoid DB error)
+    const empRes = await client.query(
+      'SELECT emp_id, name, role, department FROM employees'
+    );
     const employees = empRes.rows;
 
     // Fetch all attendance records for this month
-    const attRes = await client.query(`
-      SELECT emp_id, date, clock_in, clock_out
-      FROM attendance
-      WHERE to_char(date, 'YYYY-MM') = $1
-    `, [targetMonth]);
+    const attRes = await client.query(
+      `SELECT emp_id, date, clock_in, clock_out
+       FROM attendance
+       WHERE to_char(date, 'YYYY-MM') = $1`,
+      [targetMonth]
+    );
 
     // Structure: { emp_id => [ [48], [48], ..., [48] ] }
     const logsByEmp = {};
     employees.forEach(emp => {
-      logsByEmp[emp.emp_id] = Array.from({ length: daysInMonth }, () => Array(48).fill("NA"));
+      logsByEmp[emp.emp_id] = Array.from({ length: daysInMonth }, () =>
+        Array(48).fill("NA")
+      );
     });
 
+    // Fill attendance blocks
     attRes.rows.forEach(({ emp_id, date, clock_in, clock_out }) => {
       if (!logsByEmp[emp_id] || !clock_in || !clock_out) return;
 
@@ -52,21 +58,22 @@ exports.handler = async (event, context) => {
       name: emp.name,
       role: emp.role,
       department: emp.department,
-      from: emp.join_date || "",
+      from: "2025-01-01", // default value since join_date is not available
       status: logsByEmp[emp.emp_id]
     }));
 
     await client.end();
+
     return {
       statusCode: 200,
-      body: JSON.stringify(result)
+      body: JSON.stringify({ data: result })
     };
 
   } catch (err) {
-    console.error("Error fetching attendance:", err);
+    console.error("❌ DB ERROR:", err.message, err.stack);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Internal Server Error" })
+      body: JSON.stringify({ error: err.message })
     };
   }
 };
