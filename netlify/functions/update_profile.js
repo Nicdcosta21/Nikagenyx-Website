@@ -1,4 +1,4 @@
-const { IncomingForm } = require("formidable-serverless");
+const { IncomingForm } = require("formidable");
 const { Readable } = require("stream");
 
 exports.handler = async (event) => {
