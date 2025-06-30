@@ -16,21 +16,19 @@ exports.handler = async (event, context) => {
     const targetMonth = `${year}-${paddedMonth}`;
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    // ✅ FIXED: Removed `join_date`
+    // ✅ DO NOT use join_date
     const empRes = await client.query(`
       SELECT emp_id, name, role, department FROM employees
     `);
     const employees = empRes.rows;
-
-    console.log("✅ Total employees found:", employees.length);
+    console.log("✅ Employees:", employees.length);
 
     const attRes = await client.query(`
       SELECT emp_id, date, clock_in, clock_out
       FROM attendance
       WHERE to_char(date, 'YYYY-MM') = $1
     `, [targetMonth]);
-
-    console.log("✅ Attendance entries found:", attRes.rows.length);
+    console.log("✅ Attendance records:", attRes.rows.length);
 
     const logsByEmp = {};
     employees.forEach(emp => {
@@ -70,7 +68,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (err) {
-    console.error("❌ DB ERROR:", err.message, err.stack);
+    console.error("❌ Server error:", err.message, err.stack);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
