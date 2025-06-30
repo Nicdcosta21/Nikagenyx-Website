@@ -310,47 +310,68 @@
       }
 
       data.forEach(emp => {
-        const row = document.createElement("div");
-        row.className = "employee-row";
+  const row = document.createElement("div");
+  row.className = "employee-row";
 
-        const header = document.createElement("div");
-        header.className = "employee-header";
-        header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
-        row.appendChild(header);
+  const header = document.createElement("div");
+  header.className = "employee-header";
+  header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
+  row.appendChild(header);
 
-        const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
+  // Create time header container inside employee row
+  const timeHeader = document.createElement("div");
+  timeHeader.style.display = "flex";
+  timeHeader.style.justifyContent = "center";
+  timeHeader.style.marginBottom = "6px";
+  timeHeader.style.paddingLeft = "1.5rem"; // align with blocks padding/margin
 
-        blocks.forEach((code, idx) => {
-          const box = document.createElement("div");
-          box.className = `half-hour-box ${code}`;
-          box.title = `${code} - Slot ${idx + 1}`;
-          box.dataset.empId = emp.emp_id;
-          box.dataset.slot = idx;
-          box.dataset.date = selectedDate;
-          box.dataset.code = code;
+  // Add 24 hour labels, spaced every 2 blocks (each block = 30 min)
+  for (let h = 0; h < 24; h++) {
+    const timeSlot = document.createElement("div");
+    timeSlot.textContent = h.toString().padStart(2, "0") + ":00";
+    timeSlot.style.width = "28px"; // 2x half-hour block width + margins
+    timeSlot.style.textAlign = "center";
+    timeSlot.style.fontSize = "12px";
+    timeSlot.style.color = "#94a3b8";
+    timeSlot.style.userSelect = "none";
+    timeHeader.appendChild(timeSlot);
+  }
+  row.appendChild(timeHeader);
 
-          box.onclick = () => {
-            if(box.dataset.code === "P") {
-              box.dataset.code = "A";
-              box.className = "half-hour-box A";
-            } else {
-              box.dataset.code = "P";
-              box.className = "half-hour-box P";
-            }
-            showConfirmButton(row, emp.emp_id);
-          };
+  const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
 
-          row.appendChild(box);
-        });
+  blocks.forEach((code, idx) => {
+    const box = document.createElement("div");
+    box.className = `half-hour-box ${code}`;
+    box.title = `${code} - Slot ${idx + 1}`;
+    box.dataset.empId = emp.emp_id;
+    box.dataset.slot = idx;
+    box.dataset.date = selectedDate;
+    box.dataset.code = code;
 
-        const confirmBtn = document.createElement("button");
-        confirmBtn.textContent = "Confirm Changes";
-        confirmBtn.className = "confirm-btn hidden";
-        confirmBtn.onclick = () => submitChanges(emp.emp_id, row);
-        row.appendChild(confirmBtn);
+    box.onclick = () => {
+      if (box.dataset.code === "P") {
+        box.dataset.code = "A";
+        box.className = "half-hour-box A";
+      } else {
+        box.dataset.code = "P";
+        box.className = "half-hour-box P";
+      }
+      showConfirmButton(row, emp.emp_id);
+    };
 
-        container.appendChild(row);
-      });
+    row.appendChild(box);
+  });
+
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "Confirm Changes";
+  confirmBtn.className = "confirm-btn hidden";
+  confirmBtn.onclick = () => submitChanges(emp.emp_id, row);
+  row.appendChild(confirmBtn);
+
+  container.appendChild(row);
+});
+
     } catch (error) {
       container.innerHTML = `<p class="text-red-500 text-center">Error loading attendance data: ${error.message}</p>`;
     }
