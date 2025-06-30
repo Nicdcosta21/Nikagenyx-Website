@@ -65,8 +65,15 @@
       const container = document.getElementById("attendanceGrid");
       container.innerHTML = "";
 
-      const days = daysInMonth(currentMonth, currentYear);
-      const url = "/.netlify/functions/get_attendance_calendar";
+      const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+      }
+
+      const json = await response.json();
+
       let data = [];
 
       try {
