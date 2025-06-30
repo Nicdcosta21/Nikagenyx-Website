@@ -1,4 +1,5 @@
 const { IncomingForm } = require("formidable-serverless");
+const { Readable } = require("stream");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -8,39 +9,37 @@ exports.handler = async (event) => {
     };
   }
 
-  // Decode body according to encoding flag
+  // Convert body buffer into a readable stream
   const bodyBuffer = event.isBase64Encoded
     ? Buffer.from(event.body, "base64")
     : Buffer.from(event.body);
 
-  return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // max 1MB
+  // Create a readable stream from buffer for formidable
+  const reqStream = new Readable();
+  reqStream.push(bodyBuffer);
+  reqStream.push(null); // End of stream
 
-    form.parse(
-      {
-        headers: event.headers,
-        method: event.httpMethod,
-        url: event.path,
-        rawBody: bodyBuffer,
-      },
-      (err, fields, files) => {
-        if (err) {
-          console.error("❌ Form parse failed:", err);
-          return resolve({
-            statusCode: 500,
-            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
-          });
-        }
-        // Return parsed fields and file names for debugging/demo
+  return new Promise((resolve) => {
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB limit
+
+    form.parse(reqStream, (err, fields, files) => {
+      if (err) {
+        console.error("❌ Form parse failed:", err);
         return resolve({
-          statusCode: 200,
-          body: JSON.stringify({
-            message: "Form parsed successfully",
-            fields,
-            files: Object.keys(files),
-          }),
+          statusCode: 500,
+          body: JSON.stringify({ error: "Form parse failed", message: err.message }),
         });
       }
-    );
+
+      // For debugging/demo: return fields and uploaded file names
+      return resolve({
+        statusCode: 200,
+        body: JSON.stringify({
+          message: "Form parsed successfully",
+          fields,
+          files: Object.keys(files),
+        }),
+      });
+    });
   });
 };
