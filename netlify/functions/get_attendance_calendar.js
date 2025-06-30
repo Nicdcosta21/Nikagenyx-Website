@@ -16,21 +16,22 @@ exports.handler = async (event, context) => {
     const targetMonth = `${year}-${paddedMonth}`;
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    // Fetch employees (no join_date to avoid DB error)
-    const empRes = await client.query(
-      'SELECT emp_id, name, role, department FROM employees'
-    );
+    // ✅ FIXED: Removed `join_date`
+    const empRes = await client.query(`
+      SELECT emp_id, name, role, department FROM employees
+    `);
     const employees = empRes.rows;
 
-    // Fetch all attendance records for this month
-    const attRes = await client.query(
-      `SELECT emp_id, date, clock_in, clock_out
-       FROM attendance
-       WHERE to_char(date, 'YYYY-MM') = $1`,
-      [targetMonth]
-    );
+    console.log("✅ Total employees found:", employees.length);
 
-    // Structure: { emp_id => [ [48], [48], ..., [48] ] }
+    const attRes = await client.query(`
+      SELECT emp_id, date, clock_in, clock_out
+      FROM attendance
+      WHERE to_char(date, 'YYYY-MM') = $1
+    `, [targetMonth]);
+
+    console.log("✅ Attendance entries found:", attRes.rows.length);
+
     const logsByEmp = {};
     employees.forEach(emp => {
       logsByEmp[emp.emp_id] = Array.from({ length: daysInMonth }, () =>
@@ -38,7 +39,6 @@ exports.handler = async (event, context) => {
       );
     });
 
-    // Fill attendance blocks
     attRes.rows.forEach(({ emp_id, date, clock_in, clock_out }) => {
       if (!logsByEmp[emp_id] || !clock_in || !clock_out) return;
 
@@ -58,7 +58,7 @@ exports.handler = async (event, context) => {
       name: emp.name,
       role: emp.role,
       department: emp.department,
-      from: "2025-01-01", // default value since join_date is not available
+      from: "2025-01-01", // placeholder
       status: logsByEmp[emp.emp_id]
     }));
 
