@@ -1,11 +1,11 @@
-const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
+
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -13,69 +13,60 @@ exports.handler = async (event, context) => {
     };
   }
 
-  return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB
+  try {
+    const data = JSON.parse(event.body);
+    const { emp_id, name, phone, dob, role, department, base_salary } = data;
 
-    form.parse(event, async (err, fields, files) => {
-      if (err) {
-        console.error("❌ Form parse error:", err);
-        return resolve({
-          statusCode: 500,
-          body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
-        });
-      }
+    if (!emp_id || !name) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Employee ID and Name are required." }),
+      };
+    }
 
-      try {
-        const { emp_id, phone, dob, role, department, new_pin } = fields;
+    const updates = [];
+    const values = [];
+    let index = 1;
 
-        if (!emp_id) {
-          return resolve({
-            statusCode: 400,
-            body: JSON.stringify({ message: "Missing employee ID" }),
-          });
-        }
+    if (name) {
+      updates.push(`name = $${index++}`);
+      values.push(name);
+    }
+    if (phone) {
+      updates.push(`phone = $${index++}`);
+      values.push(phone);
+    }
+    if (dob) {
+      updates.push(`dob = $${index++}`);
+      values.push(dob);
+    }
+    if (role) {
+      updates.push(`role = $${index++}`);
+      values.push(role);
+    }
+    if (department) {
+      updates.push(`department = $${index++}`);
+      values.push(department);
+    }
+    if (base_salary !== undefined) {
+      updates.push(`base_salary = $${index++}`);
+      values.push(parseInt(base_salary));
+    }
 
-        const updates = [];
-        const values = [];
-        let i = 1;
+    values.push(emp_id);
+    const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
+    await pool.query(query, values);
 
-        if (phone) {
-          updates.push(`phone = $${i++}`);
-          values.push(phone);
-        }
-        if (dob) {
-          updates.push(`dob = $${i++}`);
-          values.push(dob);
-        }
-        if (role) {
-          updates.push(`role = $${i++}`);
-          values.push(role);
-        }
-        if (department) {
-          updates.push(`department = $${i++}`);
-          values.push(department);
-        }
-        if (new_pin) {
-          updates.push(`pin = $${i++}`);
-          values.push(new_pin);
-        }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: "Profile updated successfully" }),
+    };
 
-        values.push(emp_id); // for WHERE clause
-        const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${i}`;
-        await pool.query(query, values);
-
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify({ message: "Profile updated successfully" }),
-        });
-
-      } catch (e) {
-        console.error("❌ Update error:", e);
-        resolve({
-          statusCode: 500,
-          body: JSON.stringify({ message: "Server error", error: e.message }),
-        });
-      }
-    });
-  });
+  } catch (err) {
+    console.error("❌ Update error:", err.message);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Server error", error: err.message }),
+    };
+  }
 };
