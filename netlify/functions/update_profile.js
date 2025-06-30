@@ -52,12 +52,12 @@ exports.handler = async (event) => {
         let idx = 1;
 
         // Text fields update
-        ["phone", "dob", "role", "department", "new_pin"].forEach(field => {
-          if (fields[field] && fields[field].trim() !== "") {
-            updates.push(`${field === "new_pin" ? "pin" : field} = $${idx++}`);
-            values.push(fields[field].trim());
-          }
-        });
+        ["phone", "dob", "role", "department", "new_pin"].forEach((field) => {
+          if (typeof fields[field] === "string" && fields[field].trim() !== "") {
+          updates.push(`${field === "new_pin" ? "pin" : field} = $${idx++}`);
+          values.push(fields[field].trim());
+        }
+      });
 
         // File fields - store filename references in DB
         ["pan", "aadhaar", "resume", "qualification", "photo", "passport"].forEach(fileField => {
