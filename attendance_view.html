@@ -62,30 +62,30 @@
     }
 
     async function loadAttendance() {
-      const container = document.getElementById("attendanceGrid");
-      container.innerHTML = "";
+  const container = document.getElementById("attendanceGrid");
+  container.innerHTML = "";
 
-      const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+  const days = daysInMonth(currentMonth, currentYear);
+  const url = "/.netlify/functions/get_attendance_calendar"; // ✅ Add this line
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
-      }
+  let data = [];
 
-      const json = await response.json();
+  try {
+    const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
 
-      let data = [];
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server responded with ${response.status}: ${errorText}`);
+    }
 
-      try {
-        const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-        const json = await response.json();
-        data = json.data || [];
-        console.log("✅ Fetched attendance data:", data);
-      } catch (e) {
-        console.error("❌ Failed to load attendance data:", e);
-        container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data. Check server logs or network connection.</p>`;
-        return;
-      }
+    const json = await response.json();
+    data = json.data || [];
+    console.log("✅ Fetched attendance data:", data);
+  } catch (e) {
+    console.error("❌ Failed to load attendance data:", e.message);
+    container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data: ${e.message}</p>`;
+    return;
+  }
 
       data.forEach(emp => {
         const row = document.createElement("div");
