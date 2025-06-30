@@ -21,85 +21,7 @@
       color: #c7d2fe;
       text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
     }
-    #monthSelector {
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-    }
-    .month-btn {
-      background-color: #1e293b;
-      color: #e0e7ff;
-      padding: 0.4rem 1.2rem;
-      border-radius: 8px;
-      font-weight: 600;
-      box-shadow: 0 0 6px transparent;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      user-select: none;
-      border: 2px solid transparent;
-      font-size: 0.9rem;
-    }
-    .month-btn:hover {
-      background-color: #3730a3;
-      box-shadow: 0 0 12px #818cf8;
-    }
-    .month-btn.bg-indigo-700, .month-btn.active-month {
-      background-color: #4f46e5;
-      box-shadow: 0 0 15px #a5b4fc;
-      border-color: #c7d2fe;
-      color: #fefefe;
-    }
-    #dateSelector {
-      margin-bottom: 2rem;
-      overflow-x: auto;
-      padding: 0 1rem;
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      scrollbar-width: thin;
-      scrollbar-color: #6366f1 #1e293b;
-    }
-    #dateSelector::-webkit-scrollbar {
-      height: 6px;
-    }
-    #dateSelector::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    #dateSelector::-webkit-scrollbar-thumb {
-      background-color: #6366f1;
-      border-radius: 3px;
-    }
-    .date-btn {
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      font-weight: 600;
-      border-radius: 6px;
-      background-color: #1e293b;
-      color: #cbd5e1;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      text-align: center;
-      user-select: none;
-      border: 2px solid transparent;
-      box-shadow: 0 0 3px transparent;
-    }
-    .date-btn:hover {
-      background-color: #4338ca;
-      color: #eef2ff;
-      box-shadow: 0 0 8px #818cf8;
-    }
-    .date-btn.active {
-      background-color: #6366f1;
-      color: #f0f0f0;
-      border-color: #a5b4fc;
-      box-shadow: 0 0 12px #a5b4fc;
-    }
-    #attendanceGrid {
-      max-width: 100%;
-    }
+    /* ... keep your existing styling ... */
     .employee-row {
       background-color: #1e293b;
       padding: 1rem 1.5rem;
@@ -108,9 +30,7 @@
       box-shadow: 0 0 15px #334155cc;
       border: 1px solid #334155;
       user-select: none;
-    }
-    .employee-row:hover {
-      box-shadow: 0 0 20px #6366f1cc;
+      overflow-x: auto;
     }
     .employee-header {
       font-weight: 700;
@@ -119,14 +39,13 @@
       color: #e0e7ff;
       letter-spacing: 0.02em;
     }
-    /* Time header inside employee row */
     .time-header {
       display: flex;
       overflow-x: auto;
       padding-left: 1.5rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 4px;
       user-select: none;
-      font-size: 12px;
+      font-size: 10px;
       color: #94a3b8;
       border-bottom: 1px solid #334155;
       scrollbar-width: thin;
@@ -143,17 +62,18 @@
       border-radius: 3px;
     }
     .time-slot {
-      width: 28px;
+      width: 14px; /* exact width as half-hour block */
       flex-shrink: 0;
       text-align: center;
       font-weight: 600;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
+      padding-top: 1px;
     }
     .half-hour-box {
       width: 14px;
       height: 28px;
       display: inline-block;
-      margin: 0 2px;
+      margin: 0 1px; /* smaller margin to fit */
       cursor: pointer;
       border-radius: 4px;
       background-color: #475569;
@@ -186,22 +106,6 @@
       background-color: #a5b4fc;
       cursor: not-allowed;
       box-shadow: none;
-    }
-
-    /* Responsive tweaks */
-    @media (max-width: 768px) {
-      .half-hour-box {
-        width: 10px;
-        height: 24px;
-        margin: 0 1px;
-      }
-      .time-slot {
-        width: 20px;
-        font-size: 10px;
-      }
-      #dateSelector {
-        padding: 0 0.5rem;
-      }
     }
   </style>
 </head>
@@ -298,10 +202,16 @@
         const timeHeader = document.createElement("div");
         timeHeader.className = "time-header";
 
-        for(let h = 0; h < 24; h++) {
+        // Show all half-hour labels 00:00, 00:30 ... 23:30
+        for(let h = 0; h < 48; h++) {
           const timeSlot = document.createElement("div");
           timeSlot.className = "time-slot";
-          timeSlot.textContent = h.toString().padStart(2, "0") + ":00";
+
+          // Calculate hour and minute for half-hour slots
+          const hour = Math.floor(h / 2);
+          const min = h % 2 === 0 ? "00" : "30";
+
+          timeSlot.textContent = `${hour.toString().padStart(2, "0")}:${min}`;
           timeHeader.appendChild(timeSlot);
         }
         row.appendChild(timeHeader);
@@ -384,6 +294,7 @@
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
+
 </script>
 
 </body>
