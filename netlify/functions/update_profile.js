@@ -1,5 +1,7 @@
 const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
+
+// Setup PostgreSQL pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -13,23 +15,23 @@ exports.handler = async (event) => {
     };
   }
 
+  // Required for parsing FormData in Netlify functions
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB max
 
-    // For Netlify to work, use event.rawBody and event.headers
     form.parse(
       {
         headers: event.headers,
         method: event.httpMethod,
         url: event.path,
-        buffer: Buffer.from(event.body, "base64"),
+        buffer: Buffer.from(event.body, "base64"), // ✅ Netlify requires base64 decode
       },
       async (err, fields, files) => {
         if (err) {
-          console.error("❌ Form parse error:", err);
+          console.error("❌ Formidable parsing error:", err);
           return resolve({
             statusCode: 500,
-            body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
+            body: JSON.stringify({ message: "Failed to parse form", error: err.message }),
           });
         }
 
@@ -39,7 +41,7 @@ exports.handler = async (event) => {
           if (!emp_id) {
             return resolve({
               statusCode: 400,
-              body: JSON.stringify({ message: "Missing employee ID" }),
+              body: JSON.stringify({ message: "Employee ID is required" }),
             });
           }
 
@@ -68,6 +70,13 @@ exports.handler = async (event) => {
             values.push(new_pin);
           }
 
+          if (updates.length === 0) {
+            return resolve({
+              statusCode: 400,
+              body: JSON.stringify({ message: "No fields provided for update" }),
+            });
+          }
+
           values.push(emp_id);
           const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${i}`;
           await pool.query(query, values);
@@ -76,12 +85,11 @@ exports.handler = async (event) => {
             statusCode: 200,
             body: JSON.stringify({ message: "Profile updated successfully" }),
           });
-
-        } catch (error) {
-          console.error("❌ Update error:", error);
+        } catch (e) {
+          console.error("❌ DB update failed:", e);
           resolve({
             statusCode: 500,
-            body: JSON.stringify({ message: "Server error", error: error.message }),
+            body: JSON.stringify({ message: "Server error", error: e.message }),
           });
         }
       }
