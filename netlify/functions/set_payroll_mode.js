@@ -1,4 +1,8 @@
 const { Pool } = require('pg');
+
+const verify = require('./verifySession');
+try { verify(event); } catch { return { statusCode: 401 }; }
+
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
