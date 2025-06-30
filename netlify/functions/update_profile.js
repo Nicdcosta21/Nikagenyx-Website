@@ -22,7 +22,7 @@ exports.handler = async (event) => {
   mockReq.url = event.path;
 
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024, allowEmptyFiles: true });
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024, allowEmptyFiles: true, minFileSize: 0 });
 
     form.parse(mockReq, async (err, fields, files) => {
       if (err) {
