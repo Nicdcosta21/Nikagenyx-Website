@@ -13,16 +13,14 @@ exports.handler = async (event) => {
     ? Buffer.from(event.body, "base64")
     : Buffer.from(event.body);
 
-  // Create a readable stream from the buffer
   const reqStream = new Readable();
   reqStream.push(bodyBuffer);
   reqStream.push(null);
 
-  // Attach headers to the stream for formidable
   reqStream.headers = event.headers;
 
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 });
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // max 1MB
 
     form.parse(reqStream, (err, fields, files) => {
       if (err) {
@@ -31,6 +29,23 @@ exports.handler = async (event) => {
           statusCode: 500,
           body: JSON.stringify({ error: "Form parse failed", message: err.message }),
         });
+      }
+
+      // Validate all uploaded files (if any) have size > 0 and <= 1MB
+      for (const key in files) {
+        const file = files[key];
+        if (file.size === 0) {
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ message: `Uploaded file "${key}" is empty.` }),
+          });
+        }
+        if (file.size > 1024 * 1024) {
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ message: `Uploaded file "${key}" exceeds 1MB.` }),
+          });
+        }
       }
 
       resolve({
