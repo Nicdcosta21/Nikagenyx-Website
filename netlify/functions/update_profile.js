@@ -1,7 +1,7 @@
 const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 
-// Configure PostgreSQL connection pool
+// PostgreSQL pool setup
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -15,7 +15,7 @@ exports.handler = async (event) => {
     };
   }
 
-  // Decode body according to base64 flag
+  // Decode body according to encoding flag
   const bodyBuffer = event.isBase64Encoded
     ? Buffer.from(event.body, "base64")
     : Buffer.from(event.body);
@@ -40,7 +40,7 @@ exports.handler = async (event) => {
         }
 
         const { emp_id } = fields;
-        if (!emp_id) {
+        if (!emp_id || emp_id.trim() === "") {
           return resolve({
             statusCode: 400,
             body: JSON.stringify({ message: "Missing employee ID" }),
@@ -55,12 +55,13 @@ exports.handler = async (event) => {
           // Update only non-empty text fields
           ["phone", "dob", "role", "department", "new_pin"].forEach((field) => {
             if (fields[field] && fields[field].trim() !== "") {
-              updates.push(`${field === "new_pin" ? "pin" : field} = $${index++}`);
+              const dbField = field === "new_pin" ? "pin" : field;
+              updates.push(`${dbField} = $${index++}`);
               values.push(fields[field].trim());
             }
           });
 
-          // Update file name fields if file size > 0 and within 1MB limit
+          // Update file name fields if file size > 0 and <= 1MB
           ["pan", "aadhaar", "resume", "qualification", "photo", "passport"].forEach((fileField) => {
             const file = files[fileField];
             if (file && file.size > 0 && file.size <= 1024 * 1024) {
