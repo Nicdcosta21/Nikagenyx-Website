@@ -93,19 +93,33 @@ const rolesByDept = {
   ]
 };
 
-document.getElementById("department").addEventListener("change", function () {
-  const roleSelect = document.getElementById("role");
-  const selectedDept = this.value;
-  roleSelect.innerHTML = `<option value="">Select Role</option>`;
-  if (rolesByDept[selectedDept]) {
-    rolesByDept[selectedDept].forEach(role => {
-      const opt = document.createElement("option");
-      opt.value = role;
-      opt.textContent = role;
-      roleSelect.appendChild(opt);
+document.getElementById("profileForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  if (session?.emp_id) formData.append("emp_id", session.emp_id);
+
+  try {
+    const res = await fetch("/.netlify/functions/update_profile", {
+      method: "POST",
+      body: formData,
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Server error response:", errText);
+      alert("Server error updating profile.");
+      return;
+    }
+
+    const result = await res.json();
+    alert(result.message || "Profile updated successfully");
+  } catch (err) {
+    alert("Error updating profile");
+    console.error(err);
   }
 });
+
 
 function validateSize(input) {
   const maxKB = 1024;
