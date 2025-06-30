@@ -67,7 +67,9 @@
 
       try {
         const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-        data = await res.json();
+        const json = await res.json();
+        data = json.data || []; // ✅ fixed variable declaration
+        console.log("Attendance data:", data);
       } catch (e) {
         console.error("Error loading attendance, fallback to dummy data.");
         data = [
