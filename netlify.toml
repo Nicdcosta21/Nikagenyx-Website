@@ -4,5 +4,8 @@
   functions = "netlify/functions"
 
 [functions]
+  node_bundler = "esbuild"
+
+[functions."*"]
   memory = 1024
-  timeout = 30  
+  timeout = 30
