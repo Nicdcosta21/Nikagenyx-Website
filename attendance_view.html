@@ -382,36 +382,53 @@ button.confirm-btn:disabled {
 
         // Render the time header inside each employee row, aligned with blocks
         const timeHeader = document.createElement("div");
-        timeHeader.style.display = "flex";
-        timeHeader.style.justifyContent = "flex-start";
-        timeHeader.style.overflowX = "auto";
-        timeHeader.style.whiteSpace = "nowrap";
-        timeHeader.style.userSelect = "none";
-        timeHeader.style.fontSize = "12px";
-        timeHeader.style.color = "#94a3b8";
-        timeHeader.style.borderBottom = "1px solid #334155";
-        timeHeader.style.paddingBottom = "4px";
-        timeHeader.style.paddingLeft = "1.5rem";  // align with attendance blocks padding
+        timeHeader.style.cssText = `
+          display: flex;
+          justify-content: flex-start;
+          overflow-x: auto;
+          white-space: nowrap;
+          user-select: none;
+          font-size: 12px;
+          color: rgb(148, 163, 184);
+          border-bottom: 1px solid rgb(51, 65, 85);
+          padding-bottom: 4px;
+          padding-left: 0.3rem;
+          font-family: monospace;
+        `;
 
-        // Add half-hour labels for 48 slots
-        for (let i = 0; i < 48; i++) {
-          const timeSlot = document.createElement("div");
-          const hour = Math.floor(i / 2);
-          const min = i % 2 === 0 ? "00" : "30";
+// Render hours 00 to 23 with pipe separators '|'
+for (let h = 0; h < 24; h++) {
+  const hourDiv = document.createElement("div");
+  hourDiv.style.cssText = `
+    width: 28px;
+    flex-shrink: 0;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding-top: 2px;
+    user-select: none;
+  `;
+  hourDiv.textContent = h.toString().padStart(2, "0");
+  timeHeader.appendChild(hourDiv);
 
-          timeSlot.textContent = `${hour.toString().padStart(2, "0")}:${min}`;
-          timeSlot.style.width = "14px";  // matches block width
-          timeSlot.style.flexShrink = "0";
-          timeSlot.style.textAlign = "center";
-          timeSlot.style.fontWeight = "600";
-          timeSlot.style.letterSpacing = "0.02em";
-          timeSlot.style.paddingTop = "2px";
-          timeSlot.style.userSelect = "none";
+  // Separator pipe except after last hour
+  if (h !== 23) {
+    const sepDiv = document.createElement("div");
+    sepDiv.style.cssText = `
+      width: 7px;
+      flex-shrink: 0;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding-top: 2px;
+      user-select: none;
+    `;
+    sepDiv.textContent = "|";
+    timeHeader.appendChild(sepDiv);
+  }
+}
 
-          timeHeader.appendChild(timeSlot);
-        }
-
-        row.appendChild(timeHeader);
+row.appendChild(timeHeader);
 
         // Get attendance blocks for the selected date or fill with 'NA'
         const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
