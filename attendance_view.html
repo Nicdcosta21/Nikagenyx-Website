@@ -114,9 +114,39 @@
     }
     .employee-header {
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       font-size: 1.1rem;
       color: #e0e7ff;
+      letter-spacing: 0.02em;
+    }
+    /* Time header inside employee row */
+    .time-header {
+      display: flex;
+      overflow-x: auto;
+      padding-left: 1.5rem;
+      margin-bottom: 0.75rem;
+      user-select: none;
+      font-size: 12px;
+      color: #94a3b8;
+      border-bottom: 1px solid #334155;
+      scrollbar-width: thin;
+      scrollbar-color: #6366f1 #1e293b;
+    }
+    .time-header::-webkit-scrollbar {
+      height: 6px;
+    }
+    .time-header::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    .time-header::-webkit-scrollbar-thumb {
+      background-color: #6366f1;
+      border-radius: 3px;
+    }
+    .time-slot {
+      width: 28px;
+      flex-shrink: 0;
+      text-align: center;
+      font-weight: 600;
       letter-spacing: 0.02em;
     }
     .half-hour-box {
@@ -158,41 +188,6 @@
       box-shadow: none;
     }
 
-    /* Time Header Styles */
-    #timeHeader {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 8px;
-      padding-left: 1.5rem;
-      overflow-x: auto;
-      user-select: none;
-      font-size: 12px;
-      color: #94a3b8;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 4px;
-      scrollbar-width: thin;
-      scrollbar-color: #6366f1 #1e293b;
-    }
-    #timeHeader::-webkit-scrollbar {
-      height: 6px;
-    }
-    #timeHeader::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    #timeHeader::-webkit-scrollbar-thumb {
-      background-color: #6366f1;
-      border-radius: 3px;
-    }
-    .time-slot {
-      width: 28px;
-      flex-shrink: 0;
-      text-align: center;
-      font-weight: 600;
-      user-select: none;
-      padding-top: 2px;
-      letter-spacing: 0.02em;
-    }
-
     /* Responsive tweaks */
     @media (max-width: 768px) {
       .half-hour-box {
@@ -217,9 +212,6 @@
   <div id="monthSelector"></div>
 
   <div id="dateSelector"></div>
-
-  <!-- Time header -->
-  <div id="timeHeader"></div>
 
   <div id="attendanceGrid"></div>
 
@@ -251,7 +243,6 @@
         selectedDate = 1;
         renderMonthSelector();
         renderDateSelector();
-        renderTimeHeader();
         loadAttendance();
       };
       container.appendChild(btn);
@@ -273,21 +264,6 @@
         loadAttendance();
       };
       container.appendChild(btn);
-    }
-  }
-
-  // Render the time header above attendance blocks
-  function renderTimeHeader() {
-    const container = document.getElementById("timeHeader");
-    container.innerHTML = "";
-    // 24 hours, each hour = 2 half-hour blocks, total 48 slots
-    for(let h = 0; h < 24; h++) {
-      const label = document.createElement("div");
-      // Format time with leading zero
-      const hourStr = h.toString().padStart(2, "0") + ":00";
-      label.className = "time-slot";
-      label.textContent = hourStr;
-      container.appendChild(label);
     }
   }
 
@@ -318,22 +294,14 @@
         header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
         row.appendChild(header);
 
-        // Create time header container inside employee row
+        // Time labels container inside employee row (under header)
         const timeHeader = document.createElement("div");
-        timeHeader.style.display = "flex";
-        timeHeader.style.justifyContent = "center";
-        timeHeader.style.marginBottom = "6px";
-        timeHeader.style.paddingLeft = "1.5rem"; // align with blocks padding/margin
+        timeHeader.className = "time-header";
 
-        // Add 24 hour labels, spaced every 2 blocks (each block = 30 min)
-        for (let h = 0; h < 24; h++) {
+        for(let h = 0; h < 24; h++) {
           const timeSlot = document.createElement("div");
+          timeSlot.className = "time-slot";
           timeSlot.textContent = h.toString().padStart(2, "0") + ":00";
-          timeSlot.style.width = "28px"; // 2x half-hour block width + margins
-          timeSlot.style.textAlign = "center";
-          timeSlot.style.fontSize = "12px";
-          timeSlot.style.color = "#94a3b8";
-          timeSlot.style.userSelect = "none";
           timeHeader.appendChild(timeSlot);
         }
         row.appendChild(timeHeader);
@@ -415,7 +383,6 @@
 
   renderMonthSelector();
   renderDateSelector();
-  renderTimeHeader();
   loadAttendance();
 </script>
 
