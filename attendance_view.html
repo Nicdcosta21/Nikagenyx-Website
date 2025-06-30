@@ -1,260 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Attendance Date View - Nikagenyx</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body {
-    font-family: 'Questrial', sans-serif;
-    background-color: #0f172a;
-    color: #e0e7ff;
-    margin: 0; padding: 2rem;
-    min-height: 100vh;
-  }
-  h1 {
-    font-weight: 700;
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
-    text-align: center;
-    color: #c7d2fe;
-    text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
-  }
-  #monthSelector {
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-  .month-btn {
-    background-color: #1e293b;
-    color: #e0e7ff;
-    padding: 0.4rem 1.2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    box-shadow: 0 0 6px transparent;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    user-select: none;
-    border: 2px solid transparent;
-    font-size: 0.9rem;
-  }
-  .month-btn:hover {
-    background-color: #3730a3;
-    box-shadow: 0 0 12px #818cf8;
-  }
-  .month-btn.bg-indigo-700, .month-btn.active-month {
-    background-color: #4f46e5;
-    box-shadow: 0 0 15px #a5b4fc;
-    border-color: #c7d2fe;
-    color: #fefefe;
-  }
-  #dateSelector {
-    margin-bottom: 2rem;
-    overflow-x: auto;
-    padding: 0 1rem;
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: #6366f1 #1e293b;
-  }
-  #dateSelector::-webkit-scrollbar {
-    height: 6px;
-  }
-  #dateSelector::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-  #dateSelector::-webkit-scrollbar-thumb {
-    background-color: #6366f1;
-    border-radius: 3px;
-  }
-  .date-btn {
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
-    font-weight: 600;
-    border-radius: 6px;
-    background-color: #1e293b;
-    color: #cbd5e1;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    text-align: center;
-    user-select: none;
-    border: 2px solid transparent;
-    box-shadow: 0 0 3px transparent;
-  }
-  .date-btn:hover {
-    background-color: #4338ca;
-    color: #eef2ff;
-    box-shadow: 0 0 8px #818cf8;
-  }
-  .date-btn.active {
-    background-color: #6366f1;
-    color: #f0f0f0;
-    border-color: #a5b4fc;
-    box-shadow: 0 0 12px #a5b4fc;
-  }
-  #attendanceGrid {
-    max-width: 100%;
-  }
-  .employee-row {
-    background-color: #1e293b;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 0 15px #334155cc;
-    border: 1px solid #334155;
-    user-select: none;
-  }
-  .employee-row:hover {
-    box-shadow: 0 0 20px #6366f1cc;
-  }
-  .employee-header {
-    font-weight: 700;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: #e0e7ff;
-    letter-spacing: 0.02em;
-  }
-  .half-hour-box {
-    width: 14px;
-    height: 28px;
-    display: inline-block;
-    margin: 0 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    background-color: #475569;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 0 3px transparent;
-  }
-  .half-hour-box:hover {
-    box-shadow: 0 0 6px #818cf8;
-  }
-  .half-hour-box.P { background-color: #22c55e; box-shadow: 0 0 10px #22c55ecc; }
-  .half-hour-box.A { background-color: #ef4444; box-shadow: 0 0 10px #ef4444cc; }
-  .half-hour-box.L { background-color: #eab308; box-shadow: 0 0 10px #eab308cc; }
-  .half-hour-box.H { background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6cc; }
-  button.confirm-btn {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    background-color: #4f46e5;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    box-shadow: 0 0 10px #818cf8;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    border: none;
-  }
-  button.confirm-btn:hover {
-    background-color: #4338ca;
-  }
-  button.confirm-btn:disabled {
-    background-color: #a5b4fc;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Date View - Nikagenyx</title>
 
-  /* Time Header Styles */
-  #timeHeader {
-    display: flex;
-    justify-content: flex-start;
-    overflow-x: auto;
-    white-space: nowrap;
-    user-select: none;
-    font-size: 12px;
-    color: #94a3b8;
-    border-bottom: 1px solid #334155;
-    padding-bottom: 4px;
-    padding-left: 1.5rem; /* align with blocks padding */
-    scrollbar-width: thin;
-    scrollbar-color: #6366f1 #1e293b;
-  }
-  #timeHeader::-webkit-scrollbar {
-    height: 6px;
-  }
-  #timeHeader::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-  #timeHeader::-webkit-scrollbar-thumb {
-    background-color: #6366f1;
-    border-radius: 3px;
-  }
-  .time-slot {
-    flex-shrink: 0;
-    width: 14px; /* same width as half-hour block */
-    text-align: center;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    padding-top: 2px;
-    display: inline-block;
-    user-select: none;
-  }
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  /* Responsive tweaks */
-  @media (max-width: 768px) {
-    .half-hour-box {
-      width: 10px;
-      height: 24px;
-      margin: 0 1px;
+  <style>
+    /* Body and general page styles */
+    body {
+      font-family: 'Questrial', sans-serif;
+      background-color: #0f172a;
+      color: #e0e7ff;
+      margin: 0;
+      padding: 2rem;
+      min-height: 100vh;
     }
-    .time-slot {
-      width: 20px;
-      font-size: 10px;
+
+    /* Page title styling */
+    h1 {
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: #c7d2fe;
+      text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
     }
+
+    /* Month selector container styling */
+    #monthSelector {
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    /* Individual month button styles */
+    .month-btn {
+      background-color: #1e293b;
+      color: #e0e7ff;
+      padding: 0.4rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 0 6px transparent;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+      border: 2px solid transparent;
+      font-size: 0.9rem;
+    }
+    .month-btn:hover {
+      background-color: #3730a3;
+      box-shadow: 0 0 12px #818cf8;
+    }
+    .month-btn.bg-indigo-700, .month-btn.active-month {
+      background-color: #4f46e5;
+      box-shadow: 0 0 15px #a5b4fc;
+      border-color: #c7d2fe;
+      color: #fefefe;
+    }
+
+    /* Date selector container styling (horizontal scroll) */
     #dateSelector {
-      padding: 0 0.5rem;
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      padding: 0 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: #6366f1 #1e293b;
     }
-  }
-</style>
+    /* Scrollbar styling for WebKit browsers */
+    #dateSelector::-webkit-scrollbar {
+      height: 6px;
+    }
+    #dateSelector::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    #dateSelector::-webkit-scrollbar-thumb {
+      background-color: #6366f1;
+      border-radius: 3px;
+    }
+
+    /* Individual date button styles */
+    .date-btn {
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      font-weight: 600;
+      border-radius: 6px;
+      background-color: #1e293b;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+      user-select: none;
+      border: 2px solid transparent;
+      box-shadow: 0 0 3px transparent;
+    }
+    .date-btn:hover {
+      background-color: #4338ca;
+      color: #eef2ff;
+      box-shadow: 0 0 8px #818cf8;
+    }
+    .date-btn.active {
+      background-color: #6366f1;
+      color: #f0f0f0;
+      border-color: #a5b4fc;
+      box-shadow: 0 0 12px #a5b4fc;
+    }
+
+    /* Attendance grid container max width */
+    #attendanceGrid {
+      max-width: 100%;
+    }
+
+    /* Individual employee row styles */
+    .employee-row {
+      background-color: #1e293b;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 15px #334155cc;
+      border: 1px solid #334155;
+      user-select: none;
+    }
+    .employee-row:hover {
+      box-shadow: 0 0 20px #6366f1cc;
+    }
+
+    /* Employee header text */
+    .employee-header {
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      color: #e0e7ff;
+      letter-spacing: 0.02em;
+    }
+
+    /* Half-hour attendance block styles */
+    .half-hour-box {
+      width: 14px;
+      height: 28px;
+      display: inline-block;
+      margin: 0 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      background-color: #475569;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 0 3px transparent;
+    }
+    .half-hour-box:hover {
+      box-shadow: 0 0 6px #818cf8;
+    }
+    /* Attendance status colors */
+    .half-hour-box.P { background-color: #22c55e; box-shadow: 0 0 10px #22c55ecc; } /* Present */
+    .half-hour-box.A { background-color: #ef4444; box-shadow: 0 0 10px #ef4444cc; } /* Absent */
+    .half-hour-box.L { background-color: #eab308; box-shadow: 0 0 10px #eab308cc; } /* Leave */
+    .half-hour-box.H { background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6cc; } /* Holiday */
+
+    /* Confirm button styling */
+    button.confirm-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #4f46e5;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 0 10px #818cf8;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      border: none;
+    }
+    button.confirm-btn:hover {
+      background-color: #4338ca;
+    }
+    button.confirm-btn:disabled {
+      background-color: #a5b4fc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Time header container styles */
+    #timeHeader {
+      display: flex;
+      justify-content: flex-start;
+      overflow-x: auto;
+      white-space: nowrap;
+      user-select: none;
+      font-size: 12px;
+      color: #94a3b8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+      padding-left: 1.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: #6366f1 #1e293b;
+    }
+    /* Webkit scrollbar for time header */
+    #timeHeader::-webkit-scrollbar {
+      height: 6px;
+    }
+    #timeHeader::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    #timeHeader::-webkit-scrollbar-thumb {
+      background-color: #6366f1;
+      border-radius: 3px;
+    }
+    /* Individual time slot styling */
+    .time-slot {
+      flex-shrink: 0;
+      width: 14px; /* same as half-hour box width */
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding-top: 2px;
+      display: inline-block;
+      user-select: none;
+    }
+
+    /* Responsive tweaks for smaller screens */
+    @media (max-width: 768px) {
+      .half-hour-box {
+        width: 10px;
+        height: 24px;
+        margin: 0 1px;
+      }
+      .time-slot {
+        width: 20px;
+        font-size: 10px;
+      }
+      #dateSelector {
+        padding: 0 0.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<h1>📅 Employee Attendance - Date View</h1>
+  <!-- Page heading -->
+  <h1>📅 Employee Attendance - Date View</h1>
 
-<div id="monthSelector"></div>
+  <!-- Month selection buttons -->
+  <div id="monthSelector"></div>
 
-<div id="dateSelector"></div>
+  <!-- Date selection buttons -->
+  <div id="dateSelector"></div>
 
-<!-- Time header -->
-<div id="timeHeader"></div>
+  <!-- Time labels header -->
+  <div id="timeHeader"></div>
 
-<div id="attendanceGrid"></div>
+  <!-- Container for attendance blocks -->
+  <div id="attendanceGrid"></div>
 
 <script>
+  // Month names for selectors
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
+  // Initialize current date selections
   const today = new Date();
   let currentMonth = today.getMonth();
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
 
+  // Helper to get total days in a month/year
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
   }
 
-  // Render month selector buttons
+  // Render month selector buttons dynamically
   function renderMonthSelector() {
     const container = document.getElementById("monthSelector");
     container.innerHTML = "";
+
     months.forEach((m, i) => {
       const btn = document.createElement("button");
       btn.textContent = `${m} ${currentYear}`;
       btn.className = `month-btn ${i === currentMonth ? "bg-indigo-700" : "bg-gray-700 hover:bg-gray-600"}`;
+
       btn.onclick = () => {
         currentMonth = i;
-        selectedDate = 1;
-        renderMonthSelector();
-        renderDateSelector();
-        renderTimeHeader();
-        loadAttendance();
+        selectedDate = 1;               // Reset selected date to 1 on month change
+        renderMonthSelector();          // Re-render month buttons
+        renderDateSelector();           // Render date buttons for new month
+        renderTimeHeader();             // Render time header
+        loadAttendance();              // Load attendance data for new month/date
       };
+
       container.appendChild(btn);
     });
   }
@@ -263,7 +302,9 @@
   function renderDateSelector() {
     const container = document.getElementById("dateSelector");
     container.innerHTML = "";
+
     const days = daysInMonth(currentMonth, currentYear);
+
     for(let d = 1; d <= days; d++) {
       const btn = document.createElement("div");
       btn.textContent = d;
@@ -281,25 +322,33 @@
   function renderTimeHeader() {
     const container = document.getElementById("timeHeader");
     container.innerHTML = "";
-    // 48 half-hour slots (00:00, 00:30 ... 23:30)
+
+    // Each hour has two half-hour slots: 00:00, 00:30, ..., 23:30 = 48 total
     for(let i = 0; i < 48; i++) {
       const timeSlot = document.createElement("div");
       const hour = Math.floor(i / 2);
       const min = i % 2 === 0 ? "00" : "30";
+
       timeSlot.textContent = `${hour.toString().padStart(2, "0")}:${min}`;
       timeSlot.className = "time-slot";
+
       container.appendChild(timeSlot);
     }
   }
 
+  // Load and display attendance data for selected month and date
   async function loadAttendance() {
     const container = document.getElementById("attendanceGrid");
     container.innerHTML = "Loading...";
 
     const url = "/.netlify/functions/get_attendance_calendar";
+
     try {
+      // Fetch attendance data from backend function
       const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+
       if (!res.ok) throw new Error("Failed to fetch data");
+
       const json = await res.json();
       const data = json.data || [];
 
@@ -310,17 +359,54 @@
         return;
       }
 
+      // Render each employee's attendance row
       data.forEach(emp => {
         const row = document.createElement("div");
         row.className = "employee-row";
 
+        // Employee info header
         const header = document.createElement("div");
         header.className = "employee-header";
         header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
         row.appendChild(header);
 
+        // Render the time header inside each employee row, aligned with blocks
+        const timeHeader = document.createElement("div");
+        timeHeader.style.display = "flex";
+        timeHeader.style.justifyContent = "flex-start";
+        timeHeader.style.overflowX = "auto";
+        timeHeader.style.whiteSpace = "nowrap";
+        timeHeader.style.userSelect = "none";
+        timeHeader.style.fontSize = "12px";
+        timeHeader.style.color = "#94a3b8";
+        timeHeader.style.borderBottom = "1px solid #334155";
+        timeHeader.style.paddingBottom = "4px";
+        timeHeader.style.paddingLeft = "1.5rem";  // align with attendance blocks padding
+
+        // Add half-hour labels for 48 slots
+        for (let i = 0; i < 48; i++) {
+          const timeSlot = document.createElement("div");
+          const hour = Math.floor(i / 2);
+          const min = i % 2 === 0 ? "00" : "30";
+
+          timeSlot.textContent = `${hour.toString().padStart(2, "0")}:${min}`;
+          timeSlot.style.width = "14px";  // matches block width
+          timeSlot.style.flexShrink = "0";
+          timeSlot.style.textAlign = "center";
+          timeSlot.style.fontWeight = "600";
+          timeSlot.style.letterSpacing = "0.02em";
+          timeSlot.style.paddingTop = "2px";
+          timeSlot.style.userSelect = "none";
+
+          timeHeader.appendChild(timeSlot);
+        }
+
+        row.appendChild(timeHeader);
+
+        // Get attendance blocks for the selected date or fill with 'NA'
         const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
 
+        // Render attendance blocks
         blocks.forEach((code, idx) => {
           const box = document.createElement("div");
           box.className = `half-hour-box ${code}`;
@@ -330,6 +416,7 @@
           box.dataset.date = selectedDate;
           box.dataset.code = code;
 
+          // Toggle block attendance status on click (P <-> A)
           box.onclick = () => {
             if (box.dataset.code === "P") {
               box.dataset.code = "A";
@@ -344,6 +431,7 @@
           row.appendChild(box);
         });
 
+        // Confirm changes button - initially hidden
         const confirmBtn = document.createElement("button");
         confirmBtn.textContent = "Confirm Changes";
         confirmBtn.className = "confirm-btn hidden";
@@ -358,11 +446,13 @@
     }
   }
 
+  // Show confirm button when any block is toggled
   function showConfirmButton(row, empId) {
     const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
-    if(btn) btn.classList.remove("hidden");
+    if (btn) btn.classList.remove("hidden");
   }
 
+  // Submit updated attendance to backend
   async function submitChanges(empId, row) {
     const boxes = [...row.getElementsByClassName("half-hour-box")];
     const updatedSlots = boxes.map(box => ({
@@ -386,18 +476,21 @@
       if (!res.ok) throw new Error("Failed to update attendance");
 
       alert(`Attendance updated for ${empId} on ${currentYear}-${currentMonth + 1}-${selectedDate}`);
+
       const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
-      if(btn) btn.classList.add("hidden");
+      if (btn) btn.classList.add("hidden");
 
     } catch (error) {
       alert(`Error updating attendance: ${error.message}`);
     }
   }
 
+  // Initialize UI and load initial data
   renderMonthSelector();
   renderDateSelector();
   renderTimeHeader();
   loadAttendance();
+
 </script>
 
 </body>
