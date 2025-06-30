@@ -59,6 +59,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ empId, pin }),
+      credentials: "include"
     });
 
     if (res.status === 200) {
