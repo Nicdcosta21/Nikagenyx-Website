@@ -44,11 +44,14 @@ exports.handler = async (event) => {
         });
       }
 
+      console.log("Parsed fields:", fields);
+      console.log("Parsed files:", Object.keys(files));
+
       const { emp_id } = fields;
-      if (!emp_id) {
+      if (!emp_id || typeof emp_id !== "string" || emp_id.trim() === "") {
         return resolve({
           statusCode: 400,
-          body: JSON.stringify({ message: "Missing employee ID" }),
+          body: JSON.stringify({ message: "Missing or invalid employee ID" }),
         });
       }
 
@@ -70,7 +73,7 @@ exports.handler = async (event) => {
           if (files[fileField] && files[fileField].size > 0) {
             updates.push(`${fileField}_filename = $${idx++}`);
             values.push(files[fileField].originalFilename || "");
-            // You may want to save file data or upload elsewhere here
+            // Optional: handle actual file storage or processing here
           }
         });
 
@@ -85,7 +88,18 @@ exports.handler = async (event) => {
         values.push(emp_id.trim());
         const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${idx}`;
 
-        await pool.query(query, values);
+        console.log("Executing query:", query);
+        console.log("With values:", values);
+
+        const result = await pool.query(query, values);
+        console.log("DB update rowCount:", result.rowCount);
+
+        if (result.rowCount === 0) {
+          return resolve({
+            statusCode: 404,
+            body: JSON.stringify({ message: "No employee found with the given ID" }),
+          });
+        }
 
         resolve({
           statusCode: 200,
