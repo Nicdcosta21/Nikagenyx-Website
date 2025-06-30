@@ -126,7 +126,16 @@ document.getElementById("profileForm").addEventListener("submit", async function
       method: "POST",
       body: formData
     });
-    const result = await res.json();
+
+    const contentType = res.headers.get("content-type");
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Server error:", text);
+      alert("Server error while updating profile.");
+      return;
+    }
+
+    const result = contentType.includes("application/json") ? await res.json() : {};
     alert(result.message || "Profile updated successfully");
   } catch (err) {
     alert("Error updating profile");
