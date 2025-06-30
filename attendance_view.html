@@ -2,175 +2,220 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance View - Nikagenyx</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Date View - Nikagenyx</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
-    .half-hour-box {
-      width: 6px; height: 24px; display: inline-block; margin: 0 0.5px;
-      background-color: #374151; /* Default for NA */
+    .date-btn {
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      margin: 0 2px;
       cursor: pointer;
+      border-radius: 4px;
+      background-color: #374151;
+      color: white;
+      user-select: none;
     }
-    .P { background-color: #16a34a; }  /* Present */
-    .A { background-color: #dc2626; }  /* Absent */
-    .L { background-color: #facc15; }  /* Leave */
-    .H { background-color: #3b82f6; }  /* Holiday */
-    .NA { background-color: #374151; }
-    .month-btn { padding: 6px 12px; border-radius: 4px; }
-    .active-month { background-color: #4f46e5; }
+    .date-btn.active {
+      background-color: #4f46e5;
+    }
+    .half-hour-box {
+      width: 12px;
+      height: 24px;
+      display: inline-block;
+      margin: 0 1px;
+      cursor: pointer;
+      border-radius: 2px;
+      background-color: #374151; /* default NA */
+      transition: background-color 0.3s ease;
+    }
+    .half-hour-box.P { background-color: #16a34a; }  /* Present */
+    .half-hour-box.A { background-color: #dc2626; }  /* Absent */
+    .half-hour-box.L { background-color: #facc15; }  /* Leave */
+    .half-hour-box.H { background-color: #3b82f6; }  /* Holiday */
   </style>
 </head>
 <body class="bg-gray-900 text-white p-6">
 
-  <h1 class="text-3xl font-bold mb-6 text-center">📅 Employee Attendance Viewer</h1>
-  <div class="flex justify-center flex-wrap gap-2 mb-6" id="monthSelector"></div>
-  <div id="attendanceGrid" class="space-y-8"></div>
+  <h1 class="text-3xl font-bold mb-6 text-center">📅 Employee Attendance - Date View</h1>
 
-  <script>
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ];
+  <div id="monthSelector" class="flex justify-center flex-wrap mb-6 gap-2"></div>
 
-    const isAdmin = true; // 🔒 Change to false for guest/employee view
-    const today = new Date();
-    let currentMonth = today.getMonth();
-    let currentYear = today.getFullYear();
+  <div id="dateSelector" class="flex justify-center mb-6 overflow-x-auto"></div>
 
-    const toggleCode = (current) => {
-      const order = ["NA", "P", "A", "L"];
-      return order[(order.indexOf(current) + 1) % order.length];
-    };
+  <div id="attendanceGrid" class="overflow-x-auto"></div>
 
-    function daysInMonth(month, year) {
-      return new Date(year, month + 1, 0).getDate();
+<script>
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const today = new Date();
+  let currentMonth = today.getMonth();
+  let currentYear = today.getFullYear();
+  let selectedDate = today.getDate();
+
+  function daysInMonth(month, year) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  // Render month selector buttons
+  function renderMonthSelector() {
+    const container = document.getElementById("monthSelector");
+    container.innerHTML = "";
+    months.forEach((m, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = `${m} ${currentYear}`;
+      btn.className = `month-btn ${i === currentMonth ? "bg-indigo-700" : "bg-gray-700 hover:bg-gray-600"}`;
+      btn.onclick = () => {
+        currentMonth = i;
+        selectedDate = 1; // reset date to 1 when month changes
+        renderMonthSelector();
+        renderDateSelector();
+        loadAttendance();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  // Render horizontal date selector
+  function renderDateSelector() {
+    const container = document.getElementById("dateSelector");
+    container.innerHTML = "";
+    const days = daysInMonth(currentMonth, currentYear);
+    for(let d = 1; d <= days; d++) {
+      const btn = document.createElement("div");
+      btn.textContent = d;
+      btn.className = "date-btn" + (d === selectedDate ? " active" : "");
+      btn.onclick = () => {
+        selectedDate = d;
+        renderDateSelector();
+        loadAttendance();
+      };
+      container.appendChild(btn);
     }
+  }
 
-    function renderMonthSelector() {
-      const selector = document.getElementById("monthSelector");
-      selector.innerHTML = "";
-      months.forEach((m, i) => {
-        const btn = document.createElement("button");
-        btn.className = `month-btn ${i === currentMonth ? 'bg-indigo-700' : 'bg-gray-700 hover:bg-gray-600'}`;
-        btn.textContent = `${m} ${currentYear}`;
-        btn.onclick = () => {
-          currentMonth = i;
-          renderMonthSelector();
-          loadAttendance();
-        };
-        selector.appendChild(btn);
-      });
-    }
+  // Load attendance data for the selected date
+  async function loadAttendance() {
+    const container = document.getElementById("attendanceGrid");
+    container.innerHTML = "Loading...";
 
-    async function loadAttendance() {
-      const container = document.getElementById("attendanceGrid");
-      container.innerHTML = "";
+    const url = "/.netlify/functions/get_attendance_calendar";
+    try {
+      const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+      if (!res.ok) throw new Error("Failed to fetch data");
+      const json = await res.json();
+      const data = json.data || [];
 
-      const days = daysInMonth(currentMonth, currentYear);
-      const url = "/.netlify/functions/get_attendance_calendar";
-      let data = [];
+      container.innerHTML = ""; // Clear loading text
 
-      try {
-        const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-        const json = await res.json();
-        data = json.data || [];
-        console.log("✅ Attendance data loaded:", data);
-      } catch (e) {
-        container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data: ${e.message}</p>`;
+      if(data.length === 0) {
+        container.innerHTML = "<p class='text-center text-gray-400'>No attendance data for this month.</p>";
         return;
       }
 
-      const dateHeader = document.createElement("div");
-      dateHeader.className = "flex items-center mb-4 overflow-x-auto whitespace-nowrap";
-      dateHeader.innerHTML = `<div class="w-40"></div>`; // spacer for name
-      for (let d = 1; d <= days; d++) {
-        const date = document.createElement("div");
-        date.textContent = d;
-        date.className = "w-10 text-center text-xs text-gray-400";
-        dateHeader.appendChild(date);
-      }
-      container.appendChild(dateHeader);
-
-      data.forEach((emp, empIndex) => {
+      // Show attendance for selected date only
+      data.forEach(emp => {
         const row = document.createElement("div");
-        row.className = "bg-gray-800 p-4 rounded border border-gray-700";
+        row.className = "mb-6 p-4 bg-gray-800 rounded border border-gray-700";
 
-        const title = document.createElement("p");
-        title.className = "text-sm mb-2 font-semibold";
-        title.innerHTML = `Name: ${emp.name} | Role: ${emp.role} | Active From: ${emp.from}`;
-        row.appendChild(title);
+        // Employee header
+        const header = document.createElement("div");
+        header.className = "mb-2 font-semibold";
+        header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
+        row.appendChild(header);
 
-        const empState = JSON.parse(JSON.stringify(emp.status));
-        let isModified = false;
+        // Half hour blocks for selected date
+        const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
 
-        for (let d = 0; d < days; d++) {
-          const dayRow = document.createElement("div");
-          dayRow.className = "flex items-center mb-1";
+        blocks.forEach((code, idx) => {
+          const box = document.createElement("div");
+          box.className = `half-hour-box ${code}`;
+          box.title = `${code} - Slot ${idx + 1}`;
+          box.dataset.empId = emp.emp_id;
+          box.dataset.slot = idx;
+          box.dataset.date = selectedDate;
+          box.dataset.code = code;
 
-          const label = document.createElement("div");
-          label.className = "w-10 text-xs text-gray-400 mr-2";
-          label.textContent = `${d + 1}`;
-          dayRow.appendChild(label);
-
-          const blocks = empState[d] || Array(48).fill("NA");
-          blocks.forEach((code, idx) => {
-            const box = document.createElement("div");
-            box.className = `half-hour-box ${code}`;
-            box.dataset.code = code;
-
-            if (isAdmin) {
-              box.onclick = () => {
-                const newCode = toggleCode(box.dataset.code);
-                box.dataset.code = newCode;
-                box.className = `half-hour-box ${newCode}`;
-                empState[d][idx] = newCode;
-                isModified = true;
-                confirmBtn.style.display = "inline-block";
-              };
+          // Toggle attendance status on click
+          box.onclick = () => {
+            if(box.dataset.code === "P") {
+              box.dataset.code = "A";
+              box.className = "half-hour-box A";
+            } else {
+              box.dataset.code = "P";
+              box.className = "half-hour-box P";
             }
+            showConfirmButton(row, emp.emp_id);
+          };
 
-            dayRow.appendChild(box);
-          });
+          row.appendChild(box);
+        });
 
-          row.appendChild(dayRow);
-        }
-
+        // Confirm button (initially hidden)
         const confirmBtn = document.createElement("button");
-        confirmBtn.className = "mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm";
         confirmBtn.textContent = "Confirm Changes";
-        confirmBtn.style.display = "none";
+        confirmBtn.className = "mt-3 px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 hidden";
+        confirmBtn.onclick = () => submitChanges(emp.emp_id, row);
+        row.appendChild(confirmBtn);
 
-        confirmBtn.onclick = () => {
-          console.log("📤 Updated data for", emp.emp_id, empState);
-          fetch("/.netlify/functions/update_attendance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              emp_id: emp.emp_id,
-              month: currentMonth + 1,
-              year: currentYear,
-              status: empState,
-            })
-          })
-          .then(res => res.json())
-          .then(resp => {
-            alert("✅ Attendance updated successfully.");
-            confirmBtn.style.display = "none";
-          })
-          .catch(err => {
-            alert("❌ Failed to update attendance.");
-            console.error(err);
-          });
-        };
-
-        if (isAdmin) row.appendChild(confirmBtn);
         container.appendChild(row);
       });
-    }
 
-    renderMonthSelector();
-    loadAttendance();
-  </script>
+    } catch (error) {
+      container.innerHTML = `<p class="text-red-500 text-center">Error loading attendance data: ${error.message}</p>`;
+    }
+  }
+
+  // Show confirm button on changes
+  function showConfirmButton(row, empId) {
+    const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
+    if(btn) btn.classList.remove("hidden");
+  }
+
+  // Submit changes to backend
+  async function submitChanges(empId, row) {
+    const boxes = [...row.getElementsByClassName("half-hour-box")];
+    const updatedSlots = boxes.map(box => ({
+      slot: parseInt(box.dataset.slot),
+      status: box.dataset.code
+    }));
+
+    try {
+      const res = await fetch("/.netlify/functions/update_attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emp_id: empId,
+          year: currentYear,
+          month: currentMonth + 1,
+          day: selectedDate,
+          slots: updatedSlots
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to update attendance");
+
+      alert(`Attendance updated for ${empId} on ${currentYear}-${currentMonth + 1}-${selectedDate}`);
+      // Hide confirm button
+      const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
+      if(btn) btn.classList.add("hidden");
+
+    } catch (error) {
+      alert(`Error updating attendance: ${error.message}`);
+    }
+  }
+
+  // Init
+  renderMonthSelector();
+  renderDateSelector();
+  loadAttendance();
+
+</script>
 </body>
 </html>
