@@ -1,7 +1,6 @@
 const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 
-// Setup PostgreSQL pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -15,23 +14,22 @@ exports.handler = async (event) => {
     };
   }
 
-  // Required for parsing FormData in Netlify functions
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB max
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB
 
     form.parse(
       {
         headers: event.headers,
         method: event.httpMethod,
         url: event.path,
-        buffer: Buffer.from(event.body, "base64"), // ✅ Netlify requires base64 decode
+        buffer: Buffer.from(event.body, "base64"), // ✅ Netlify-specific decode
       },
       async (err, fields, files) => {
         if (err) {
-          console.error("❌ Formidable parsing error:", err);
+          console.error("❌ Form parsing failed:", err);
           return resolve({
             statusCode: 500,
-            body: JSON.stringify({ message: "Failed to parse form", error: err.message }),
+            body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
           });
         }
 
@@ -41,7 +39,7 @@ exports.handler = async (event) => {
           if (!emp_id) {
             return resolve({
               statusCode: 400,
-              body: JSON.stringify({ message: "Employee ID is required" }),
+              body: JSON.stringify({ message: "Missing employee ID" }),
             });
           }
 
@@ -73,7 +71,7 @@ exports.handler = async (event) => {
           if (updates.length === 0) {
             return resolve({
               statusCode: 400,
-              body: JSON.stringify({ message: "No fields provided for update" }),
+              body: JSON.stringify({ message: "No fields to update" }),
             });
           }
 
@@ -85,11 +83,11 @@ exports.handler = async (event) => {
             statusCode: 200,
             body: JSON.stringify({ message: "Profile updated successfully" }),
           });
-        } catch (e) {
-          console.error("❌ DB update failed:", e);
+        } catch (error) {
+          console.error("❌ Database update error:", error);
           resolve({
             statusCode: 500,
-            body: JSON.stringify({ message: "Server error", error: e.message }),
+            body: JSON.stringify({ message: "Database error", error: error.message }),
           });
         }
       }
