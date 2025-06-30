@@ -30,55 +30,55 @@ exports.handler = async (event) => {
 
   return new Promise((resolve) => {
     const form = new IncomingForm({
-      maxFileSize: 1024 * 1024,  // 1MB max
+      maxFileSize: 1024 * 1024, // 1MB max
       allowEmptyFiles: true,
       minFileSize: 0,
     });
 
     form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error("❌ Form parse failed:", err);
-        return resolve({
-          statusCode: 400,
-          body: JSON.stringify({ error: "Form parse failed", message: err.message }),
-        });
-      }
-
-      console.log("Parsed fields:", fields);
-      console.log("Parsed files:", Object.keys(files));
-
-      const { emp_id } = fields;
-      if (!emp_id || typeof emp_id !== "string" || emp_id.trim() === "") {
-        return resolve({
-          statusCode: 400,
-          body: JSON.stringify({ message: "Missing or invalid employee ID" }),
-        });
-      }
-
       try {
+        if (err) {
+          console.error("❌ Form parse failed:", err);
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
+          });
+        }
+
+        // Unwrap emp_id from array if needed
+        const emp_id = Array.isArray(fields.emp_id) ? fields.emp_id[0] : fields.emp_id;
+
+        if (!emp_id || typeof emp_id !== "string" || emp_id.trim() === "") {
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ message: "Missing or invalid employee ID" }),
+          });
+        }
+
         const updates = [];
         const values = [];
         let idx = 1;
 
-        // Only add non-empty text fields to update
+        // Add non-empty text fields to update
         ["phone", "dob", "role", "department", "new_pin"].forEach((field) => {
-          if (fields[field] && typeof fields[field] === "string" && fields[field].trim() !== "") {
+          const value = Array.isArray(fields[field]) ? fields[field][0] : fields[field];
+          if (value && typeof value === "string" && value.trim() !== "") {
             updates.push(`${field === "new_pin" ? "pin" : field} = $${idx++}`);
-            values.push(fields[field].trim());
+            values.push(value.trim());
           }
         });
 
-        // For files, save filenames if file uploaded and size > 0
+        // Add file fields if uploaded with size > 0
         ["pan", "aadhaar", "resume", "qualification", "photo", "passport"].forEach((fileField) => {
           if (files[fileField] && files[fileField].size > 0) {
             updates.push(`${fileField}_filename = $${idx++}`);
             values.push(files[fileField].originalFilename || "");
-            // Optional: handle actual file storage or processing here
+            // Optional: handle file storage here
           }
         });
 
         if (updates.length === 0) {
-          // Nothing to update, return success anyway
+          // Nothing to update
           return resolve({
             statusCode: 200,
             body: JSON.stringify({ message: "No changes detected. Profile not updated." }),
@@ -88,11 +88,11 @@ exports.handler = async (event) => {
         values.push(emp_id.trim());
         const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${idx}`;
 
-        console.log("Executing query:", query);
-        console.log("With values:", values);
+        // Uncomment for debugging:
+        // console.log("Executing query:", query);
+        // console.log("With values:", values);
 
         const result = await pool.query(query, values);
-        console.log("DB update rowCount:", result.rowCount);
 
         if (result.rowCount === 0) {
           return resolve({
@@ -105,11 +105,11 @@ exports.handler = async (event) => {
           statusCode: 200,
           body: JSON.stringify({ message: "Profile updated successfully" }),
         });
-      } catch (dbErr) {
-        console.error("❌ Database error:", dbErr);
+      } catch (error) {
+        console.error("❌ Unexpected error in form parse callback:", error);
         resolve({
           statusCode: 500,
-          body: JSON.stringify({ message: "Database error", error: dbErr.message }),
+          body: JSON.stringify({ message: "Unexpected error", error: error.message }),
         });
       }
     });
