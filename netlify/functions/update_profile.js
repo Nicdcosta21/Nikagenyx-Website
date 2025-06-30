@@ -9,18 +9,20 @@ exports.handler = async (event) => {
     };
   }
 
-  // Convert body buffer into a readable stream
   const bodyBuffer = event.isBase64Encoded
     ? Buffer.from(event.body, "base64")
     : Buffer.from(event.body);
 
-  // Create a readable stream from buffer for formidable
+  // Create a readable stream from the buffer
   const reqStream = new Readable();
   reqStream.push(bodyBuffer);
-  reqStream.push(null); // End of stream
+  reqStream.push(null);
+
+  // Attach headers to the stream for formidable
+  reqStream.headers = event.headers;
 
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB limit
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 });
 
     form.parse(reqStream, (err, fields, files) => {
       if (err) {
@@ -31,8 +33,7 @@ exports.handler = async (event) => {
         });
       }
 
-      // For debugging/demo: return fields and uploaded file names
-      return resolve({
+      resolve({
         statusCode: 200,
         body: JSON.stringify({
           message: "Form parsed successfully",
