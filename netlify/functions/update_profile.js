@@ -1,4 +1,4 @@
-const { IncomingForm } = require("formidable");
+const { IncomingForm } = require("formidable-serverless");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -16,23 +16,31 @@ exports.handler = async (event) => {
   return new Promise((resolve) => {
     const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // max 1MB
 
-    form.parseBuffer(bodyBuffer, (err, fields, files) => {
-      if (err) {
-        console.error("❌ Form parse failed:", err);
+    form.parse(
+      {
+        headers: event.headers,
+        method: event.httpMethod,
+        url: event.path,
+        rawBody: bodyBuffer,
+      },
+      (err, fields, files) => {
+        if (err) {
+          console.error("❌ Form parse failed:", err);
+          return resolve({
+            statusCode: 500,
+            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
+          });
+        }
+        // Return parsed fields and file names for debugging/demo
         return resolve({
-          statusCode: 500,
-          body: JSON.stringify({ error: "Form parse failed", message: err.message }),
+          statusCode: 200,
+          body: JSON.stringify({
+            message: "Form parsed successfully",
+            fields,
+            files: Object.keys(files),
+          }),
         });
       }
-      // Return parsed fields and file names for debugging/demo
-      return resolve({
-        statusCode: 200,
-        body: JSON.stringify({
-          message: "Form parsed successfully",
-          fields,
-          files: Object.keys(files),
-        }),
-      });
-    });
+    );
   });
 };
