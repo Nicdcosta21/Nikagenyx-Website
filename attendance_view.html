@@ -8,12 +8,18 @@
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .day-label { width: 24px; text-align: center; font-size: 10px; color: #ccc; }
-    .half-hour-box { width: 6px; height: 24px; display: inline-block; margin: 0 0.5px; }
-    .P { background-color: #16a34a; }
-    .A { background-color: #dc2626; }
-    .L { background-color: #facc15; }
-    .H { background-color: #3b82f6; }
-    .NA { background-color: #374151; }
+    .half-hour-box {
+      width: 6px;
+      height: 24px;
+      display: inline-block;
+      margin: 0 0.5px;
+      background-color: #4b5563; /* Default for NA */
+    }
+    .P { background-color: #16a34a; }  /* Present */
+    .A { background-color: #dc2626; }  /* Absent */
+    .L { background-color: #facc15; }  /* Leave */
+    .H { background-color: #3b82f6; }  /* Holiday */
+    .NA { background-color: #374151; } /* Not Available */
     .month-btn { padding: 6px 12px; border-radius: 4px; }
     .active-month { background-color: #4f46e5; }
   </style>
@@ -21,7 +27,6 @@
 <body class="bg-gray-900 text-white p-6">
 
   <h1 class="text-3xl font-bold mb-6 text-center">📅 Employee Attendance Viewer</h1>
-
   <div class="flex justify-center flex-wrap gap-2 mb-6" id="monthSelector"></div>
   <div id="attendanceGrid" class="space-y-8"></div>
 
@@ -49,8 +54,8 @@
         btn.textContent = `${m} ${currentYear}`;
         btn.onclick = () => {
           currentMonth = i;
-          loadAttendance();
           renderMonthSelector();
+          loadAttendance();
         };
         selector.appendChild(btn);
       });
@@ -65,13 +70,13 @@
       let data = [];
 
       try {
-        const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-        const json = await res.json();
+        const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+        const json = await response.json();
         data = json.data || [];
         console.log("✅ Fetched attendance data:", data);
       } catch (e) {
-        console.error("❌ Failed to load attendance data from server:", e);
-        container.innerHTML = "<p class='text-red-500 text-center'>Unable to load attendance data. Please check server logs or network connection.</p>";
+        console.error("❌ Failed to load attendance data:", e);
+        container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data. Check server logs or network connection.</p>`;
         return;
       }
 
@@ -96,7 +101,7 @@
           const halfHours = emp.status[day] || Array(48).fill("NA");
           halfHours.forEach(code => {
             const box = document.createElement("div");
-            box.className = `half-hour-box ${code}`;
+            box.className = `half-hour-box ${code || 'NA'}`;
             dayRow.appendChild(box);
           });
 
