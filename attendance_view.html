@@ -7,19 +7,16 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
-    .day-label { width: 24px; text-align: center; font-size: 10px; color: #ccc; }
     .half-hour-box {
-      width: 6px;
-      height: 24px;
-      display: inline-block;
-      margin: 0 0.5px;
-      background-color: #4b5563; /* Default for NA */
+      width: 6px; height: 24px; display: inline-block; margin: 0 0.5px;
+      background-color: #374151; /* Default for NA */
+      cursor: pointer;
     }
     .P { background-color: #16a34a; }  /* Present */
     .A { background-color: #dc2626; }  /* Absent */
     .L { background-color: #facc15; }  /* Leave */
     .H { background-color: #3b82f6; }  /* Holiday */
-    .NA { background-color: #374151; } /* Not Available */
+    .NA { background-color: #374151; }
     .month-btn { padding: 6px 12px; border-radius: 4px; }
     .active-month { background-color: #4f46e5; }
   </style>
@@ -36,9 +33,15 @@
       "July", "August", "September", "October", "November", "December"
     ];
 
+    const isAdmin = true; // 🔒 Change to false for guest/employee view
     const today = new Date();
     let currentMonth = today.getMonth();
     let currentYear = today.getFullYear();
+
+    const toggleCode = (current) => {
+      const order = ["NA", "P", "A", "L"];
+      return order[(order.indexOf(current) + 1) % order.length];
+    };
 
     function daysInMonth(month, year) {
       return new Date(year, month + 1, 0).getDate();
@@ -47,7 +50,6 @@
     function renderMonthSelector() {
       const selector = document.getElementById("monthSelector");
       selector.innerHTML = "";
-
       months.forEach((m, i) => {
         const btn = document.createElement("button");
         btn.className = `month-btn ${i === currentMonth ? 'bg-indigo-700' : 'bg-gray-700 hover:bg-gray-600'}`;
@@ -62,32 +64,35 @@
     }
 
     async function loadAttendance() {
-  const container = document.getElementById("attendanceGrid");
-  container.innerHTML = "";
+      const container = document.getElementById("attendanceGrid");
+      container.innerHTML = "";
 
-  const days = daysInMonth(currentMonth, currentYear);
-  const url = "/.netlify/functions/get_attendance_calendar"; // ✅ Add this line
+      const days = daysInMonth(currentMonth, currentYear);
+      const url = "/.netlify/functions/get_attendance_calendar";
+      let data = [];
 
-  let data = [];
+      try {
+        const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+        const json = await res.json();
+        data = json.data || [];
+        console.log("✅ Attendance data loaded:", data);
+      } catch (e) {
+        container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data: ${e.message}</p>`;
+        return;
+      }
 
-  try {
-    const response = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
+      const dateHeader = document.createElement("div");
+      dateHeader.className = "flex items-center mb-4 overflow-x-auto whitespace-nowrap";
+      dateHeader.innerHTML = `<div class="w-40"></div>`; // spacer for name
+      for (let d = 1; d <= days; d++) {
+        const date = document.createElement("div");
+        date.textContent = d;
+        date.className = "w-10 text-center text-xs text-gray-400";
+        dateHeader.appendChild(date);
+      }
+      container.appendChild(dateHeader);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server responded with ${response.status}: ${errorText}`);
-    }
-
-    const json = await response.json();
-    data = json.data || [];
-    console.log("✅ Fetched attendance data:", data);
-  } catch (e) {
-    console.error("❌ Failed to load attendance data:", e.message);
-    container.innerHTML = `<p class="text-red-500 text-center">Unable to load attendance data: ${e.message}</p>`;
-    return;
-  }
-
-      data.forEach(emp => {
+      data.forEach((emp, empIndex) => {
         const row = document.createElement("div");
         row.className = "bg-gray-800 p-4 rounded border border-gray-700";
 
@@ -96,25 +101,70 @@
         title.innerHTML = `Name: ${emp.name} | Role: ${emp.role} | Active From: ${emp.from}`;
         row.appendChild(title);
 
-        for (let day = 0; day < days; day++) {
+        const empState = JSON.parse(JSON.stringify(emp.status));
+        let isModified = false;
+
+        for (let d = 0; d < days; d++) {
           const dayRow = document.createElement("div");
           dayRow.className = "flex items-center mb-1";
 
           const label = document.createElement("div");
           label.className = "w-10 text-xs text-gray-400 mr-2";
-          label.textContent = `${day + 1}`;
+          label.textContent = `${d + 1}`;
           dayRow.appendChild(label);
 
-          const halfHours = emp.status[day] || Array(48).fill("NA");
-          halfHours.forEach(code => {
+          const blocks = empState[d] || Array(48).fill("NA");
+          blocks.forEach((code, idx) => {
             const box = document.createElement("div");
-            box.className = `half-hour-box ${code || 'NA'}`;
+            box.className = `half-hour-box ${code}`;
+            box.dataset.code = code;
+
+            if (isAdmin) {
+              box.onclick = () => {
+                const newCode = toggleCode(box.dataset.code);
+                box.dataset.code = newCode;
+                box.className = `half-hour-box ${newCode}`;
+                empState[d][idx] = newCode;
+                isModified = true;
+                confirmBtn.style.display = "inline-block";
+              };
+            }
+
             dayRow.appendChild(box);
           });
 
           row.appendChild(dayRow);
         }
 
+        const confirmBtn = document.createElement("button");
+        confirmBtn.className = "mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm";
+        confirmBtn.textContent = "Confirm Changes";
+        confirmBtn.style.display = "none";
+
+        confirmBtn.onclick = () => {
+          console.log("📤 Updated data for", emp.emp_id, empState);
+          fetch("/.netlify/functions/update_attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              emp_id: emp.emp_id,
+              month: currentMonth + 1,
+              year: currentYear,
+              status: empState,
+            })
+          })
+          .then(res => res.json())
+          .then(resp => {
+            alert("✅ Attendance updated successfully.");
+            confirmBtn.style.display = "none";
+          })
+          .catch(err => {
+            alert("❌ Failed to update attendance.");
+            console.error(err);
+          });
+        };
+
+        if (isAdmin) row.appendChild(confirmBtn);
         container.appendChild(row);
       });
     }
