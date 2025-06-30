@@ -1,6 +1,7 @@
 const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 
+// Configure PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -14,22 +15,32 @@ exports.handler = async (event) => {
     };
   }
 
+  console.log("Event.isBase64Encoded:", event.isBase64Encoded);
+
+  // Decode body depending on encoding (Netlify may send base64 or plain)
+  const bodyBuffer = event.isBase64Encoded
+    ? Buffer.from(event.body, "base64")
+    : Buffer.from(event.body);
+
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB limit
 
     form.parse(
       {
         headers: event.headers,
         method: event.httpMethod,
         url: event.path,
-        buffer: Buffer.from(event.body, "base64"),
+        buffer: bodyBuffer,
       },
       async (err, fields, files) => {
         if (err) {
-          console.error("❌ Form parse failed:", err);
+          console.error("❌ Form parsing failed:", err);
           return resolve({
             statusCode: 500,
-            body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
+            body: JSON.stringify({
+              message: "Form parsing failed",
+              error: err.message,
+            }),
           });
         }
 
@@ -76,7 +87,9 @@ exports.handler = async (event) => {
           }
 
           values.push(emp_id);
-          const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${i}`;
+          const query = `UPDATE employees SET ${updates.join(
+            ", "
+          )} WHERE emp_id = $${i}`;
           await pool.query(query, values);
 
           resolve({
