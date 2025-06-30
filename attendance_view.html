@@ -106,14 +106,14 @@
       max-width: 100%;
     }
     .employee-row {
-  background-color: #1e293b;
-  padding: 1rem 1.5rem 1rem 1.8rem; /* Added left padding from 1.5rem to 1.8rem */
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  box-shadow: 0 0 15px #334155cc;
-  border: 1px solid #334155;
-  user-select: none;
-}
+      background-color: #1e293b;
+      padding: 1rem 1.5rem 1rem 1.8rem; /* Added left padding */
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 15px #334155cc;
+      border: 1px solid #334155;
+      user-select: none;
+    }
     .employee-row:hover {
       box-shadow: 0 0 20px #6366f1cc;
     }
@@ -125,42 +125,42 @@
       letter-spacing: 0.02em;
     }
     .hour-labels {
-  display: flex;
-  justify-content: flex-start;
-  overflow-x: auto;
-  white-space: nowrap;
-  font-size: 12px;
-  color: rgb(148, 163, 184);
-  border-bottom: 1px solid rgb(51, 65, 85);
-  padding-bottom: 4px;
-  padding-left: 0.3rem; /* you can adjust if needed */
-  font-family: monospace;
-  margin-bottom: 6px;
-}
-
-.hour-label {
-  width: 36px; /* width for two half-hour blocks */
-  text-align: center;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding-top: 2px;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.half-hour-box {
-  width: 14px;
-  height: 28px;
-  margin: 0 2px;
-  display: inline-block;
-  cursor: pointer;
-  border-radius: 4px;
-  background-color: #475569;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 0 3px transparent;
-}
-
-
+      display: flex;
+      justify-content: flex-start;
+      overflow-x: auto;
+      white-space: nowrap;
+      font-size: 12px;
+      color: rgb(148, 163, 184);
+      border-bottom: 1px solid rgb(51, 65, 85);
+      padding-bottom: 4px;
+      padding-left: 0.3rem;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    .hour-label {
+      width: 36px; /* width for two half-hour blocks */
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding-top: 2px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .half-hour-box {
+      width: 14px;
+      height: 28px;
+      margin: 0 2px;
+      display: inline-block;
+      cursor: pointer;
+      border-radius: 4px;
+      background-color: #475569;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 0 3px transparent;
+    }
+    /* Add bigger margin after every 2 blocks */
+    .half-hour-box:nth-child(2n) {
+      margin-right: 12px;
+    }
     .half-hour-box:hover {
       box-shadow: 0 0 6px #818cf8;
     }
@@ -265,19 +265,19 @@
   }
 
   // Render hour labels centered over each 2 half-hour blocks
-function renderHourLabels() {
-  const container = document.createElement("div");
-  container.className = "hour-labels";
+  function renderHourLabels() {
+    const container = document.createElement("div");
+    container.className = "hour-labels";
 
-  for (let h = 0; h < 24; h++) {
-    const label = document.createElement("div");
-    label.className = "hour-label";
-    label.textContent = h.toString().padStart(2, "0");
-    container.appendChild(label);
+    for (let h = 0; h < 24; h++) {
+      const label = document.createElement("div");
+      label.className = "hour-label";
+      label.textContent = h.toString().padStart(2, "0");
+      container.appendChild(label);
+    }
+
+    return container;
   }
-
-  return container;
-}
 
   async function loadAttendance() {
     const container = document.getElementById("attendanceGrid");
