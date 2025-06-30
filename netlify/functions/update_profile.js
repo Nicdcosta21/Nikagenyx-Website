@@ -22,11 +22,11 @@ exports.handler = async (event) => {
         headers: event.headers,
         method: event.httpMethod,
         url: event.path,
-        buffer: Buffer.from(event.body, "base64"), // ✅ Netlify-specific decode
+        buffer: Buffer.from(event.body, "base64"),
       },
       async (err, fields, files) => {
         if (err) {
-          console.error("❌ Form parsing failed:", err);
+          console.error("❌ Form parse failed:", err);
           return resolve({
             statusCode: 500,
             body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
