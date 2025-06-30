@@ -2,103 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>My Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Attendance Viewer</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .status-P { background-color: #10b981; color: black; } /* Present - green */
+    .status-L { background-color: #fbbf24; color: black; } /* Leave - amber */
+    .status-A { background-color: #ef4444; color: white; } /* Absent - red */
+    .status-H { background-color: #3b82f6; color: white; } /* Holiday - blue */
+    .status-NA { background-color: #6b7280; color: white; } /* No log - gray */
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+<body class="bg-gray-900 text-white min-h-screen px-6 py-4">
+  <h1 class="text-2xl font-bold mb-4">📊 Admin Attendance Viewer</h1>
 
-  <!-- Navbar -->
-  <nav class="bg-gray-800 p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Nikagenyx</h1>
-    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded text-sm">Logout</button>
-  </nav>
+  <!-- Month Selector -->
+  <div class="flex flex-wrap gap-2 mb-4" id="monthButtons"></div>
 
-  <!-- Main Content -->
-  <main class="flex-grow p-6">
-    <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
-    <table class="w-full text-left text-sm bg-gray-800 rounded">
-      <thead class="bg-gray-700 text-gray-300">
-        <tr>
-          <th class="p-2">Date</th>
-          <th class="p-2">Clock In</th>
-          <th class="p-2">Clock Out</th>
-          <th class="p-2">Hours</th>
-          <th class="p-2">Status</th>
-        </tr>
-      </thead>
-      <tbody id="attendanceTableBody"></tbody>
-      <tfoot>
-        <tr class="bg-gray-700 text-white text-sm">
-          <td colspan="3" class="p-2 font-bold">Weekly Total</td>
-          <td colspan="2" id="weeklyTotal" class="p-2"></td>
-        </tr>
-      </tfoot>
-    </table>
-  </main>
+  <!-- Attendance Table -->
+  <div id="attendanceGrid" class="overflow-auto"></div>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-center text-xs text-gray-500 py-4">
-    &copy; 2025 Nikagenyx Vision Tech Private Limited
-  </footer>
-
-  <!-- Script -->
   <script>
-    const session = JSON.parse(localStorage.getItem("emp_session"));
-    if (!session?.emp_id) window.location.href = "employee_portal.html";
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
 
-    function logout() {
-      localStorage.removeItem("emp_session");
-      window.location.href = "employee_portal.html";
-    }
+    const monthButtons = document.getElementById("monthButtons");
+    const attendanceGrid = document.getElementById("attendanceGrid");
 
-    function timeDiff(clockIn, clockOut) {
-      if (!clockIn || !clockOut) return { label: "-", hours: 0, status: "NA" };
-
-      const [h1, m1, s1] = clockIn.split(":").map(Number);
-      const [h2, m2, s2] = clockOut.split(":").map(Number);
-      const inSecs = h1 * 3600 + m1 * 60 + s1;
-      const outSecs = h2 * 3600 + m2 * 60 + s2;
-      const total = outSecs - inSecs;
-      if (total <= 0) return { label: "-", hours: 0, status: "NA" };
-
-      const hrs = Math.floor(total / 3600);
-      const mins = Math.floor((total % 3600) / 60);
-      const hoursFloat = total / 3600;
-      const status = hoursFloat < 5 ? "A" : hoursFloat < 7 ? "L" : "P";
-      return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
-    }
-
-    fetch("/.netlify/functions/get_employee_attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: session.emp_id })
-    })
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("attendanceTableBody");
-      let totalHours = 0;
-
-      if (Array.isArray(data.attendance)) {
-        data.attendance.forEach(entry => {
-          const result = timeDiff(entry.clock_in, entry.clock_out);
-          totalHours += result.hours;
-
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td class="p-2">${entry.date}</td>
-            <td class="p-2">${entry.clock_in || '-'}</td>
-            <td class="p-2">${entry.clock_out || '-'}</td>
-            <td class="p-2">${result.label}</td>
-            <td class="p-2">${result.status}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      }
-
-      document.getElementById("weeklyTotal").textContent = `${totalHours.toFixed(2)} hours`;
+    months.forEach((name, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = name + " 2025";
+      btn.className = "bg-gray-700 hover:bg-purple-600 px-3 py-1 rounded";
+      btn.onclick = () => loadAttendance(index + 1);
+      monthButtons.appendChild(btn);
     });
-  </script>
 
+    async function loadAttendance(month) {
+      const res = await fetch("/.netlify/functions/get_attendance_calendar");
+      const data = await res.json();
+      const daysInMonth = new Date(2025, month, 0).getDate();
+
+      attendanceGrid.innerHTML = "";
+
+      // Header Row
+      const headerRow = document.createElement("div");
+      headerRow.className = `grid grid-cols-[200px_repeat(${daysInMonth},1fr)] gap-1 font-bold mb-2`;
+      headerRow.innerHTML = `<div class="pl-2">Employee</div>` +
+        Array.from({ length: daysInMonth }, (_, i) => `<div class="text-center">${i + 1}</div>`).join('');
+      attendanceGrid.appendChild(headerRow);
+
+      data.forEach(emp => {
+        const row = document.createElement("div");
+        row.className = `grid grid-cols-[200px_repeat(${daysInMonth},1fr)] gap-1 mb-1`;
+        row.innerHTML = `<div class="pl-2 text-sm">${emp.name}</div>` +
+          Array.from({ length: daysInMonth }, (_, i) => {
+            const dateKey = `2025-${month.toString().padStart(2, '0')}-${(i + 1).toString().padStart(2, '0')}`;
+            const status = emp.attendance[dateKey] || "NA";
+            return `<div class="text-center text-xs rounded status-${status}">${status}</div>`;
+          }).join('');
+        attendanceGrid.appendChild(row);
+      });
+    }
+
+    // Load current month by default
+    loadAttendance(new Date().getMonth() + 1);
+  </script>
 </body>
 </html>
