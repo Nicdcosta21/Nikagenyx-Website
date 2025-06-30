@@ -9,11 +9,11 @@
     body { font-family: 'Questrial', sans-serif; }
     .day-label { width: 24px; text-align: center; font-size: 10px; color: #ccc; }
     .half-hour-box { width: 6px; height: 24px; display: inline-block; margin: 0 0.5px; }
-    .P { background-color: #16a34a; }      /* Present */
-    .A { background-color: #dc2626; }      /* Absent */
-    .L { background-color: #facc15; }      /* Leave */
-    .H { background-color: #3b82f6; }      /* Holiday */
-    .NA { background-color: #374151; }     /* Not Available */
+    .P { background-color: #16a34a; }
+    .A { background-color: #dc2626; }
+    .L { background-color: #facc15; }
+    .H { background-color: #3b82f6; }
+    .NA { background-color: #374151; }
     .month-btn { padding: 6px 12px; border-radius: 4px; }
     .active-month { background-color: #4f46e5; }
   </style>
@@ -23,7 +23,6 @@
   <h1 class="text-3xl font-bold mb-6 text-center">📅 Employee Attendance Viewer</h1>
 
   <div class="flex justify-center flex-wrap gap-2 mb-6" id="monthSelector"></div>
-
   <div id="attendanceGrid" class="space-y-8"></div>
 
   <script>
@@ -68,26 +67,12 @@
       try {
         const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
         const json = await res.json();
-        data = json.data || []; // ✅ fixed variable declaration
-        console.log("Attendance data:", data);
+        data = json.data || [];
+        console.log("✅ Fetched attendance data:", data);
       } catch (e) {
-        console.error("Error loading attendance, fallback to dummy data.");
-        data = [
-          {
-            name: "NIKOLAS  SAMSON DCOSTA",
-            role: "Photo Manager",
-            from: "2025-02-21",
-            status: Array.from({ length: days }, () => Array(48).fill("P"))
-          },
-          {
-            name: "BARBOSA, PINKSON COLIN",
-            role: "Photographer",
-            from: "2025-04-01",
-            status: Array.from({ length: days }, (_, i) => {
-              return Array(48).fill(i % 2 === 0 ? "P" : "A");
-            })
-          }
-        ];
+        console.error("❌ Failed to load attendance data from server:", e);
+        container.innerHTML = "<p class='text-red-500 text-center'>Unable to load attendance data. Please check server logs or network connection.</p>";
+        return;
       }
 
       data.forEach(emp => {
