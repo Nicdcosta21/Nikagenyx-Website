@@ -1,6 +1,7 @@
 const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 
+// Configure PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -14,12 +15,13 @@ exports.handler = async (event) => {
     };
   }
 
+  // Decode body according to base64 flag
   const bodyBuffer = event.isBase64Encoded
     ? Buffer.from(event.body, "base64")
     : Buffer.from(event.body);
 
   return new Promise((resolve) => {
-    const form = new IncomingForm({ maxFileSize: 1024 * 1024, allowEmptyFiles: true });
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024, allowEmptyFiles: true }); // 1MB max, allow empty files
 
     form.parse(
       {
@@ -58,12 +60,12 @@ exports.handler = async (event) => {
             }
           });
 
-          // Handle files: update your DB with filenames or process them accordingly
-          // Example: If you want to save filename references to DB
+          // Update file name fields if file size > 0 and within 1MB limit
           ["pan", "aadhaar", "resume", "qualification", "photo", "passport"].forEach((fileField) => {
-            if (files[fileField] && files[fileField].size > 0) {
+            const file = files[fileField];
+            if (file && file.size > 0 && file.size <= 1024 * 1024) {
               updates.push(`${fileField}_filename = $${index++}`);
-              values.push(files[fileField].originalFilename || "");
+              values.push(file.originalFilename || "");
             }
           });
 
