@@ -64,6 +64,8 @@
 
     if (res.status === 200) {
       const profileRes = await fetch("/.netlify/functions/get_employees");
+        credentials: "include"
+    
       if (profileRes.status !== 200) {
         error.textContent = "Login succeeded, but profile fetch failed.";
         error.classList.remove("hidden");
