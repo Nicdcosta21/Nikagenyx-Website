@@ -1,8 +1,5 @@
-// netlify/functions/update_profile.js
-const { Pool } = require('pg');
-const formidable = require('formidable');
-const fs = require('fs');
-
+const { IncomingForm } = require("formidable");
+const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -16,57 +13,64 @@ exports.handler = async (event, context) => {
     };
   }
 
-  return new Promise((resolve, reject) => {
-    const form = formidable({ multiples: false, maxFileSize: 512 * 1024 }); // 500KB max
+  return new Promise((resolve) => {
+    const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // 1MB
 
     form.parse(event, async (err, fields, files) => {
       if (err) {
-        console.error("❌ Form parsing error:", err);
+        console.error("❌ Form parse error:", err);
         return resolve({
           statusCode: 500,
-          body: JSON.stringify({ message: "File upload error", error: err.message }),
+          body: JSON.stringify({ message: "Form parsing failed", error: err.message }),
         });
       }
 
       try {
-        const { emp_id, phone, dob, department, new_pin, role } = fields;
+        const { emp_id, phone, dob, role, department, new_pin } = fields;
 
-        if (!emp_id || !phone || !dob) {
+        if (!emp_id) {
           return resolve({
             statusCode: 400,
-            body: JSON.stringify({ message: "Required fields missing" }),
+            body: JSON.stringify({ message: "Missing employee ID" }),
           });
         }
 
         const updates = [];
         const values = [];
-        let idx = 1;
+        let i = 1;
 
-        if (phone)        { updates.push(`phone = $${idx++}`); values.push(phone); }
-        if (dob)          { updates.push(`dob = $${idx++}`); values.push(dob); }
-        if (department)   { updates.push(`department = $${idx++}`); values.push(department); }
-        if (role)         { updates.push(`role = $${idx++}`); values.push(role); }
-        if (new_pin)      { updates.push(`pin = $${idx++}`); values.push(new_pin); }
-
-        // ✅ Handle passport-size photo upload
-        if (files.photo && files.photo.filepath) {
-          const fileBuffer = fs.readFileSync(files.photo.filepath);
-          const base64 = fileBuffer.toString('base64');
-          updates.push(`photo_base64 = $${idx++}`);
-          values.push(base64);
+        if (phone) {
+          updates.push(`phone = $${i++}`);
+          values.push(phone);
+        }
+        if (dob) {
+          updates.push(`dob = $${i++}`);
+          values.push(dob);
+        }
+        if (role) {
+          updates.push(`role = $${i++}`);
+          values.push(role);
+        }
+        if (department) {
+          updates.push(`department = $${i++}`);
+          values.push(department);
+        }
+        if (new_pin) {
+          updates.push(`pin = $${i++}`);
+          values.push(new_pin);
         }
 
-        values.push(emp_id); // WHERE clause
-        const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${idx}`;
-
+        values.push(emp_id); // for WHERE clause
+        const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${i}`;
         await pool.query(query, values);
 
         resolve({
           statusCode: 200,
           body: JSON.stringify({ message: "Profile updated successfully" }),
         });
+
       } catch (e) {
-        console.error("❌ Update failed:", e.message);
+        console.error("❌ Update error:", e);
         resolve({
           statusCode: 500,
           body: JSON.stringify({ message: "Server error", error: e.message }),
