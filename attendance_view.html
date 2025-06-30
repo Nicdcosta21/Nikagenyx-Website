@@ -157,12 +157,52 @@
       cursor: not-allowed;
       box-shadow: none;
     }
+
+    /* New: Time Header Styles */
+    #timeHeader {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 8px;
+      padding-left: 1.5rem; /* same padding as employee rows */
+      overflow-x: auto;
+      user-select: none;
+      font-size: 12px;
+      color: #94a3b8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: #6366f1 #1e293b;
+    }
+    #timeHeader::-webkit-scrollbar {
+      height: 6px;
+    }
+    #timeHeader::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    #timeHeader::-webkit-scrollbar-thumb {
+      background-color: #6366f1;
+      border-radius: 3px;
+    }
+    .time-slot {
+      width: 28px; /* exactly 2 half-hour boxes width + margins */
+      flex-shrink: 0;
+      text-align: center;
+      font-weight: 600;
+      user-select: none;
+      padding-top: 2px;
+      letter-spacing: 0.02em;
+    }
+
     /* Responsive tweaks */
     @media (max-width: 768px) {
       .half-hour-box {
         width: 10px;
         height: 24px;
         margin: 0 1px;
+      }
+      .time-slot {
+        width: 20px;
+        font-size: 10px;
       }
       #dateSelector {
         padding: 0 0.5rem;
@@ -177,6 +217,9 @@
   <div id="monthSelector"></div>
 
   <div id="dateSelector"></div>
+
+  <!-- Time header -->
+  <div id="timeHeader"></div>
 
   <div id="attendanceGrid"></div>
 
@@ -195,6 +238,7 @@
     return new Date(year, month + 1, 0).getDate();
   }
 
+  // Render month selector buttons
   function renderMonthSelector() {
     const container = document.getElementById("monthSelector");
     container.innerHTML = "";
@@ -207,12 +251,14 @@
         selectedDate = 1;
         renderMonthSelector();
         renderDateSelector();
+        renderTimeHeader();
         loadAttendance();
       };
       container.appendChild(btn);
     });
   }
 
+  // Render date selector buttons horizontally
   function renderDateSelector() {
     const container = document.getElementById("dateSelector");
     container.innerHTML = "";
@@ -227,6 +273,21 @@
         loadAttendance();
       };
       container.appendChild(btn);
+    }
+  }
+
+  // Render the time header above attendance blocks
+  function renderTimeHeader() {
+    const container = document.getElementById("timeHeader");
+    container.innerHTML = "";
+    // 24 hours, each hour = 2 half-hour blocks, total 48 slots
+    for(let h = 0; h < 24; h++) {
+      const label = document.createElement("div");
+      // Format time with leading zero
+      const hourStr = h.toString().padStart(2, "0") + ":00";
+      label.className = "time-slot";
+      label.textContent = hourStr;
+      container.appendChild(label);
     }
   }
 
@@ -333,7 +394,9 @@
 
   renderMonthSelector();
   renderDateSelector();
+  renderTimeHeader();
   loadAttendance();
 </script>
+
 </body>
 </html>
