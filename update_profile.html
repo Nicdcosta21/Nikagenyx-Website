@@ -93,6 +93,30 @@ const rolesByDept = {
   ]
 };
 
+// Populate Role dropdown dynamically when Department changes
+document.getElementById("department").addEventListener("change", function () {
+  const roleSelect = document.getElementById("role");
+  const selectedDept = this.value;
+  roleSelect.innerHTML = '<option value="">Select Role</option>';
+  if (rolesByDept[selectedDept]) {
+    rolesByDept[selectedDept].forEach(role => {
+      const option = document.createElement("option");
+      option.value = role;
+      option.textContent = role;
+      roleSelect.appendChild(option);
+    });
+  }
+});
+
+// Validate file size <= 1MB
+function validateSize(input) {
+  const maxKB = 1024;
+  if (input.files[0] && input.files[0].size > maxKB * 1024) {
+    alert("File size should not exceed 1MB.");
+    input.value = "";
+  }
+}
+
 document.getElementById("profileForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   const formData = new FormData(this);
@@ -112,44 +136,8 @@ document.getElementById("profileForm").addEventListener("submit", async function
       return;
     }
 
-    const result = await res.json();
-    alert(result.message || "Profile updated successfully");
-  } catch (err) {
-    alert("Error updating profile");
-    console.error(err);
-  }
-});
-
-
-function validateSize(input) {
-  const maxKB = 1024;
-  if (input.files[0] && input.files[0].size > maxKB * 1024) {
-    alert("File size should not exceed 1MB.");
-    input.value = "";
-  }
-}
-
-document.getElementById("profileForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-  const formData = new FormData(this);
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-  if (session?.emp_id) formData.append("emp_id", session.emp_id);
-
-  try {
-    const res = await fetch("/.netlify/functions/update_profile", {
-      method: "POST",
-      body: formData
-    });
-
     const contentType = res.headers.get("content-type");
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Server error:", text);
-      alert("Server error while updating profile.");
-      return;
-    }
-
-    const result = contentType.includes("application/json") ? await res.json() : {};
+    const result = contentType && contentType.includes("application/json") ? await res.json() : {};
     alert(result.message || "Profile updated successfully");
   } catch (err) {
     alert("Error updating profile");
