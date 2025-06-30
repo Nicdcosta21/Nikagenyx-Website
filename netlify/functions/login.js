@@ -1,38 +1,44 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+const { serialize } = require('cookie');
 
-exports.handler = async function (event) {
-  const { empId, pin } = JSON.parse(event.body);
+exports.handler = async (event) => {
+  const { empId, pin } = JSON.parse(event.body || '{}');
 
-  const client = new Client({
+  const db = new Pool({
     connectionString: process.env.NETLIFY_DATABASE_URL,
     ssl: { rejectUnauthorized: false },
   });
 
-  await client.connect();
+  const { rows } = await db.query(
+    'SELECT emp_id FROM employees WHERE emp_id=$1 AND pin=$2',
+    [empId, pin]
+  );
+  await db.end();
 
-  try {
-    const result = await client.query(
-      'SELECT * FROM employees WHERE emp_id = $1 AND pin = $2',
-      [empId, pin]
-    );
-
-    await client.end();
-
-    if (result.rows.length > 0) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ status: "success", user: result.rows[0] }),
-      };
-    } else {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ status: "fail", message: "Invalid login" }),
-      };
-    }
-  } catch (err) {
+  if (!rows.length) {
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      statusCode: 401,
+      body: 'Bad credentials',
     };
   }
+
+  const token = jwt.sign({ empId: rows[0].emp_id }, process.env.JWT_SECRET, {
+    expiresIn: '2h',
+  });
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Set-Cookie': serialize('nikagenyx_session', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        path: '/',
+        maxAge: 60 * 60 * 2, // 2 hours
+      }),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ok: true }),
+  };
 };
