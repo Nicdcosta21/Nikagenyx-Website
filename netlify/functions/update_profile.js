@@ -16,31 +16,23 @@ exports.handler = async (event) => {
   return new Promise((resolve) => {
     const form = new IncomingForm({ maxFileSize: 1024 * 1024 }); // max 1MB
 
-    form.parse(
-      {
-        headers: event.headers,
-        method: event.httpMethod,
-        url: event.path,
-        buffer: bodyBuffer,
-      },
-      (err, fields, files) => {
-        if (err) {
-          console.error("❌ Form parse failed:", err);
-          return resolve({
-            statusCode: 500,
-            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
-          });
-        }
-        // Return parsed fields and file names for debugging/demo
+    form.parseBuffer(bodyBuffer, (err, fields, files) => {
+      if (err) {
+        console.error("❌ Form parse failed:", err);
         return resolve({
-          statusCode: 200,
-          body: JSON.stringify({
-            message: "Form parsed successfully",
-            fields,
-            files: Object.keys(files),
-          }),
+          statusCode: 500,
+          body: JSON.stringify({ error: "Form parse failed", message: err.message }),
         });
       }
-    );
+      // Return parsed fields and file names for debugging/demo
+      return resolve({
+        statusCode: 200,
+        body: JSON.stringify({
+          message: "Form parsed successfully",
+          fields,
+          files: Object.keys(files),
+        }),
+      });
+    });
   });
 };
