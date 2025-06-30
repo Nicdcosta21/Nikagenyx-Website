@@ -9,7 +9,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Body and general page styles */
     body {
       font-family: 'Questrial', sans-serif;
       background-color: #0f172a;
@@ -18,8 +17,6 @@
       padding: 2rem;
       min-height: 100vh;
     }
-
-    /* Page title styling */
     h1 {
       font-weight: 700;
       font-size: 2.5rem;
@@ -28,8 +25,6 @@
       color: #c7d2fe;
       text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
     }
-
-    /* Month selector container styling */
     #monthSelector {
       margin-bottom: 1.5rem;
       display: flex;
@@ -37,8 +32,6 @@
       justify-content: center;
       gap: 10px;
     }
-
-    /* Individual month button styles */
     .month-btn {
       background-color: #1e293b;
       color: #e0e7ff;
@@ -63,8 +56,6 @@
       border-color: #c7d2fe;
       color: #fefefe;
     }
-
-    /* Date selector container styling (horizontal scroll) */
     #dateSelector {
       margin-bottom: 2rem;
       overflow-x: auto;
@@ -75,7 +66,6 @@
       scrollbar-width: thin;
       scrollbar-color: #6366f1 #1e293b;
     }
-    /* Scrollbar styling for WebKit browsers */
     #dateSelector::-webkit-scrollbar {
       height: 6px;
     }
@@ -86,8 +76,6 @@
       background-color: #6366f1;
       border-radius: 3px;
     }
-
-    /* Individual date button styles */
     .date-btn {
       width: 36px;
       height: 36px;
@@ -114,13 +102,9 @@
       border-color: #a5b4fc;
       box-shadow: 0 0 12px #a5b4fc;
     }
-
-    /* Attendance grid container max width */
     #attendanceGrid {
       max-width: 100%;
     }
-
-    /* Individual employee row styles */
     .employee-row {
       background-color: #1e293b;
       padding: 1rem 1.5rem;
@@ -133,17 +117,36 @@
     .employee-row:hover {
       box-shadow: 0 0 20px #6366f1cc;
     }
-
-    /* Employee header text */
     .employee-header {
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 0.8rem;
       font-size: 1.1rem;
       color: #e0e7ff;
       letter-spacing: 0.02em;
     }
-
-    /* Half-hour attendance block styles */
+    .hour-labels {
+      display: flex;
+      justify-content: flex-start;
+      overflow-x: auto;
+      white-space: nowrap;
+      user-select: none;
+      font-size: 12px;
+      color: rgb(148, 163, 184);
+      border-bottom: 1px solid rgb(51, 65, 85);
+      padding-bottom: 4px;
+      padding-left: 0.3rem;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    .hour-label {
+      width: 34px; /* width for two half-hour blocks (14px*2 + margins) */
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding-top: 2px;
+      flex-shrink: 0;
+      user-select: none;
+    }
     .half-hour-box {
       width: 14px;
       height: 28px;
@@ -158,25 +161,22 @@
     .half-hour-box:hover {
       box-shadow: 0 0 6px #818cf8;
     }
-    /* Attendance status colors */
     .half-hour-box.P {
       background-color: #22c55e;
       box-shadow: 0 0 10px #22c55ecc;
-    } /* Present */
+    }
     .half-hour-box.A {
       background-color: #ef4444;
       box-shadow: 0 0 10px #ef4444cc;
-    } /* Absent */
+    }
     .half-hour-box.L {
       background-color: #eab308;
       box-shadow: 0 0 10px #eab308cc;
-    } /* Leave */
+    }
     .half-hour-box.H {
       background-color: #3b82f6;
       box-shadow: 0 0 10px #3b82f6cc;
-    } /* Holiday */
-
-    /* Confirm button styling */
+    }
     button.confirm-btn {
       margin-top: 1rem;
       padding: 0.5rem 1rem;
@@ -201,37 +201,29 @@
 </head>
 <body>
 
-  <!-- Page heading -->
   <h1>📅 Employee Attendance - Date View</h1>
 
-  <!-- Month selection buttons -->
   <div id="monthSelector"></div>
 
-  <!-- Date selection buttons -->
   <div id="dateSelector"></div>
 
-  <!-- Container for attendance blocks -->
   <div id="attendanceGrid"></div>
 
 <script>
-  // Month names for selectors
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Initialize current date selections
   const today = new Date();
   let currentMonth = today.getMonth();
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
 
-  // Helper to get total days in a month/year
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
   }
 
-  // Render month selector buttons dynamically
   function renderMonthSelector() {
     const container = document.getElementById("monthSelector");
     container.innerHTML = "";
@@ -240,26 +232,22 @@
       const btn = document.createElement("button");
       btn.textContent = `${m} ${currentYear}`;
       btn.className = `month-btn ${i === currentMonth ? "bg-indigo-700" : "bg-gray-700 hover:bg-gray-600"}`;
-
       btn.onclick = () => {
         currentMonth = i;
-        selectedDate = 1;               // Reset selected date to 1 on month change
-        renderMonthSelector();          // Re-render month buttons
-        renderDateSelector();           // Render date buttons for new month
-        loadAttendance();              // Load attendance data for new month/date
+        selectedDate = 1;
+        renderMonthSelector();
+        renderDateSelector();
+        loadAttendance();
       };
-
       container.appendChild(btn);
     });
   }
 
-  // Render date selector buttons horizontally
   function renderDateSelector() {
     const container = document.getElementById("dateSelector");
     container.innerHTML = "";
 
     const days = daysInMonth(currentMonth, currentYear);
-
     for(let d = 1; d <= days; d++) {
       const btn = document.createElement("div");
       btn.textContent = d;
@@ -273,7 +261,21 @@
     }
   }
 
-  // Load and display attendance data for selected month and date
+  // Render hour labels centered over each 2 half-hour blocks
+  function renderHourLabels() {
+    const container = document.createElement("div");
+    container.className = "hour-labels";
+
+    for (let h = 0; h < 24; h++) {
+      const label = document.createElement("div");
+      label.className = "hour-label";
+      label.textContent = h.toString().padStart(2, "0");
+      container.appendChild(label);
+    }
+
+    return container;
+  }
+
   async function loadAttendance() {
     const container = document.getElementById("attendanceGrid");
     container.innerHTML = "Loading...";
@@ -281,9 +283,7 @@
     const url = "/.netlify/functions/get_attendance_calendar";
 
     try {
-      // Fetch attendance data from backend function
       const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-
       if (!res.ok) throw new Error("Failed to fetch data");
 
       const json = await res.json();
@@ -291,76 +291,26 @@
 
       container.innerHTML = "";
 
-      if(data.length === 0) {
+      if (data.length === 0) {
         container.innerHTML = "<p class='text-center text-gray-400'>No attendance data for this month.</p>";
         return;
       }
 
-      // Render each employee's attendance row
       data.forEach(emp => {
         const row = document.createElement("div");
         row.className = "employee-row";
 
-        // Employee info header
         const header = document.createElement("div");
         header.className = "employee-header";
         header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
         row.appendChild(header);
 
-        // Render the hour labels inside each employee row, above half-hour blocks
-        const timeHeader = document.createElement("div");
-        timeHeader.style.cssText = `
-          display: flex;
-          justify-content: flex-start;
-          overflow-x: auto;
-          white-space: nowrap;
-          user-select: none;
-          font-size: 12px;
-          color: rgb(148, 163, 184);
-          border-bottom: 1px solid rgb(51, 65, 85);
-          padding-bottom: 4px;
-          padding-left: 0.3rem;
-          font-family: monospace;
-        `;
+        // Add hour labels above attendance blocks
+        const hourLabels = renderHourLabels();
+        row.appendChild(hourLabels);
 
-        // Render hours 00 to 23 with pipe separators '|'
-        for (let h = 0; h < 24; h++) {
-          const hourDiv = document.createElement("div");
-          hourDiv.style.cssText = `
-            width: 28px;
-            flex-shrink: 0;
-            text-align: center;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            padding-top: 2px;
-            user-select: none;
-          `;
-          hourDiv.textContent = h.toString().padStart(2, "0");
-          timeHeader.appendChild(hourDiv);
-
-          // Separator pipe except after last hour
-          if (h !== 23) {
-            const sepDiv = document.createElement("div");
-            sepDiv.style.cssText = `
-              width: 7px;
-              flex-shrink: 0;
-              text-align: center;
-              font-weight: 600;
-              letter-spacing: 0.02em;
-              padding-top: 2px;
-              user-select: none;
-            `;
-            sepDiv.textContent = "|";
-            timeHeader.appendChild(sepDiv);
-          }
-        }
-
-        row.appendChild(timeHeader);
-
-        // Get attendance blocks for the selected date or fill with 'NA'
         const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
 
-        // Render attendance blocks
         blocks.forEach((code, idx) => {
           const box = document.createElement("div");
           box.className = `half-hour-box ${code}`;
@@ -370,7 +320,6 @@
           box.dataset.date = selectedDate;
           box.dataset.code = code;
 
-          // Toggle block attendance status on click (P <-> A)
           box.onclick = () => {
             if (box.dataset.code === "P") {
               box.dataset.code = "A";
@@ -385,7 +334,6 @@
           row.appendChild(box);
         });
 
-        // Confirm changes button - initially hidden
         const confirmBtn = document.createElement("button");
         confirmBtn.textContent = "Confirm Changes";
         confirmBtn.className = "confirm-btn hidden";
@@ -394,19 +342,16 @@
 
         container.appendChild(row);
       });
-
     } catch (error) {
       container.innerHTML = `<p class="text-red-500 text-center">Error loading attendance data: ${error.message}</p>`;
     }
   }
 
-  // Show confirm button when any block is toggled
   function showConfirmButton(row, empId) {
     const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
     if (btn) btn.classList.remove("hidden");
   }
 
-  // Submit updated attendance to backend
   async function submitChanges(empId, row) {
     const boxes = [...row.getElementsByClassName("half-hour-box")];
     const updatedSlots = boxes.map(box => ({
@@ -433,13 +378,11 @@
 
       const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
       if (btn) btn.classList.add("hidden");
-
     } catch (error) {
       alert(`Error updating attendance: ${error.message}`);
     }
   }
 
-  // Initialize UI and load initial data
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
