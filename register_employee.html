@@ -44,7 +44,7 @@
       </div>
       <div class="mb-4">
         <label class="block mb-1 text-sm">4 Digits PIN *</label>
-        <input type="password" name="pin" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+        <input type="password" name="pin" pattern="[0-9]{4}" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
       </div>
       <div class="mb-4">
         <label class="block mb-1 text-sm">Department *</label>
@@ -69,7 +69,23 @@
       <p class="text-sm mb-1">Or enter this secret key manually:</p>
       <p id="mfaSecret" class="text-sm mb-2 select-all"></p>
       <button onclick="copySecret()" class="mt-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">Copy Secret Key</button>
-      <button onclick="window.location.href='employee_portal.html'" class="mt-4 block w-full bg-green-600 hover:bg-green-700 py-2 rounded">Finish</button>
+
+      <form id="mfaForm" class="mt-4">
+        <label class="block mb-1 text-sm">Enter 6-digit code from your authenticator app:</label>
+        <input id="mfaInput" type="text" maxlength="6" required
+               class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-center tracking-widest text-lg"
+               placeholder="------" />
+        <button id="verifyBtn" type="submit"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 mt-3 py-2 rounded font-bold">
+          Verify MFA
+        </button>
+      </form>
+
+      <button id="finishBtn" onclick="window.location.href='employee_portal.html'"
+              class="mt-4 block w-full bg-green-600 hover:bg-green-700 py-2 rounded opacity-50 cursor-not-allowed"
+              disabled>
+        Finish
+      </button>
     </div>
 
     <p id="message" class="text-sm text-center mt-4"></p>
@@ -89,20 +105,12 @@
   const qrSection = document.getElementById('qrSection');
   const qrImage = document.getElementById('qrImage');
   const mfaSecretEl = document.getElementById('mfaSecret');
+  const mfaForm = document.getElementById('mfaForm');
+  const mfaInput = document.getElementById('mfaInput');
+  const finishBtn = document.getElementById('finishBtn');
+
   let capturedPhoto = '';
   let empId = '', mfaSecret = '';
-
-  // Dynamically add MFA input + Finish button
-  const mfaInput = document.createElement("input");
-  mfaInput.type = "text";
-  mfaInput.placeholder = "Enter MFA code from your app";
-  mfaInput.maxLength = 6;
-  mfaInput.className = "w-full p-2 mt-2 bg-gray-700 border border-gray-600 rounded text-center";
-  qrSection.appendChild(mfaInput);
-
-  const finishBtn = document.querySelector("#qrSection button:last-of-type");
-  finishBtn.disabled = true;
-  finishBtn.classList.add("opacity-50", "cursor-not-allowed");
 
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
@@ -147,15 +155,20 @@
       mfaSecretEl.textContent = mfaSecret;
       qrSection.classList.remove('hidden');
       message.innerHTML = `<span class="text-green-400">✅ QR Code generated for <strong>${empId}</strong></span>`;
-      mfaInput.addEventListener('input', handleMFAInput);
     } else {
       message.textContent = `❌ Error: ${result.message}`;
       message.classList.add('text-red-400');
     }
   });
 
-  async function handleMFAInput() {
-    if (mfaInput.value.length !== 6) return;
+  mfaForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const mfaCode = mfaInput.value.trim();
+
+    if (mfaCode.length !== 6 || !/^\d{6}$/.test(mfaCode)) {
+      message.innerHTML = `<span class="text-red-400">⚠️ Enter a valid 6-digit MFA code.</span>`;
+      return;
+    }
 
     const verifyData = {
       emp_id: empId,
@@ -167,7 +180,7 @@
       photo: capturedPhoto,
       department: form.department.value,
       mfa_secret: mfaSecret,
-      mfa_code: mfaInput.value
+      mfa_code: mfaCode
     };
 
     const res = await fetch('/.netlify/functions/finalize-registration', {
@@ -181,13 +194,13 @@
     if (res.ok) {
       finishBtn.disabled = false;
       finishBtn.classList.remove("opacity-50", "cursor-not-allowed");
-      message.innerHTML = `<span class="text-green-400">🎉 Registration complete for <strong>${empId}</strong></span>`;
+      message.innerHTML = `<span class="text-green-400">🎉 MFA verified. Registered as <strong>${empId}</strong></span>`;
     } else {
       message.innerHTML = `<span class="text-red-400">❌ MFA failed: ${result.message}</span>`;
       finishBtn.disabled = true;
       finishBtn.classList.add("opacity-50", "cursor-not-allowed");
     }
-  }
+  });
 
   function copySecret() {
     navigator.clipboard.writeText(mfaSecretEl.textContent).then(() => {
