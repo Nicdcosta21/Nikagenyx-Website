@@ -44,18 +44,6 @@
   </footer>
 
   <script>
-    async function saveSessionAndRedirect(user) {
-      await Promise.resolve();
-      console.log("API Response:", data);  
-      console.log("User:", data.user);
-      localStorage.setItem("emp_session", JSON.stringify(data.user));
-      console.log("Session saved:", user);
-
-      window.location.href = user.role === "admin"
-        ? "admin_dashboard.html"
-        : "employee_dashboard.html";
-    }
-
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const empId = document.getElementById("empId").value.trim().toUpperCase();
@@ -77,7 +65,13 @@
           return;
         }
 
-        saveSessionAndRedirect(data.user);
+        // ✅ Save session and redirect
+        localStorage.setItem("emp_session", JSON.stringify(data.user));
+        console.log("Session saved:", data.user);
+
+        window.location.href = data.user.role === "admin"
+          ? "admin_dashboard.html"
+          : "employee_dashboard.html";
 
       } catch (err) {
         console.error("Login failed:", err);
