@@ -3,24 +3,10 @@
 
   // Early exit: skip gate on login page — let login complete
   if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
-    const sessionStr = localStorage.getItem("emp_session");
+  console.log("🔐 On login page — gate exiting early");
+  return;
+}
 
-    if (sessionStr) {
-      try {
-        const parsed = JSON.parse(sessionStr);
-        if (parsed && parsed.role) {
-          setTimeout(() => {
-            if (parsed.role.includes("admin")) {
-              window.location.href = "/admin_dashboard.html";
-            } else {
-              window.location.href = "/employee_dashboard.html";
-            }
-          }, 200); // allow localStorage to finish writing
-        }
-      } catch (e) {
-        console.error("Session parse error on login page:", e);
-      }
-    }
 
     // Don’t run full auth gate
     return;
