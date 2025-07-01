@@ -1,7 +1,8 @@
 (function authGate() {
-  const PUBLIC_PAGES = ["/login.html", "/employee_portal.html", "/register_employee.html"];
-  const ADMIN_PAGES = ["/admin_dashboard.html"];
-  const EMPLOYEE_PAGES = ["/employee_dashboard.html"];
+  const PUBLIC_PAGES = ["/employee_portal.html", "/register_employee.html"];
+  const ADMIN_PAGES = ["/admin_dashboard.html", "/view_payroll.html", "/attendance_view.html"];
+  const EMPLOYEE_PAGES = ["/employee_dashboard.html", "/update_profile.html", "/view_attendance.html", "/view_payroll.html", "/clock_attendance.html"];
+
 
   const currentPath = window.location.pathname.toLowerCase();
   const sessionStr = localStorage.getItem("emp_session");
@@ -64,6 +65,14 @@
         if (redirect("/employee_dashboard.html")) return;
       }
     }
+
+
+    // Employee-only page access check
+if (EMPLOYEE_PAGES.includes(currentPath)) {
+  if (!session.role || session.role === "admin") {
+    if (redirect("/admin_dashboard.html")) return;
+  }
+}
 
     // Redirect logged-in users away from public login pages
     if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
