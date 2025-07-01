@@ -102,6 +102,7 @@
   });
 
   if (res.status === 200) {
+    localStorage.setItem("mfa_verified", "true");
     window.location.href = cachedUserData.role === "admin"
       ? "admin_dashboard.html"
       : "employee_dashboard.html";
