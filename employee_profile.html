@@ -37,51 +37,45 @@
   </footer>
 
   <script>
-    const ADMIN_EMAILS = ["nikagenyx@gmail.com", "nic.dcosta21@gmail.com"];
+  async function saveSessionAndRedirect(data) {
+    await Promise.resolve();
+    localStorage.setItem("emp_session", JSON.stringify(data));
+    console.log("Session saved:", data);
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const empId = document.getElementById("empId").value.trim().toUpperCase();
-      const errorBox = document.getElementById("error");
-
-      try {
-        const res = await fetch("/.netlify/functions/get_employee", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emp_id: empId })
-        });
-
-        const data = await res.json();
-        if (!data || !data.emp_id) {
-          errorBox.textContent = "❌ Employee not found.";
-          errorBox.classList.remove("hidden");
-          return;
-        }
-
-        // Store session
-        localStorage.setItem("emp_session", JSON.stringify(data));
-        console.log("Session saved:", JSON.stringify(data));
-        // Wait 300ms before redirecting
-setTimeout(() => {
-  if (data.role === "admin") {
-    window.location.href = "admin_dashboard.html";
-  } else {
-    window.location.href = "employee_dashboard.html";
+    window.location.href = data.role === "admin"
+      ? "admin_dashboard.html"
+      : "employee_dashboard.html";
   }
-}, 300);
 
-        // Redirect based on role
-        if (data.role === "admin") {
-          window.location.href = "admin_dashboard.html";
-        } else {
-          window.location.href = "employee_dashboard.html";
-        }
-      } catch (err) {
-        console.error("Login failed:", err);
-        errorBox.textContent = "❌ Something went wrong. Please try again.";
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const empId = document.getElementById("empId").value.trim().toUpperCase();
+    const errorBox = document.getElementById("error");
+
+    try {
+      const res = await fetch("/.netlify/functions/get_employee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id: empId })
+      });
+
+      const data = await res.json();
+      if (!data || !data.emp_id) {
+        errorBox.textContent = "❌ Employee not found.";
         errorBox.classList.remove("hidden");
+        return;
       }
-    });
-  </script>
+
+      // ✅ Save session and redirect
+      saveSessionAndRedirect(data);
+
+    } catch (err) {
+      console.error("Login failed:", err);
+      errorBox.textContent = "❌ Something went wrong. Please try again.";
+      errorBox.classList.remove("hidden");
+    }
+  });
+</script>
+
 </body>
 </html>
