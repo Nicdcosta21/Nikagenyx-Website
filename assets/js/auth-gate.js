@@ -7,8 +7,8 @@
   const sessionStr = localStorage.getItem("emp_session");
   const mfaVerified = localStorage.getItem("mfa_verified") === "true";
 
-  // Optional: Cookie check
-  const cookies = document.cookie.split(";").map(c => c.trim());
+  // Normalize cookie names to lowercase to avoid case sensitivity issues
+  const cookies = document.cookie.toLowerCase().split(";").map(c => c.trim());
   const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
 
   function redirect(path) {
@@ -31,7 +31,7 @@
     // Skip validation on public pages
     if (PUBLIC_PAGES.includes(currentPath)) return;
 
-    // Require session cookie
+    // Require session cookie presence
     if (!hasSessionCookie) {
       clearSessionAndRedirect();
       return;
@@ -45,26 +45,27 @@
 
     const session = JSON.parse(sessionStr);
 
-    // Basic ID check
+    // Basic session integrity check
     if (!session || !session.emp_id) {
       clearSessionAndRedirect();
       return;
     }
 
-    // MFA required for non-superadmin users
-    const isSuperAdmin = session.emp_id === "NGX001";
+    // Bypass MFA for super admin NGX001 (case insensitive)
+    const isSuperAdmin = session.emp_id && session.emp_id.toUpperCase() === "NGX001";
+
     if (!isSuperAdmin && !mfaVerified) {
       if (redirect("/employee_portal.html")) return;
     }
 
-    // Role validation for admin pages
+    // Admin page access check
     if (ADMIN_PAGES.includes(currentPath)) {
       if (!session.role || !session.role.includes("admin")) {
         if (redirect("/employee_dashboard.html")) return;
       }
     }
 
-    // Redirect logged-in user away from login or employee_portal pages
+    // Redirect logged-in users away from public login pages
     if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
       if (session.role && session.role.includes("admin")) {
         if (redirect("/admin_dashboard.html")) return;
@@ -72,6 +73,7 @@
         if (redirect("/employee_dashboard.html")) return;
       }
     }
+
   } catch (err) {
     console.error("🔐 Auth Gate Error:", err);
     clearSessionAndRedirect();
