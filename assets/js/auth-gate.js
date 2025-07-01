@@ -1,8 +1,8 @@
 (async function () {
   const cookies = document.cookie.split("; ");
-  const sessionExists = cookies.some(p => p.startsWith("nikagenyx_session="));
+  const hasSession = cookies.some(p => p.startsWith("nikagenyx_session="));
 
-  if (!sessionExists) {
+  if (!hasSession) {
     localStorage.removeItem("emp_session");
     window.location.replace("/employee_portal.html");
     return;
@@ -10,20 +10,21 @@
 
   let session = localStorage.getItem("emp_session");
 
-  // 🛠️ If localStorage was wiped, fetch user again
   if (!session) {
     try {
       const res = await fetch("/.netlify/functions/get_employees", {
         credentials: "include"
       });
+
       if (res.status === 200) {
         const user = await res.json();
+        localStorage.setItem("emp_session", JSON.stringify(user));
         session = JSON.stringify(user);
-        localStorage.setItem("emp_session", session);
       } else {
-        throw new Error("Session invalid");
+        throw new Error("Invalid session");
       }
-    } catch {
+    } catch (err) {
+      localStorage.removeItem("emp_session");
       window.location.replace("/employee_portal.html");
       return;
     }
