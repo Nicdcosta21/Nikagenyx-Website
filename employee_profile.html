@@ -75,11 +75,12 @@
 
 
 setTimeout(() => {
-  console.log("✅ Login success. Not redirecting for now.");
-  // window.location.href = data.user.role === "admin"
-  //   ? "admin_dashboard.html"
-  //   : "employee_dashboard.html";
+  console.log("✅ Login success. Redirecting...");
+  window.location.href = data.user.role === "admin"
+    ? "admin_dashboard.html"
+    : "employee_dashboard.html";
 }, 400);
+
 
 
     } catch (err) {
