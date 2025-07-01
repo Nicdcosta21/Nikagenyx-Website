@@ -46,20 +46,16 @@ exports.handler = async (event) => {
     );
 
     // ✅ Insert session tracking into DB
-    try {
-      await pool.query(
-        `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
-         VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
-        [
-          user.emp_id,
-          token,
-          event.headers['user-agent'] || 'unknown',
-          event.headers['x-forwarded-for'] || '127.0.0.1'
-        ]
-      );
-    } catch (dbErr) {
-      console.error("❌ Failed to log session:", dbErr);
-    }
+    await pool.query(
+      `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
+      [
+        user.emp_id,
+        token,
+        event.headers['user-agent'] || 'unknown',
+        event.headers['x-forwarded-for'] || '127.0.0.1'
+      ]
+    );
 
     return {
       statusCode: 200,
@@ -88,7 +84,5 @@ exports.handler = async (event) => {
       statusCode: 500,
       body: JSON.stringify({ message: 'Internal Server Error' }),
     };
-  } finally {
-    await pool.end();
   }
 };
