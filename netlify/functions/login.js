@@ -25,7 +25,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // 🔍 Query employee
     const result = await pool.query(
       'SELECT emp_id, role FROM employees WHERE emp_id = $1 AND pin = $2',
       [empId, pin]
@@ -40,36 +39,37 @@ exports.handler = async (event) => {
 
     const user = result.rows[0];
 
-    // 🔐 Create JWT token
     const token = jwt.sign(
       { emp_id: user.emp_id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
 
-    // Optional: Track session in DB
-    /*
-    await pool.query(
-      `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
-      [
-        user.emp_id,
-        token,
-        event.headers['user-agent'] || 'unknown',
-        event.headers['x-forwarded-for'] || '127.0.0.1'
-      ]
-    );
-    */
+    // ✅ Insert session tracking into DB
+    try {
+      await pool.query(
+        `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
+        [
+          user.emp_id,
+          token,
+          event.headers['user-agent'] || 'unknown',
+          event.headers['x-forwarded-for'] || '127.0.0.1'
+        ]
+      );
+    } catch (dbErr) {
+      console.error("❌ Failed to log session:", dbErr);
+    }
 
     return {
       statusCode: 200,
       headers: {
         'Set-Cookie': serialize('nikagenyx_session', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // Set true in Netlify
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'Strict',
           path: '/',
-          maxAge: 60 * 60 * 2, // 2 hours
+          maxAge: 60 * 60 * 2,
         }),
         'Content-Type': 'application/json',
       },
