@@ -28,9 +28,13 @@ exports.handler = async (event) => {
 
     const user = rows[0];
 
-    const token = jwt.sign({ empId: user.emp_id }, process.env.JWT_SECRET, {
-      expiresIn: '2h',
-    });
+  console.log("JWT_SECRET in login.js:", process.env.JWT_SECRET); // <-- 🔍 Add this just above
+
+const token = jwt.sign(
+  { empId: user.emp_id },
+  process.env.JWT_SECRET,
+  { expiresIn: '2h' }
+);
 
     return {
       statusCode: 200,
