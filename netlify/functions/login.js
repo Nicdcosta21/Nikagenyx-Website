@@ -25,35 +25,38 @@ exports.handler = async (event) => {
       };
     }
 
+    // 🔍 Query employee
     const result = await pool.query(
-      'SELECT emp_id, role FROM employees WHERE emp_id=$1 AND pin=$2',
+      'SELECT emp_id, role FROM employees WHERE emp_id = $1 AND pin = $2',
       [empId, pin]
     );
 
     if (result.rows.length === 0) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ message: 'Bad credentials' }),
+        body: JSON.stringify({ message: 'Invalid ID or PIN' }),
       };
     }
 
     const user = result.rows[0];
+
+    // 🔐 Create JWT token
     const token = jwt.sign(
       { emp_id: user.emp_id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
 
-    // Optional: Save session in DB for tracking (if table exists)
+    // Optional: Track session in DB
     /*
     await pool.query(
-      `INSERT INTO sessions (emp_id, token, user_agent, ip_address, expires_at)
-       VALUES ($1, $2, $3, $4, NOW() + interval '2 hours')`,
+      `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
       [
         user.emp_id,
         token,
         event.headers['user-agent'] || 'unknown',
-        event.headers['x-forwarded-for'] || 'localhost'
+        event.headers['x-forwarded-for'] || '127.0.0.1'
       ]
     );
     */
@@ -63,15 +66,22 @@ exports.handler = async (event) => {
       headers: {
         'Set-Cookie': serialize('nikagenyx_session', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: process.env.NODE_ENV === 'production', // Set true in Netlify
           sameSite: 'Strict',
           path: '/',
           maxAge: 60 * 60 * 2, // 2 hours
         }),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ok: true, user }),
+      body: JSON.stringify({
+        ok: true,
+        user: {
+          emp_id: user.emp_id,
+          role: user.role
+        }
+      }),
     };
+
   } catch (error) {
     console.error('❌ Login error:', error);
     return {
