@@ -46,7 +46,7 @@
   <script>
     async function saveSessionAndRedirect(user) {
       await Promise.resolve();
-      localStorage.setItem("emp_session", JSON.stringify(user));
+      localStorage.setItem("emp_session", JSON.stringify(data.user));
       console.log("Session saved:", user);
 
       window.location.href = user.role === "admin"
