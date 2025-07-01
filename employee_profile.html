@@ -43,42 +43,47 @@
     &copy; 2025 Nikagenyx Vision Tech Private Limited
   </footer>
 
-  <script>
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const empId = document.getElementById("empId").value.trim().toUpperCase();
-      const pin = document.getElementById("pin").value.trim();
-      const errorBox = document.getElementById("error");
+ <script>
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const empId = document.getElementById("empId").value.trim().toUpperCase();
+    const pin = document.getElementById("pin").value.trim();
+    const errorBox = document.getElementById("error");
 
-      try {
-        const res = await fetch("/.netlify/functions/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ empId, pin })
-        });
+    try {
+      const res = await fetch("/.netlify/functions/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empId, pin })
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (!data.ok || !data.user) {
-          errorBox.textContent = "❌ Invalid ID or PIN.";
-          errorBox.classList.remove("hidden");
-          return;
-        }
+      // ✅ Log everything cleanly
+      console.log("Login response:", data);
 
-        // ✅ Save session and redirect
-        localStorage.setItem("emp_session", JSON.stringify(data.user));
-        console.log("Session saved:", data.user);
-
-        window.location.href = data.user.role === "admin"
-          ? "admin_dashboard.html"
-          : "employee_dashboard.html";
-
-      } catch (err) {
-        console.error("Login failed:", err);
-        errorBox.textContent = "❌ Something went wrong. Please try again.";
+      if (!data.ok || !data.user) {
+        errorBox.textContent = "❌ Invalid ID or PIN.";
         errorBox.classList.remove("hidden");
+        return;
       }
-    });
-  </script>
+
+      // ✅ Save session cleanly
+      localStorage.setItem("emp_session", JSON.stringify(data.user));
+      console.log("Session saved to localStorage:", localStorage.getItem("emp_session"));
+
+      // ✅ Redirect
+      window.location.href = data.user.role === "admin"
+        ? "admin_dashboard.html"
+        : "employee_dashboard.html";
+
+    } catch (err) {
+      console.error("Login failed:", err);
+      errorBox.textContent = "❌ Something went wrong. Please try again.";
+      errorBox.classList.remove("hidden");
+    }
+  });
+</script>
+
 </body>
 </html>
