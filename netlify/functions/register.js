@@ -28,19 +28,33 @@ exports.handler = async (event) => {
       };
     }
 
-    const emp_id = `NGX${Date.now().toString().slice(-6)}`;
     const fullName = `${firstName} ${lastName}`;
 
-    // Generate MFA secret
+    // 🔍 Check if user already exists by phone or (name + dob)
+    const duplicateCheck = await pool.query(
+      `SELECT * FROM employees WHERE phone = $1 OR (name = $2 AND dob = $3)`,
+      [phone, fullName, dob]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({ message: "Employee already exists." })
+      };
+    }
+
+    // Generate unique employee ID
+    const emp_id = `NGX${Date.now().toString().slice(-6)}`;
+
+    // 🔐 Generate MFA secret
     const secret = speakeasy.generateSecret({
       name: `Nikagenyx (${fullName})`,
     });
 
-    // Generate QR code from otpauth URL
-    const otpAuthURL = secret.otpauth_url;
-    const qr_code_url = await QRCode.toDataURL(otpAuthURL);
+    // 📸 Generate QR code for authenticator app
+    const qr_code_url = await QRCode.toDataURL(secret.otpauth_url);
 
-    // Save employee + MFA secret
+    // 💾 Insert new employee into database
     await pool.query(
       `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64, mfa_secret)
        VALUES ($1, $2, $3, 'employee', $4, $5, $6, $7, $8)`,
