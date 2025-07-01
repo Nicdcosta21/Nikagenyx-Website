@@ -1,47 +1,57 @@
-(async function () {
-  const cookies = document.cookie.split("; ");
-  const hasSession = cookies.some(p => p.startsWith("nikagenyx_session="));
-
-  if (!hasSession) {
-    localStorage.removeItem("emp_session");
-    window.location.replace("/employee_portal.html");
-    return;
-  }
-
-  let session = localStorage.getItem("emp_session");
-
-  if (!session) {
-    try {
-      const res = await fetch("/.netlify/functions/get_employees", {
-        credentials: "include"
-      });
-
-      if (res.status === 200) {
-        const user = await res.json();
-
-        // Fallback for NGX001 role if missing
-        if (user.emp_id === "NGX001" && !user.role) {
-          user.role = "admin";
-        }
-
-        localStorage.setItem("emp_session", JSON.stringify(user));
-        session = JSON.stringify(user);
-      } else {
-        throw new Error("Invalid session");
-      }
-    } catch (err) {
+(async function authGate() {
+  try {
+    // Check for session cookie
+    const cookies = document.cookie.split("; ").map(c => c.trim());
+    const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
+    if (!hasSessionCookie) {
       localStorage.removeItem("emp_session");
-      window.location.replace("/employee_portal.html");
+      if (window.location.pathname !== "/employee_portal.html") {
+        window.location.replace("/employee_portal.html");
+      }
       return;
     }
-  }
 
-  const user = JSON.parse(session);
+    // Check localStorage session
+    const sessionStr = localStorage.getItem("emp_session");
+    if (!sessionStr) {
+      localStorage.removeItem("emp_session");
+      if (window.location.pathname !== "/employee_portal.html") {
+        window.location.replace("/employee_portal.html");
+      }
+      return;
+    }
 
-  // Admin page restriction
-  if (window.location.pathname.includes("admin_dashboard")) {
-    if (!user || !user.role?.includes("admin")) {
-      window.location.replace("/employee_dashboard.html");
+    const session = JSON.parse(sessionStr);
+
+    // Admin page protection
+    if (window.location.pathname.includes("admin_dashboard")) {
+      if (!session.role || !session.role.includes("admin")) {
+        if (window.location.pathname !== "/employee_dashboard.html") {
+          window.location.replace("/employee_dashboard.html");
+        }
+        return;
+      }
+    }
+
+    // Prevent logged-in user from accessing login page again
+    if (
+      window.location.pathname === "/employee_portal.html" ||
+      window.location.pathname === "/login.html"
+    ) {
+      if (session && session.emp_id) {
+        // Redirect admins to admin dashboard
+        if (session.role && session.role.includes("admin")) {
+          window.location.replace("/admin_dashboard.html");
+        } else {
+          window.location.replace("/employee_dashboard.html");
+        }
+      }
+    }
+  } catch (err) {
+    // On error, clear session and redirect to login
+    localStorage.removeItem("emp_session");
+    if (window.location.pathname !== "/employee_portal.html") {
+      window.location.replace("/employee_portal.html");
     }
   }
 })();
