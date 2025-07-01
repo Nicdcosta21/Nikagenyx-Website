@@ -1,97 +1,94 @@
 (function authGate() {
+  const currentPath = window.location.pathname.toLowerCase();
+
+  // Early exit: skip gate on login page — let login complete
+  if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
+    const sessionStr = localStorage.getItem("emp_session");
+
+    if (sessionStr) {
+      try {
+        const parsed = JSON.parse(sessionStr);
+        if (parsed && parsed.role) {
+          setTimeout(() => {
+            if (parsed.role.includes("admin")) {
+              window.location.href = "/admin_dashboard.html";
+            } else {
+              window.location.href = "/employee_dashboard.html";
+            }
+          }, 200); // allow localStorage to finish writing
+        }
+      } catch (e) {
+        console.error("Session parse error on login page:", e);
+      }
+    }
+
+    // Don’t run full auth gate
+    return;
+  }
+
   const PUBLIC_PAGES = ["/employee_portal.html", "/register_employee.html"];
   const ADMIN_PAGES = ["/admin_dashboard.html", "/view_payroll.html", "/attendance_view.html"];
-  const EMPLOYEE_PAGES = ["/employee_dashboard.html", "/update_profile.html", "/view_attendance.html", "/view_payroll.html", "/clock_attendance.html"];
+  const EMPLOYEE_PAGES = [
+    "/employee_dashboard.html",
+    "/update_profile.html",
+    "/view_attendance.html",
+    "/view_payroll.html",
+    "/clock_attendance.html"
+  ];
 
-
-  const currentPath = window.location.pathname.toLowerCase();
   const sessionStr = localStorage.getItem("emp_session");
   const mfaVerified = localStorage.getItem("mfa_verified") === "true";
 
-  // Normalize cookie names to lowercase to avoid case sensitivity issues
   const cookies = document.cookie.toLowerCase().split(";").map(c => c.trim());
   const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
 
   function redirect(path) {
-    // Avoid redirecting away from login page too quickly — allow session to be written
-if ((currentPath === "/employee_portal.html" || currentPath === "/login.html") && sessionStr) {
-  try {
-    const parsed = JSON.parse(sessionStr);
-    if (parsed && parsed.role) {
-      setTimeout(() => {
-        if (parsed.role.includes("admin")) {
-          window.location.href = "/admin_dashboard.html";
-        } else {
-          window.location.href = "/employee_dashboard.html";
-        }
-      }, 200); // Delay gives time to save session during login
+    if (window.location.pathname !== path) {
+      window.location.replace(path);
+      return true;
     }
-  } catch (e) {
-    console.error("Session parsing error:", e);
+    return false;
   }
-}
-
 
   function clearSessionAndRedirect() {
     localStorage.removeItem("emp_session");
     localStorage.removeItem("mfa_verified");
-    // Expire the session cookie
     document.cookie = "nikagenyx_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     redirect("/employee_portal.html");
   }
 
   try {
-    // Skip validation on public pages
     if (PUBLIC_PAGES.includes(currentPath)) return;
 
-    // Require session cookie presence
-    if (!hasSessionCookie) {
-      clearSessionAndRedirect();
-      return;
-    }
-
-    // Session must exist
-    if (!sessionStr) {
+    if (!hasSessionCookie || !sessionStr) {
       clearSessionAndRedirect();
       return;
     }
 
     const session = JSON.parse(sessionStr);
-
-    // Basic session integrity check
     if (!session || !session.emp_id) {
       clearSessionAndRedirect();
       return;
     }
 
-    // Bypass MFA for super admin NGX001 (case insensitive)
-    const isSuperAdmin = session.emp_id && session.emp_id.toUpperCase() === "NGX001";
+    const isSuperAdmin = session.emp_id.toUpperCase() === "NGX001";
 
     if (!isSuperAdmin && !mfaVerified) {
-      if (redirect("/employee_portal.html")) return;
+      redirect("/employee_portal.html");
+      return;
     }
 
-    // Admin page access check
     if (ADMIN_PAGES.includes(currentPath)) {
       if (!session.role || !session.role.includes("admin")) {
-        if (redirect("/employee_dashboard.html")) return;
+        redirect("/employee_dashboard.html");
+        return;
       }
     }
 
-
-    // Employee-only page access check
-if (EMPLOYEE_PAGES.includes(currentPath)) {
-  if (!session.role || session.role === "admin") {
-    if (redirect("/admin_dashboard.html")) return;
-  }
-}
-
-    // Redirect logged-in users away from public login pages
-    if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
-      if (session.role && session.role.includes("admin")) {
-        if (redirect("/admin_dashboard.html")) return;
-      } else {
-        if (redirect("/employee_dashboard.html")) return;
+    if (EMPLOYEE_PAGES.includes(currentPath)) {
+      if (!session.role || session.role === "admin") {
+        redirect("/admin_dashboard.html");
+        return;
       }
     }
 
