@@ -21,10 +21,10 @@
 
   <!-- Main Content -->
   <main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
-    <h1 class="text-2xl font-semibold mb-4">
+    <h1 class="text-2xl font-semibold mb-2">
       Welcome, <span id="empName">Employee</span>
-      <p id="currentTime" class="text-sm text-gray-400 mb-4">Loading current time...</p>
     </h1>
+    <p id="currentTime" class="text-sm text-gray-400 mb-4">Loading current time...</p>
 
     <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center">
       <h2 class="text-lg font-bold mb-4">Clock In / Clock Out</h2>
@@ -47,6 +47,7 @@
     &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
   </footer>
 
+  <!-- Script -->
   <script>
     const empSession = JSON.parse(localStorage.getItem("emp_session"));
     const empId = empSession?.emp_id;
@@ -73,6 +74,9 @@
     }
 
     function markAttendance(type) {
+      clockInBtn.disabled = true;
+      clockOutBtn.disabled = true;
+
       fetch("/.netlify/functions/mark_attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,39 +88,47 @@
         updateButtonState(type);
         localStorage.setItem("last_action", type);
         localStorage.setItem("last_activity", Date.now());
+      })
+      .catch(() => {
+        status.textContent = "Error connecting to server.";
+        clockInBtn.disabled = false;
+        clockOutBtn.disabled = false;
       });
     }
 
     function clockIn() { markAttendance("in"); }
     function clockOut() { markAttendance("out"); }
 
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toISOString().split("T")[0]; // returns YYYY-MM-DD
-}
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0]; // returns YYYY-MM-DD
+    }
 
-function formatTime(timeString) {
-  return timeString ? timeString : "-";
-}
+    function formatTime(timeString) {
+      return timeString ? timeString : "-";
+    }
 
-function calculateHours(clockIn, clockOut) {
-  if (!clockIn || !clockOut) return "-";
+    function calculateHours(clockIn, clockOut) {
+      if (!clockIn || !clockOut) return "-";
+      const [h1, m1, s1] = clockIn.split(":").map(Number);
+      const [h2, m2, s2] = clockOut.split(":").map(Number);
+      const inSeconds = h1 * 3600 + m1 * 60 + s1;
+      const outSeconds = h2 * 3600 + m2 * 60 + s2;
+      const diffSeconds = outSeconds - inSeconds;
+      if (diffSeconds < 0) return "-";
+      const hours = Math.floor(diffSeconds / 3600);
+      const minutes = Math.floor((diffSeconds % 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
 
-  const [h1, m1, s1] = clockIn.split(":").map(Number);
-  const [h2, m2, s2] = clockOut.split(":").map(Number);
+    // Real-time clock update
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("currentTime").textContent = "Current Time: " + now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-  const inSeconds = h1 * 3600 + m1 * 60 + s1;
-  const outSeconds = h2 * 3600 + m2 * 60 + s2;
-  const diffSeconds = outSeconds - inSeconds;
-
-  if (diffSeconds < 0) return "-";
-
-  const hours = Math.floor(diffSeconds / 3600);
-  const minutes = Math.floor((diffSeconds % 3600) / 60);
-  return `${hours}h ${minutes}m`;
-}
-
-    
     // Auto clock-out after 30 min inactivity
     function autoClockOutCheck() {
       const lastAction = localStorage.getItem("last_action");
@@ -137,13 +149,6 @@ function calculateHours(clockIn, clockOut) {
     }
 
     updateButtonState(localStorage.getItem("last_action"));
-
-
-
-    
   </script>
-
-  
-
 </body>
 </html>
