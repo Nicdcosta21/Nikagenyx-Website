@@ -3,12 +3,7 @@
 
   // Early exit: skip gate on login page — let login complete
   if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
-  console.log("🔐 On login page — gate exiting early");
-  return;
-}
-
-
-    // Don’t run full auth gate
+    console.log("🔐 On login page — gate exiting early");
     return;
   }
 
@@ -24,8 +19,6 @@
 
   const sessionStr = localStorage.getItem("emp_session");
   const mfaVerified = localStorage.getItem("mfa_verified") === "true";
-
- 
 
   function redirect(path) {
     if (window.location.pathname !== path) {
@@ -46,14 +39,12 @@
     if (PUBLIC_PAGES.includes(currentPath)) return;
 
     console.log("auth-gate.js running");
-console.log("localStorage sessionStr:", sessionStr);
-console.log("hasSessionCookie:", hasSessionCookie);
-
+    console.log("localStorage sessionStr:", sessionStr);
 
     if (!sessionStr) {
-  clearSessionAndRedirect();
-  return;
-}
+      clearSessionAndRedirect();
+      return;
+    }
 
     const session = JSON.parse(sessionStr);
     if (!session || !session.emp_id) {
