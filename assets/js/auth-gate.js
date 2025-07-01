@@ -1,57 +1,55 @@
-(async function authGate() {
-  try {
-    // Check for session cookie
-    const cookies = document.cookie.split("; ").map(c => c.trim());
-    const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
-    if (!hasSessionCookie) {
-      localStorage.removeItem("emp_session");
-      if (window.location.pathname !== "/employee_portal.html") {
-        window.location.replace("/employee_portal.html");
-      }
-      return;
-    }
+// auth-gate.js
 
-    // Check localStorage session
-    const sessionStr = localStorage.getItem("emp_session");
-    if (!sessionStr) {
-      localStorage.removeItem("emp_session");
-      if (window.location.pathname !== "/employee_portal.html") {
-        window.location.replace("/employee_portal.html");
-      }
-      return;
-    }
+(function authGate() {
+  const PUBLIC_PAGES = ["/login.html", "/employee_portal.html", "/register_employee.html"];
+  const ADMIN_PAGES = ["/admin_dashboard.html"];
+  const EMPLOYEE_PAGES = ["/employee_dashboard.html"];
+
+  const currentPath = window.location.pathname;
+  const sessionStr = localStorage.getItem("emp_session");
+  const mfaVerified = localStorage.getItem("mfa_verified") === "true";
+
+  function redirect(path) {
+    if (currentPath !== path) window.location.replace(path);
+  }
+
+  function clearSessionAndRedirect() {
+    localStorage.removeItem("emp_session");
+    localStorage.removeItem("mfa_verified");
+    redirect("/employee_portal.html");
+  }
+
+  try {
+    // Skip validation on public pages
+    if (PUBLIC_PAGES.includes(currentPath)) return;
+
+    // Session must exist
+    if (!sessionStr) return clearSessionAndRedirect();
 
     const session = JSON.parse(sessionStr);
 
-    // Admin page protection
-    if (window.location.pathname.includes("admin_dashboard")) {
-      if (!session.role || !session.role.includes("admin")) {
-        if (window.location.pathname !== "/employee_dashboard.html") {
-          window.location.replace("/employee_dashboard.html");
-        }
-        return;
-      }
+    // Basic ID check
+    if (!session || !session.emp_id) return clearSessionAndRedirect();
+
+    // MFA required for non-superadmin users
+    const isSuperAdmin = session.emp_id === "NGX001";
+    if (!isSuperAdmin && !mfaVerified) return redirect("/employee_portal.html");
+
+    // Role validation
+    if (ADMIN_PAGES.includes(currentPath)) {
+      if (!session.role || !session.role.includes("admin")) return redirect("/employee_dashboard.html");
     }
 
-    // Prevent logged-in user from accessing login page again
-    if (
-      window.location.pathname === "/employee_portal.html" ||
-      window.location.pathname === "/login.html"
-    ) {
-      if (session && session.emp_id) {
-        // Redirect admins to admin dashboard
-        if (session.role && session.role.includes("admin")) {
-          window.location.replace("/admin_dashboard.html");
-        } else {
-          window.location.replace("/employee_dashboard.html");
-        }
+    // Optional: Redirect logged-in user away from login or employee_portal pages
+    if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
+      if (session.role && session.role.includes("admin")) {
+        return redirect("/admin_dashboard.html");
+      } else {
+        return redirect("/employee_dashboard.html");
       }
     }
   } catch (err) {
-    // On error, clear session and redirect to login
-    localStorage.removeItem("emp_session");
-    if (window.location.pathname !== "/employee_portal.html") {
-      window.location.replace("/employee_portal.html");
-    }
+    console.error("🔐 Auth Gate Error:", err);
+    clearSessionAndRedirect();
   }
 })();
