@@ -46,115 +46,121 @@
 </footer>
 
 <script>
- let cachedUserData = null;
+  let cachedUserData = null;
 
-document.getElementById("loginForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
+  document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-  const empIdInput = document.getElementById("empId");
-  const pinInput = document.getElementById("pin");
-  const error = document.getElementById("error");
-  error.classList.add("hidden");
+    const empIdInput = document.getElementById("empId");
+    const pinInput = document.getElementById("pin");
+    const error = document.getElementById("error");
+    error.classList.add("hidden");
 
-  const empId = empIdInput.value.trim().toUpperCase();
-  const pin = pinInput.value.trim();
+    const empIdRaw = empIdInput.value.trim();
+    const empId = empIdRaw ? empIdRaw.toUpperCase() : "";
+    const pin = pinInput.value.trim();
 
-  try {
-    // Disable login button while processing
-    this.querySelector("button[type='submit']").disabled = true;
-
-    const loginRes = await fetch("/.netlify/functions/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId, pin }),
-      credentials: "include"
-    });
-
-    if (loginRes.status !== 200) throw new Error("Invalid credentials");
-
-    const profileRes = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-    if (profileRes.status !== 200) throw new Error("Login succeeded, but profile fetch failed");
-
-    const user = await profileRes.json();
-
-    // NGX001 fallback as admin
-    if (user.emp_id.toUpperCase() === "NGX001" && !user.role) user.role = "admin";
-
-    console.log("✅ Storing session for:", user.emp_id);
-    localStorage.setItem("emp_session", JSON.stringify(user));
-    cachedUserData = user;
-
-    // Skip MFA for super-admin
-    if (user.emp_id.toUpperCase() === "NGX001") {
-      window.location.href = user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+    if (!empId) {
+      error.textContent = "Please enter your Employee ID.";
+      error.classList.remove("hidden");
       return;
     }
 
-    // Show MFA modal
-    document.getElementById("mfaModal").classList.remove("hidden");
+    try {
+      this.querySelector("button[type='submit']").disabled = true;
 
-  } catch (err) {
-    console.error("Login error:", err);
-    error.textContent = err.message || "Login failed.";
-    error.classList.remove("hidden");
-  } finally {
-    this.querySelector("button[type='submit']").disabled = false;
+      const loginRes = await fetch("/.netlify/functions/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empId, pin }),
+        credentials: "include"
+      });
+
+      if (loginRes.status !== 200) throw new Error("Invalid credentials");
+
+      const profileRes = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
+      if (profileRes.status !== 200) throw new Error("Login succeeded, but profile fetch failed");
+
+      const user = await profileRes.json();
+
+      if (user.emp_id && user.emp_id.toUpperCase() === "NGX001" && !user.role) {
+        user.role = "admin";
+      }
+
+      cachedUserData = user;
+      localStorage.setItem("emp_session", JSON.stringify(user));
+
+      if (user.emp_id && user.emp_id.toUpperCase() === "NGX001") {
+        window.location.href = user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+        return;
+      }
+
+      // Clear and show MFA modal
+      const mfaModal = document.getElementById("mfaModal");
+      document.getElementById("mfaCode").value = "";
+      mfaModal.classList.remove("hidden");
+      document.getElementById("mfaCode").focus();
+
+    } catch (err) {
+      console.error("Login error:", err);
+      error.textContent = err.message || "Login failed.";
+      error.classList.remove("hidden");
+    } finally {
+      this.querySelector("button[type='submit']").disabled = false;
+    }
+  });
+
+  async function verifyMFA() {
+    const codeInput = document.getElementById("mfaCode");
+    const code = codeInput.value.trim();
+    const mfaError = document.getElementById("mfaError");
+    mfaError.classList.add("hidden");
+
+    if (!/^\d{6}$/.test(code)) {
+      mfaError.textContent = "Please enter a valid 6-digit code.";
+      mfaError.classList.remove("hidden");
+      return;
+    }
+
+    try {
+      const res = await fetch("/.netlify/functions/verify-mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empId: cachedUserData.emp_id, code }),
+      });
+
+      if (res.status !== 200) throw new Error("Invalid MFA code");
+
+      window.location.href = cachedUserData.role === "admin"
+        ? "admin_dashboard.html"
+        : "employee_dashboard.html";
+
+    } catch (err) {
+      console.error("MFA Error:", err);
+      mfaError.textContent = err.message || "Failed to verify MFA.";
+      mfaError.classList.remove("hidden");
+      codeInput.value = "";
+      codeInput.focus();
+    }
   }
-});
 
-async function verifyMFA() {
-  const codeInput = document.getElementById("mfaCode");
-  const code = codeInput.value.trim();
-  const mfaError = document.getElementById("mfaError");
-  mfaError.classList.add("hidden");
+  function handleForgotPIN() {
+    const empId = prompt("Enter your Employee ID to reset your PIN:");
+    if (!empId) return;
 
-  // Basic validation
-  if (!/^\d{6}$/.test(code)) {
-    mfaError.textContent = "Please enter a valid 6-digit code.";
-    mfaError.classList.remove("hidden");
-    return;
-  }
-
-  try {
-    const res = await fetch("/.netlify/functions/verify-mfa", {
+    fetch("/.netlify/functions/forgot-pin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId: cachedUserData.emp_id, code }),
-    });
-
-    if (res.status !== 200) throw new Error("Invalid MFA code");
-
-    // Redirect after successful MFA
-    window.location.href = cachedUserData.role === "admin"
-      ? "admin_dashboard.html"
-      : "employee_dashboard.html";
-
-  } catch (err) {
-    console.error("MFA Error:", err);
-    mfaError.textContent = err.message || "Failed to verify MFA.";
-    mfaError.classList.remove("hidden");
-    codeInput.value = ""; // Clear code input for retry
+      body: JSON.stringify({ empId }),
+    })
+    .then(res => {
+      alert(res.status === 200
+        ? "A reset link or temporary PIN has been sent to your registered email."
+        : "Unable to process your request. Please contact support."
+      );
+    })
+    .catch(() => alert("Network error. Please try again later."));
   }
-}
-
-function handleForgotPIN() {
-  const empId = prompt("Enter your Employee ID to reset your PIN:");
-  if (!empId) return;
-
-  fetch("/.netlify/functions/forgot-pin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ empId }),
-  })
-  .then(res => {
-    alert(res.status === 200
-      ? "A reset link or temporary PIN has been sent to your registered email."
-      : "Unable to process your request. Please contact support."
-    );
-  })
-  .catch(() => alert("Network error. Please try again later."));
-}
-
 </script>
 
 </body>
