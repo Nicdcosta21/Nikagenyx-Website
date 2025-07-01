@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Nikagenyx</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
@@ -120,7 +121,7 @@ function changeRole(empId, newRole) {
   })
   .then(res => res.json())
   .then(data => {
-    alert(`✅ Role updated to ${newRole.toUpperCase()} for ${empId}`);
+    alert(✅ Role updated to ${newRole.toUpperCase()} for ${empId});
   })
   .catch(err => {
     console.error("Role change failed:", err);
@@ -171,8 +172,8 @@ window.onload = async () => {
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
-      tr.id = `row-${emp.emp_id}`;
-      tr.innerHTML = `
+      tr.id = row-${emp.emp_id};
+      tr.innerHTML = 
         <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
         <td class="border p-2">${emp.name}</td>
         <td class="border p-2">${emp.phone || '-'}</td>
@@ -192,7 +193,7 @@ window.onload = async () => {
           <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
           <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
         </td>
-      `;
+      ;
       table.appendChild(tr);
 
       tr.querySelector('.confirm-role').addEventListener('click', () => {
@@ -208,7 +209,7 @@ window.onload = async () => {
         })
         .then(res => res.json())
         .then(data => {
-          showToast(data.message || `PIN reset for ${emp.emp_id}`);
+          showToast(data.message || PIN reset for ${emp.emp_id});
         })
         .catch(err => {
           console.error("Reset PIN failed:", err);
@@ -224,16 +225,16 @@ window.onload = async () => {
         })
         .then(res => res.json())
         .then(data => {
-          showToast(`MFA reset for ${emp.emp_id}`);
+          showToast(MFA reset for ${emp.emp_id});
           const qrModal = document.createElement('div');
-          qrModal.innerHTML = `
+          qrModal.innerHTML = 
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
                 <h2 class="text-lg font-bold mb-2">Scan New MFA QR for ${emp.name}</h2>
                 <img src="${data.qr_code_url}" alt="MFA QR Code" class="mx-auto mb-4 w-40 h-40" />
                 <button onclick="this.parentElement.parentElement.remove()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
               </div>
-            </div>`;
+            </div>;
           document.body.appendChild(qrModal);
         })
         .catch(err => {
@@ -244,7 +245,7 @@ window.onload = async () => {
 
 tr.querySelector('.edit').addEventListener('click', () => {
   const modal = document.createElement("div");
-  modal.innerHTML = `
+  modal.innerHTML = 
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
         <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
@@ -274,7 +275,7 @@ tr.querySelector('.edit').addEventListener('click', () => {
           <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
         </div>
       </div>
-    </div>`;
+    </div>;
   document.body.appendChild(modal);
 
 const roleOptions = {
@@ -307,7 +308,7 @@ const roleOptions = {
   const roleDropdown = document.getElementById("editRole");
 
     function updateRoleDropdown(dept) {
-    roleDropdown.innerHTML = `<option value="">Select Role</option>`;
+    roleDropdown.innerHTML = <option value="">Select Role</option>;
     (roleOptions[dept] || []).forEach(role => {
       const opt = document.createElement("option");
       opt.value = role;
@@ -333,7 +334,7 @@ const roleOptions = {
         deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
       } else {
         deleteBtn.addEventListener('click', () => {
-          if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
+          if (confirm(Are you sure to delete ${emp.emp_id}?)) {
             fetch("/.netlify/functions/delete_employee", {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -399,7 +400,7 @@ function setupPayrollConfirm() {
       status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
     }
 
-    showToast(data.message || `Payroll mode updated`);
+    showToast(data.message || Payroll mode updated);
   });
 }
 
@@ -429,4 +430,5 @@ loadPayrollMode();
 
 </body>
 </html>
+
 
