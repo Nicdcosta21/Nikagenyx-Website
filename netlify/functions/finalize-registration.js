@@ -1,4 +1,3 @@
-// netlify/functions/finalize-registration.js
 const { Pool } = require("pg");
 const speakeasy = require("speakeasy");
 
@@ -9,11 +8,13 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ message: "Method Not Allowed" })
+    };
   }
 
   try {
-    const data = JSON.parse(event.body);
     const {
       emp_id,
       firstName,
@@ -25,30 +26,11 @@ exports.handler = async (event) => {
       department,
       mfa_secret,
       mfa_code
-    } = data;
-
-    if (!emp_id || !firstName || !lastName || !phone || !dob || !pin || !photo || !department || !mfa_secret || !mfa_code) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "All fields required." })
-      };
-    }
+    } = JSON.parse(event.body);
 
     const fullName = `${firstName} ${lastName}`;
 
-    // Check duplicate
-    const exists = await pool.query(
-      `SELECT * FROM employees WHERE phone = $1 OR (name = $2 AND dob = $3)`,
-      [phone, fullName, dob]
-    );
-    if (exists.rows.length > 0) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({ message: "Employee already exists." })
-      };
-    }
-
-    // Verify MFA code
+    // ✅ Only verify MFA
     const verified = speakeasy.totp.verify({
       secret: mfa_secret,
       encoding: "base32",
@@ -58,11 +40,11 @@ exports.handler = async (event) => {
     if (!verified) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ message: "Invalid MFA code." })
+        body: JSON.stringify({ message: "Invalid MFA code" })
       };
     }
 
-    // Insert to DB
+    // ✅ Now insert to DB
     await pool.query(
       `INSERT INTO employees (emp_id, name, pin, role, department, phone, dob, photo_base64, mfa_secret)
        VALUES ($1, $2, $3, 'employee', $4, $5, $6, $7, $8)`,
@@ -71,10 +53,11 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Registration completed successfully." })
+      body: JSON.stringify({ message: "Employee registered successfully" })
     };
 
   } catch (err) {
+    console.error("❌ Finalize Registration Error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: "Server error", error: err.message })
