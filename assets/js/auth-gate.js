@@ -39,8 +39,7 @@
   const sessionStr = localStorage.getItem("emp_session");
   const mfaVerified = localStorage.getItem("mfa_verified") === "true";
 
-  const cookies = document.cookie.toLowerCase().split(";").map(c => c.trim());
-  const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
+ 
 
   function redirect(path) {
     if (window.location.pathname !== path) {
