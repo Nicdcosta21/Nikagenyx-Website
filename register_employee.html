@@ -90,6 +90,19 @@
   const qrImage = document.getElementById('qrImage');
   const mfaSecretEl = document.getElementById('mfaSecret');
   let capturedPhoto = '';
+  let empId = '', mfaSecret = '';
+
+  // Dynamically add MFA input + Finish button
+  const mfaInput = document.createElement("input");
+  mfaInput.type = "text";
+  mfaInput.placeholder = "Enter MFA code from your app";
+  mfaInput.maxLength = 6;
+  mfaInput.className = "w-full p-2 mt-2 bg-gray-700 border border-gray-600 rounded text-center";
+  qrSection.appendChild(mfaInput);
+
+  const finishBtn = document.querySelector("#qrSection button:last-of-type");
+  finishBtn.disabled = true;
+  finishBtn.classList.add("opacity-50", "cursor-not-allowed");
 
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
@@ -107,10 +120,7 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (!capturedPhoto) {
-      alert('Please capture a photo first.');
-      return;
-    }
+    if (!capturedPhoto) return alert('Please capture a photo first.');
 
     const data = {
       firstName: form.firstName.value,
@@ -131,21 +141,56 @@
     const result = await res.json();
 
     if (res.ok) {
-      message.innerHTML = `<span class="text-green-400">✅ Registered as <strong>${result.emp_id}</strong></span>`;
-      if (result.qr_code_url && result.mfa_secret) {
-        qrImage.src = result.qr_code_url;
-        mfaSecretEl.textContent = result.mfa_secret;
-        qrSection.classList.remove('hidden');
-      }
+      empId = result.emp_id;
+      mfaSecret = result.mfa_secret;
+      qrImage.src = result.qr_code_url;
+      mfaSecretEl.textContent = mfaSecret;
+      qrSection.classList.remove('hidden');
+      message.innerHTML = `<span class="text-green-400">✅ QR Code generated for <strong>${empId}</strong></span>`;
+      mfaInput.addEventListener('input', handleMFAInput);
     } else {
       message.textContent = `❌ Error: ${result.message}`;
       message.classList.add('text-red-400');
     }
   });
 
+  async function handleMFAInput() {
+    if (mfaInput.value.length !== 6) return;
+
+    const verifyData = {
+      emp_id: empId,
+      firstName: form.firstName.value,
+      lastName: form.lastName.value,
+      phone: form.phone.value,
+      dob: form.dob.value,
+      pin: form.pin.value,
+      photo: capturedPhoto,
+      department: form.department.value,
+      mfa_secret: mfaSecret,
+      mfa_code: mfaInput.value
+    };
+
+    const res = await fetch('/.netlify/functions/finalize-registration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(verifyData)
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      finishBtn.disabled = false;
+      finishBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      message.innerHTML = `<span class="text-green-400">🎉 Registration complete for <strong>${empId}</strong></span>`;
+    } else {
+      message.innerHTML = `<span class="text-red-400">❌ MFA failed: ${result.message}</span>`;
+      finishBtn.disabled = true;
+      finishBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
+  }
+
   function copySecret() {
-    const secret = mfaSecretEl.textContent;
-    navigator.clipboard.writeText(secret).then(() => {
+    navigator.clipboard.writeText(mfaSecretEl.textContent).then(() => {
       alert("MFA Secret copied to clipboard");
     });
   }
