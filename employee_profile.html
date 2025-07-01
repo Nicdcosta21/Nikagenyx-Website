@@ -60,6 +60,7 @@
 
         // Store session
         localStorage.setItem("emp_session", JSON.stringify(data));
+        console.log("Session saved:", JSON.stringify(data));
 
         // Redirect based on role
         if (data.role === "admin") {
