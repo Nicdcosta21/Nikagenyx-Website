@@ -11,7 +11,6 @@ exports.handler = async (event) => {
       ssl: { rejectUnauthorized: false },
     });
 
-    // Select emp_id and role for frontend session
     const { rows } = await db.query(
       'SELECT emp_id, role FROM employees WHERE emp_id=$1 AND pin=$2',
       [empId, pin]
@@ -28,20 +27,20 @@ exports.handler = async (event) => {
 
     const user = rows[0];
 
-  console.log("JWT_SECRET in login.js:", process.env.JWT_SECRET); // <-- 🔍 Add this just above
+    console.log("JWT_SECRET in login.js:", process.env.JWT_SECRET);
 
-const token = jwt.sign(
-  { empId: user.emp_id },
-  process.env.JWT_SECRET,
-  { expiresIn: '2h' }
-);
+    const token = jwt.sign(
+      { empId: user.emp_id },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
 
     return {
       statusCode: 200,
       headers: {
         'Set-Cookie': serialize('nikagenyx_session', token, {
           httpOnly: true,
-          secure: true,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'Strict',
           path: '/',
           maxAge: 60 * 60 * 2,
