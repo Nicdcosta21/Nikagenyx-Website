@@ -13,18 +13,7 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
   
-<script>
-  const session = localStorage.getItem("emp_session");
-  let currentUser = null;
-  if (!session) {
-    window.location.href = "employee_portal.html";
-  } else {
-    currentUser = JSON.parse(session);
-    if (currentUser.role !== "admin") {
-      window.location.href = "employee_dashboard.html";
-    }
-  }
-</script>
+
 
 
 <nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
