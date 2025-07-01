@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <title>Employee Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -15,6 +20,7 @@
       <a href="update_profile.html">Update Profile</a>
       <a href="view_attendance.html">My Attendance</a>
       <a href="payroll_portal.html">Payroll</a>
+      <button onclick="toggleTheme()" class="bg-blue-600 px-3 py-1 rounded">Toggle Theme</button>
       <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
     </div>
   </nav>
@@ -47,7 +53,7 @@
     &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
   </footer>
 
-  <!-- Script -->
+  <!-- All JavaScript inline -->
   <script>
     const empSession = JSON.parse(localStorage.getItem("emp_session"));
     const empId = empSession?.emp_id;
@@ -58,6 +64,14 @@
     const clockInBtn = document.getElementById("clockInBtn");
     const clockOutBtn = document.getElementById("clockOutBtn");
     const status = document.getElementById("statusMessage");
+
+    // Update clock every second
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("currentTime").textContent = "Current Time: " + now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
     function updateButtonState(lastAction) {
       if (lastAction === "in") {
@@ -96,59 +110,68 @@
       });
     }
 
-    function clockIn() { markAttendance("in"); }
-    function clockOut() { markAttendance("out"); }
-
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toISOString().split("T")[0]; // returns YYYY-MM-DD
+    function clockIn() {
+      if (confirm("Do you want to clock in?")) markAttendance("in");
     }
 
-    function formatTime(timeString) {
-      return timeString ? timeString : "-";
+    function clockOut() {
+      if (confirm("Do you want to clock out?")) markAttendance("out");
     }
-
-    function calculateHours(clockIn, clockOut) {
-      if (!clockIn || !clockOut) return "-";
-      const [h1, m1, s1] = clockIn.split(":").map(Number);
-      const [h2, m2, s2] = clockOut.split(":").map(Number);
-      const inSeconds = h1 * 3600 + m1 * 60 + s1;
-      const outSeconds = h2 * 3600 + m2 * 60 + s2;
-      const diffSeconds = outSeconds - inSeconds;
-      if (diffSeconds < 0) return "-";
-      const hours = Math.floor(diffSeconds / 3600);
-      const minutes = Math.floor((diffSeconds % 3600) / 60);
-      return `${hours}h ${minutes}m`;
-    }
-
-    // Real-time clock update
-    function updateClock() {
-      const now = new Date();
-      document.getElementById("currentTime").textContent = "Current Time: " + now.toLocaleTimeString();
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // Auto clock-out after 30 min inactivity
-    function autoClockOutCheck() {
-      const lastAction = localStorage.getItem("last_action");
-      const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
-      if (lastAction === "in" && Date.now() - lastActivity > 1800000) {
-        markAttendance("out");
-        status.textContent = "Auto clocked out due to inactivity.";
-      }
-    }
-
-    document.addEventListener("mousemove", () => localStorage.setItem("last_activity", Date.now()));
-    document.addEventListener("keydown", () => localStorage.setItem("last_activity", Date.now()));
-    setInterval(autoClockOutCheck, 60000); // check every 1 minute
 
     function logout() {
       localStorage.removeItem("emp_session");
       window.location.href = "employee_portal.html";
     }
 
-    updateButtonState(localStorage.getItem("last_action"));
+    function autoClockOutCheck() {
+      const lastAction = localStorage.getItem("last_action");
+      const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
+      const now = Date.now();
+      const inactivityTime = now - lastActivity;
+
+      if (lastAction === "in") {
+        // Show warning at ~28 minutes
+        if (inactivityTime > 1680000 && inactivityTime < 1740000) {
+          showAutoLogoutWarning();
+        }
+
+        // Auto clock-out at 30 minutes
+        if (inactivityTime > 1800000) {
+          markAttendance("out");
+          status.textContent = "Auto clocked out due to inactivity.";
+        }
+      }
+    }
+
+    function showAutoLogoutWarning() {
+      if (Notification.permission === "granted") {
+        new Notification("⚠️ Inactivity Alert", {
+          body: "You will be auto clocked out in 2 minutes!",
+        });
+      }
+    }
+
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    document.addEventListener("mousemove", () => localStorage.setItem("last_activity", Date.now()));
+    document.addEventListener("keydown", () => localStorage.setItem("last_activity", Date.now()));
+    setInterval(autoClockOutCheck, 60000); // every 1 min
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.toggle("dark");
+      const current = html.classList.contains("dark") ? "dark" : "light";
+      localStorage.setItem("theme", current);
+    }
+
+    window.onload = function () {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light") document.documentElement.classList.remove("dark");
+      else document.documentElement.classList.add("dark");
+      updateButtonState(localStorage.getItem("last_action"));
+    };
   </script>
 </body>
 </html>
