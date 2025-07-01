@@ -46,6 +46,8 @@
   <script>
     async function saveSessionAndRedirect(user) {
       await Promise.resolve();
+      console.log("API Response:", data);  
+      console.log("User:", data.user);
       localStorage.setItem("emp_session", JSON.stringify(data.user));
       console.log("Session saved:", user);
 
