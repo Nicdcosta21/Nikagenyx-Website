@@ -59,8 +59,8 @@
 
       const data = await res.json();
 
-      // ✅ Log everything cleanly
-      console.log("Login response:", data);
+      // 🔍 Log full response and user data
+      console.log("📦 Full response from /login:", data);
 
       if (!data.ok || !data.user) {
         errorBox.textContent = "❌ Invalid ID or PIN.";
@@ -68,22 +68,26 @@
         return;
       }
 
-      // ✅ Save session cleanly
+      // ✅ Save session
+      console.log("💾 Storing this to localStorage:", data.user);
       localStorage.setItem("emp_session", JSON.stringify(data.user));
-      console.log("Session saved to localStorage:", localStorage.getItem("emp_session"));
+      console.log("✅ Stored:", localStorage.getItem("emp_session"));
 
-      // ✅ Redirect
-      window.location.href = data.user.role === "admin"
-        ? "admin_dashboard.html"
-        : "employee_dashboard.html";
+      // 🕒 Redirect after short delay to allow write
+      setTimeout(() => {
+        window.location.href = data.user.role === "admin"
+          ? "admin_dashboard.html"
+          : "employee_dashboard.html";
+      }, 200);
 
     } catch (err) {
-      console.error("Login failed:", err);
+      console.error("❌ Login failed:", err);
       errorBox.textContent = "❌ Something went wrong. Please try again.";
       errorBox.classList.remove("hidden");
     }
   });
 </script>
+
 
 </body>
 </html>
