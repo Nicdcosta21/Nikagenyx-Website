@@ -19,7 +19,7 @@
       if (res.status === 200) {
         const user = await res.json();
 
-        // ⛑️ Fallback for NGX001 role
+        // Fallback for NGX001 role if missing
         if (user.emp_id === "NGX001" && !user.role) {
           user.role = "admin";
         }
@@ -38,6 +38,7 @@
 
   const user = JSON.parse(session);
 
+  // Admin page restriction
   if (window.location.pathname.includes("admin_dashboard")) {
     if (!user || !user.role?.includes("admin")) {
       window.location.replace("/employee_dashboard.html");
