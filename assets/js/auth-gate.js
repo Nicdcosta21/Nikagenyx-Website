@@ -1,5 +1,3 @@
-// auth-gate.js
-
 (function authGate() {
   const PUBLIC_PAGES = ["/login.html", "/employee_portal.html", "/register_employee.html"];
   const ADMIN_PAGES = ["/admin_dashboard.html"];
@@ -9,6 +7,10 @@
   const sessionStr = localStorage.getItem("emp_session");
   const mfaVerified = localStorage.getItem("mfa_verified") === "true";
 
+  // Optional: Cookie check
+  const cookies = document.cookie.split("; ").map(c => c.trim());
+  const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
+
   function redirect(path) {
     if (currentPath !== path) window.location.replace(path);
   }
@@ -16,12 +18,17 @@
   function clearSessionAndRedirect() {
     localStorage.removeItem("emp_session");
     localStorage.removeItem("mfa_verified");
+    // Optionally clear cookie
+    document.cookie = "nikagenyx_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     redirect("/employee_portal.html");
   }
 
   try {
     // Skip validation on public pages
     if (PUBLIC_PAGES.includes(currentPath)) return;
+
+    // Optional: require cookie
+    if (!hasSessionCookie) return clearSessionAndRedirect();
 
     // Session must exist
     if (!sessionStr) return clearSessionAndRedirect();
