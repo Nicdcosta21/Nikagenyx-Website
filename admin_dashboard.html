@@ -4,20 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Nikagenyx</title>
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
   </style>
 </head>
-  <div id="loading" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
-  <div class="text-white text-lg animate-pulse">Loading dashboard...</div>
-</div>
-
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
   
-
+<script>
+  const session = localStorage.getItem("emp_session");
+  let currentUser = null;
+  if (!session) {
+    window.location.href = "employee_portal.html";
+  } else {
+    currentUser = JSON.parse(session);
+    if (currentUser.role !== "admin") {
+      window.location.href = "employee_dashboard.html";
+    }
+  }
+</script>
 
 
 <nav class="w-full bg-gray-800 px-6 py-4 flex items-center justify-between">
@@ -114,7 +121,7 @@ function changeRole(empId, newRole) {
   })
   .then(res => res.json())
   .then(data => {
-    alert(`✅ Role updated to ${newRole.toUpperCase()} for ${empId}`);
+    alert(✅ Role updated to ${newRole.toUpperCase()} for ${empId});
   })
   .catch(err => {
     console.error("Role change failed:", err);
@@ -130,6 +137,7 @@ function showToast(msg) {
   setTimeout(() => toast.remove(), 3000);
 }
 
+  
 function submitEdit(emp_id, name) {
   const phone = document.getElementById("editPhone").value;
   const dob = document.getElementById("editDob").value;
@@ -154,8 +162,6 @@ function submitEdit(emp_id, name) {
   });
 }
 
-const session = localStorage.getItem("emp_session");
-const currentUser = session ? JSON.parse(session) : null;
 
 window.onload = async () => {
   try {
@@ -166,8 +172,8 @@ window.onload = async () => {
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
-      tr.id = `row-${emp.emp_id}`;
-      tr.innerHTML = `
+      tr.id = row-${emp.emp_id};
+      tr.innerHTML = 
         <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
         <td class="border p-2">${emp.name}</td>
         <td class="border p-2">${emp.phone || '-'}</td>
@@ -187,16 +193,14 @@ window.onload = async () => {
           <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
           <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
         </td>
-      `;
+      ;
       table.appendChild(tr);
 
-      // Role change
       tr.querySelector('.confirm-role').addEventListener('click', () => {
         const newRole = tr.querySelector('.role-select').value;
         changeRole(emp.emp_id, newRole);
       });
 
-      // Reset PIN
       tr.querySelector('.reset-pin').addEventListener('click', () => {
         fetch("/.netlify/functions/reset_pin", {
           method: "POST",
@@ -205,7 +209,7 @@ window.onload = async () => {
         })
         .then(res => res.json())
         .then(data => {
-          showToast(data.message || `PIN reset for ${emp.emp_id}`);
+          showToast(data.message || PIN reset for ${emp.emp_id});
         })
         .catch(err => {
           console.error("Reset PIN failed:", err);
@@ -213,7 +217,6 @@ window.onload = async () => {
         });
       });
 
-      // Reset MFA
       tr.querySelector('.reset-mfa').addEventListener('click', () => {
         fetch("/.netlify/functions/reset_mfa", {
           method: "POST",
@@ -222,16 +225,16 @@ window.onload = async () => {
         })
         .then(res => res.json())
         .then(data => {
-          showToast(`MFA reset for ${emp.emp_id}`);
+          showToast(MFA reset for ${emp.emp_id});
           const qrModal = document.createElement('div');
-          qrModal.innerHTML = `
+          qrModal.innerHTML = 
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
                 <h2 class="text-lg font-bold mb-2">Scan New MFA QR for ${emp.name}</h2>
                 <img src="${data.qr_code_url}" alt="MFA QR Code" class="mx-auto mb-4 w-40 h-40" />
-                <button onclick="this.closest('.fixed').remove()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+                <button onclick="this.parentElement.parentElement.remove()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
               </div>
-            </div>`;
+            </div>;
           document.body.appendChild(qrModal);
         })
         .catch(err => {
@@ -240,101 +243,107 @@ window.onload = async () => {
         });
       });
 
-      // Edit
-      tr.querySelector('.edit').addEventListener('click', () => {
-        const modal = document.createElement("div");
-        modal.innerHTML = `
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
-              <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
-              <label class="block mb-2">Phone: 
-                <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}">
-              </label>
-              <label class="block mb-2">DOB: 
-                <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob ? formatDate(emp.dob) : ''}">
-              </label>
-              <label class="block mb-2">Department:
-                <select id="editDept" class="w-full border px-2 py-1">
-                  <option value="">Select Department</option>
-                  <option value="Tech Team">Tech Team</option>
-                  <option value="Admin Team">Admin Team</option>
-                </select>
-              </label>
-              <label class="block mb-2">Role:
-                <select id="editRole" class="w-full border px-2 py-1"></select>
-              </label>
-              <label class="block mb-2">Base Salary: 
-                <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
-              </label>
-              <div class="flex justify-end gap-2 mt-4">
-                <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-                <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
-              </div>
-            </div>
-          </div>`;
-        document.body.appendChild(modal);
+tr.querySelector('.edit').addEventListener('click', () => {
+  const modal = document.createElement("div");
+  modal.innerHTML = 
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Edit Profile - ${emp.name}</h2>
+        <label class="block mb-2">Phone: 
+          <input type="text" id="editPhone" class="w-full border px-2 py-1" value="${emp.phone || ''}">
+        </label>
+        <label class="block mb-2">DOB: 
+          <input type="date" id="editDob" class="w-full border px-2 py-1" value="${emp.dob ? formatDate(emp.dob) : ''}">
+        </label>
+        <label class="block mb-2">Department:
+          <select id="editDept" class="w-full border px-2 py-1">
+            <option value="">Select Department</option>
+            <option value="Tech Team">Tech Team</option>
+            <option value="Admin Team">Admin Team</option>
+          </select>
+        </label>
+        <label class="block mb-2">Role:
+          <select id="editRole" class="w-full border px-2 py-1">
+            <option value="">Select Role</option>
+          </select>
+        </label>
+        <label class="block mb-2">Base Salary: 
+          <input type="number" id="editSalary" class="w-full border px-2 py-1" value="${emp.base_salary || ''}">
+        </label>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
+        </div>
+      </div>
+    </div>;
+  document.body.appendChild(modal);
 
-        const roleOptions = {
-          "Tech Team": [
-            "Frontend Developer (Jr. Developer)",
-            "Backend Developer (Jr. Developer)",
-            "Full Stack Developer / Mobile App Developer (Sr. Developer)",
-            "QA Engineer (Sr. Developer)",
-            "White labelling (UI/UX Designer)",
-            "DevOps Engineer (Infrastructure Engineer)",
-            "Data Analyst",
-            "Cybersecurity & Risk Analyst",
-            "IT Systems Administrator",
-            "IT Support Specialist"
-          ],
-          "Admin Team": [
-            "Human Resources Manager",
-            "Chief Executive Officer",
-            "Finance & Accounts Officer",
-            "Managing Director (MD)",
-            "Regulatory Compliance Officer",
-            "Client Relations Consultant",
-            "Administrative Coordinator",
-            "Customer Success Executive"
-          ]
-        };
+const roleOptions = {
+  "Tech Team": [
+    "Frontend Developer (Jr. Developer)",
+    "Backend Developer (Jr. Developer)",
+    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+    "QA Engineer (Sr. Developer)",
+    "White labelling (UI/UX Designer)",
+    "DevOps Engineer (Infrastructure Engineer)",
+    "Data Analyst",
+    "Cybersecurity & Risk Analyst",
+    "IT Systems Administrator",
+    "IT Support Specialist"
+  ],
+  "Admin Team": [
+    "Human Resources Manager",
+    "Chief Executive Officer",
+    "Finance & Accounts Officer",
+    "Managing Director (MD)",
+    "Regulatory Compliance Officer",
+    "Client Relations Consultant",
+    "Administrative Coordinator",
+    "Customer Success Executive"
+  ]
+};
 
-        const deptDropdown = document.getElementById("editDept");
-        const roleDropdown = document.getElementById("editRole");
 
-        function updateRoleDropdown(dept) {
-          roleDropdown.innerHTML = `<option value="">Select Role</option>`;
-          (roleOptions[dept] || []).forEach(role => {
-            const opt = document.createElement("option");
-            opt.value = role;
-            opt.textContent = role;
-            roleDropdown.appendChild(opt);
-          });
-        }
+  const deptDropdown = document.getElementById("editDept");
+  const roleDropdown = document.getElementById("editRole");
 
-        deptDropdown.value = emp.department || "";
-        updateRoleDropdown(emp.department);
-        roleDropdown.value = emp.role || "";
+    function updateRoleDropdown(dept) {
+    roleDropdown.innerHTML = <option value="">Select Role</option>;
+    (roleOptions[dept] || []).forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role;
+      opt.textContent = role;
+      roleDropdown.appendChild(opt);
+    });
+  }
 
-        deptDropdown.addEventListener("change", (e) => {
-          updateRoleDropdown(e.target.value);
-        });
-      });
+  // Pre-fill current values
+  deptDropdown.value = emp.department || "";
+  updateRoleDropdown(emp.department);
+  roleDropdown.value = emp.role || "";
 
-      // Delete
+  deptDropdown.addEventListener("change", (e) => {
+    updateRoleDropdown(e.target.value);
+  });
+
+
+});
       const deleteBtn = tr.querySelector('.delete');
       if (emp.emp_id === currentUser.emp_id) {
         deleteBtn.disabled = true;
         deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
       } else {
         deleteBtn.addEventListener('click', () => {
-          if (confirm(`Are you sure to delete ${emp.emp_id}?`)) {
+          if (confirm(Are you sure to delete ${emp.emp_id}?)) {
             fetch("/.netlify/functions/delete_employee", {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ emp_id: emp.emp_id })
             })
-            .then(res => res.json())
+            .then(res => {
+              if (!res.ok) throw new Error("Failed to delete");
+              return res.json();
+            })
             .then(data => {
               showToast(data.message);
               tr.remove();
@@ -347,7 +356,6 @@ window.onload = async () => {
         });
       }
 
-      // Mark Attendance
       tr.querySelector('.mark-attendance').addEventListener('click', () => {
         localStorage.setItem("verify_emp_id", emp.emp_id);
         window.open("face_attendance.html", "_blank");
@@ -363,12 +371,10 @@ window.onload = async () => {
       document.getElementById("p_role").textContent = me.role || "-";
       document.getElementById("adminName").textContent = me.name || "Admin";
     }
-
   } catch (err) {
     console.error("Failed to load employees:", err);
   }
 };
-
 function setupPayrollConfirm() {
   document.getElementById("confirmPayroll").addEventListener("click", async () => {
     const selected = document.getElementById("payrollToggle").value;
@@ -394,7 +400,7 @@ function setupPayrollConfirm() {
       status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
     }
 
-    showToast(data.message || `Payroll mode updated`);
+    showToast(data.message || Payroll mode updated);
   });
 }
 
@@ -414,13 +420,15 @@ async function loadPayrollMode() {
     status.className = "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
   }
 
-  setupPayrollConfirm();
+  setupPayrollConfirm(); // Attach Confirm button listener
 }
 
 loadPayrollMode();
-</script>
 
+
+</script>
 
 </body>
 </html>
+
 
