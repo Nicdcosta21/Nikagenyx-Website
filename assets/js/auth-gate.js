@@ -60,10 +60,15 @@
   try {
     if (PUBLIC_PAGES.includes(currentPath)) return;
 
-    if (!hasSessionCookie || !sessionStr) {
-      clearSessionAndRedirect();
-      return;
-    }
+    console.log("auth-gate.js running");
+console.log("localStorage sessionStr:", sessionStr);
+console.log("hasSessionCookie:", hasSessionCookie);
+
+
+    if (!sessionStr) {
+  clearSessionAndRedirect();
+  return;
+}
 
     const session = JSON.parse(sessionStr);
     if (!session || !session.emp_id) {
