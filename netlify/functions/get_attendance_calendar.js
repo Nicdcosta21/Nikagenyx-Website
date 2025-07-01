@@ -1,9 +1,5 @@
 const { Client } = require('pg');
 
-
-const verify = require('./verifySession');
-try { verify(event); } catch { return { statusCode: 401 }; }
-
 exports.handler = async (event, context) => {
   const client = new Client({
     connectionString: process.env.NETLIFY_DATABASE_URL,  // ✅ use the correct env var

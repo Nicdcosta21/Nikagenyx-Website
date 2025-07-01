@@ -2,10 +2,6 @@ const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 const { Readable } = require("stream");
 
-
-const verify = require('./verifySession');
-try { verify(event); } catch { return { statusCode: 401 }; }
-
 // PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,

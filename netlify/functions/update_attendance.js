@@ -1,9 +1,5 @@
 const { Client } = require('pg');
 
-
-const verify = require('./verifySession');
-try { verify(event); } catch { return { statusCode: 401 }; }
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };

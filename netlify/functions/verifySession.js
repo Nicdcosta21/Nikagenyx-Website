@@ -2,23 +2,15 @@ const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
 
 module.exports = function verify(event) {
-  const rawCookie =
-    event.headers.cookie || event.headers.Cookie || '';
-
-  const cookies = cookie.parse(rawCookie || '');
+  const cookies = cookie.parse(event.headers.cookie || '');
   const token = cookies.nikagenyx_session;
 
-  if (!token) {
-    console.warn("❌ No session token found in cookies");
-    throw new Error("No session token found");
-  }
+  if (!token) throw new Error('No token');
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("✅ Session verified for:", decoded.empId || 'Unknown');
-    return decoded;
+    return decoded; // useful if you want to access empId later
   } catch (err) {
-    console.error("❌ Invalid or expired session:", err.message);
-    throw new Error("Invalid or expired session token");
+    throw new Error('Invalid token');
   }
 };

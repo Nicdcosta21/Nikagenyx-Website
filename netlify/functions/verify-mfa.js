@@ -3,36 +3,25 @@ const speakeasy = require('speakeasy');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }
 });
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: 'Method Not Allowed' }),
+      body: JSON.stringify({ message: 'Method Not Allowed' })
     };
   }
 
   try {
-    const { empId, code } = JSON.parse(event.body || '{}');
+    const { empId, code } = JSON.parse(event.body);
 
-    if (!empId || !code) {
-      return {
-        statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: 'Employee ID and MFA code are required.' }),
-      };
-    }
-
-    // Bypass MFA for NGX001 (super admin)
-    if (empId.trim().toUpperCase() === 'NGX001') {
-      console.log('✅ MFA bypassed for NGX001');
+    // Bypass MFA for the very first user
+    if (empId === 'NGX001') {
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: 'MFA bypassed for first admin' }),
+        body: JSON.stringify({ message: 'MFA bypassed for first admin' })
       };
     }
 
@@ -41,44 +30,37 @@ exports.handler = async (event) => {
       [empId]
     );
 
-    const mfaSecret = result.rows[0]?.mfa_secret;
-
-    if (!mfaSecret) {
+    if (result.rows.length === 0 || !result.rows[0].mfa_secret) {
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: 'MFA secret not found for this user' }),
+        body: JSON.stringify({ message: 'MFA secret not found for this user' })
       };
     }
 
     const verified = speakeasy.totp.verify({
-      secret: mfaSecret,
+      secret: result.rows[0].mfa_secret,
       encoding: 'base32',
       token: code,
-      window: 1,
+      window: 1
     });
 
     if (!verified) {
       return {
         statusCode: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: 'Invalid MFA token' }),
+        body: JSON.stringify({ message: 'Invalid MFA token' })
       };
     }
 
-    console.log(`✅ MFA verified for: ${empId}`);
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: 'MFA verified successfully' }),
+      body: JSON.stringify({ message: 'MFA verified successfully' })
     };
 
   } catch (err) {
     console.error('❌ MFA Verification Error:', err.message);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: 'Internal Server Error', error: err.message }),
+      body: JSON.stringify({ message: 'Internal Server Error', error: err.message })
     };
   }
 };

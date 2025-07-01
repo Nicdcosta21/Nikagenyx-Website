@@ -2,15 +2,14 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }
 });
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return {
       statusCode: 405,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Method Not Allowed" }),
+      body: JSON.stringify({ message: "Method Not Allowed" })
     };
   }
 
@@ -22,15 +21,13 @@ exports.handler = async (event) => {
     `);
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employees: result.rows }),
+      body: JSON.stringify({ employees: result.rows })
     };
   } catch (err) {
     console.error("DB Error:", err);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Failed to fetch employees", error: err.message }),
+      body: JSON.stringify({ message: "Failed to fetch employees", error: err.message })
     };
   }
 };
