@@ -13,12 +13,24 @@
   const hasSessionCookie = cookies.some(c => c.startsWith("nikagenyx_session="));
 
   function redirect(path) {
-    if (currentPath !== path) {
-      window.location.replace(path);
-      return true; // indicate redirected
+    // Avoid redirecting away from login page too quickly — allow session to be written
+if ((currentPath === "/employee_portal.html" || currentPath === "/login.html") && sessionStr) {
+  try {
+    const parsed = JSON.parse(sessionStr);
+    if (parsed && parsed.role) {
+      setTimeout(() => {
+        if (parsed.role.includes("admin")) {
+          window.location.href = "/admin_dashboard.html";
+        } else {
+          window.location.href = "/employee_dashboard.html";
+        }
+      }, 200); // Delay gives time to save session during login
     }
-    return false;
+  } catch (e) {
+    console.error("Session parsing error:", e);
   }
+}
+
 
   function clearSessionAndRedirect() {
     localStorage.removeItem("emp_session");
