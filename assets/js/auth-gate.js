@@ -18,6 +18,12 @@
 
       if (res.status === 200) {
         const user = await res.json();
+
+        // ⛑️ Fallback for NGX001 role
+        if (user.emp_id === "NGX001" && !user.role) {
+          user.role = "admin";
+        }
+
         localStorage.setItem("emp_session", JSON.stringify(user));
         session = JSON.stringify(user);
       } else {
