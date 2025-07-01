@@ -22,11 +22,18 @@
         required
         class="w-full px-4 py-2 rounded bg-gray-700 text-white border border-gray-600"
       />
+      <input
+        type="password"
+        id="pin"
+        placeholder="PIN"
+        required
+        class="w-full px-4 py-2 rounded bg-gray-700 text-white border border-gray-600"
+      />
       <button
         type="submit"
         class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-white font-semibold"
       >
-        Continue
+        Login
       </button>
     </form>
     <p id="error" class="text-red-500 text-sm mt-4 hidden text-center"></p>
@@ -37,45 +44,45 @@
   </footer>
 
   <script>
-  async function saveSessionAndRedirect(data) {
-    await Promise.resolve();
-    localStorage.setItem("emp_session", JSON.stringify(data));
-    console.log("Session saved:", data);
+    async function saveSessionAndRedirect(user) {
+      await Promise.resolve();
+      localStorage.setItem("emp_session", JSON.stringify(user));
+      console.log("Session saved:", user);
 
-    window.location.href = data.role === "admin"
-      ? "admin_dashboard.html"
-      : "employee_dashboard.html";
-  }
-
-  document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const empId = document.getElementById("empId").value.trim().toUpperCase();
-    const errorBox = document.getElementById("error");
-
-    try {
-      const res = await fetch("/.netlify/functions/get_employee", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emp_id: empId })
-      });
-
-      const data = await res.json();
-      if (!data || !data.emp_id) {
-        errorBox.textContent = "❌ Employee not found.";
-        errorBox.classList.remove("hidden");
-        return;
-      }
-
-      // ✅ Save session and redirect
-      saveSessionAndRedirect(data);
-
-    } catch (err) {
-      console.error("Login failed:", err);
-      errorBox.textContent = "❌ Something went wrong. Please try again.";
-      errorBox.classList.remove("hidden");
+      window.location.href = user.role === "admin"
+        ? "admin_dashboard.html"
+        : "employee_dashboard.html";
     }
-  });
-</script>
 
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const empId = document.getElementById("empId").value.trim().toUpperCase();
+      const pin = document.getElementById("pin").value.trim();
+      const errorBox = document.getElementById("error");
+
+      try {
+        const res = await fetch("/.netlify/functions/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empId, pin })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok || !data.user) {
+          errorBox.textContent = "❌ Invalid ID or PIN.";
+          errorBox.classList.remove("hidden");
+          return;
+        }
+
+        saveSessionAndRedirect(data.user);
+
+      } catch (err) {
+        console.error("Login failed:", err);
+        errorBox.textContent = "❌ Something went wrong. Please try again.";
+        errorBox.classList.remove("hidden");
+      }
+    });
+  </script>
 </body>
 </html>
