@@ -3,7 +3,7 @@ const speakeasy = require('speakeasy');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 exports.handler = async (event) => {
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     }
 
     // Bypass MFA for NGX001 (super admin)
-    if (empId === 'NGX001') {
+    if (empId.trim().toUpperCase() === 'NGX001') {
       console.log('✅ MFA bypassed for NGX001');
       return {
         statusCode: 200,
