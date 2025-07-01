@@ -85,25 +85,32 @@
   });
 
   async function verifyMFA() {
-    const mfaCode = document.getElementById("mfaCode").value.trim();
-    const mfaError = document.getElementById("mfaError");
-    mfaError.classList.add("hidden");
+  const mfaCode = document.getElementById("mfaCode").value.trim();
+  const mfaError = document.getElementById("mfaError");
+  mfaError.classList.add("hidden");
 
-    const res = await fetch("/.netlify/functions/verify-mfa", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId: cachedUserData.emp_id, code: mfaCode }),
-    });
-
-    if (res.status === 200) {
-      window.location.href = cachedUserData.role === "admin"
-        ? "admin_dashboard.html"
-        : "employee_dashboard.html";
-    } else {
-      mfaError.textContent = "Invalid MFA code. Try again.";
-      mfaError.classList.remove("hidden");
-    }
+  if (!cachedUserData || !cachedUserData.emp_id) {
+    mfaError.textContent = "Session expired or invalid state. Please log in again.";
+    mfaError.classList.remove("hidden");
+    return;  // stop further execution
   }
+
+  const res = await fetch("/.netlify/functions/verify-mfa", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ empId: cachedUserData.emp_id, code: mfaCode }),
+  });
+
+  if (res.status === 200) {
+    window.location.href = cachedUserData.role === "admin"
+      ? "admin_dashboard.html"
+      : "employee_dashboard.html";
+  } else {
+    mfaError.textContent = "Invalid MFA code. Try again.";
+    mfaError.classList.remove("hidden");
+  }
+}
+
 
   function handleForgotPIN() {
     const empId = prompt("Enter your Employee ID to reset your PIN:");
