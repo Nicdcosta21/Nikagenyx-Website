@@ -1,52 +1,33 @@
 const { Pool } = require('pg');
-const verify = require('./verifySession');
+
+const pool = new Pool({
+  connectionString: process.env.NETLIFY_DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 exports.handler = async (event) => {
-  let session;
-  try {
-    session = verify(event); // Extract empId from JWT
-  } catch {
+  if (event.httpMethod !== "GET") {
     return {
-      statusCode: 401,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Unauthorized: Invalid or missing session" }),
+      statusCode: 405,
+      body: JSON.stringify({ message: "Method Not Allowed" })
     };
   }
 
-  const pool = new Pool({
-    connectionString: process.env.NETLIFY_DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    const query = `
+    const result = await pool.query(`
       SELECT emp_id, name, role, department, phone, dob, base_salary
       FROM employees
-      WHERE emp_id = $1
-    `;
-    const result = await pool.query(query, [session.empId]);
-
-    if (result.rows.length === 0) {
-      return {
-        statusCode: 404,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Employee not found" }),
-      };
-    }
-
+      ORDER BY name ASC
+    `);
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(result.rows[0]),
+      body: JSON.stringify({ employees: result.rows })
     };
-
   } catch (err) {
+    console.error("DB Error:", err);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Failed to fetch employee", error: err.message }),
+      body: JSON.stringify({ message: "Failed to fetch employees", error: err.message })
     };
-  } finally {
-    await pool.end(); // ✅ always close pool
   }
 };
