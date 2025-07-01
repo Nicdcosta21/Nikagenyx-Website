@@ -72,16 +72,22 @@
         error.classList.remove("hidden");
         return;
       }
+const user = await profileRes.json();
 
-      const user = await profileRes.json();
-      localStorage.setItem("emp_session", JSON.stringify(user));
+// ⛑️ Fallback: Ensure NGX001 always has admin role
+if (user.emp_id === "NGX001" && !user.role) {
+  user.role = "admin";
+}
 
-      if (user.emp_id === "NGX001") {
-        window.location.href = user.role === "admin"
-          ? "admin_dashboard.html"
-          : "employee_dashboard.html";
-        return;
-      }
+localStorage.setItem("emp_session", JSON.stringify(user));
+
+if (user.emp_id === "NGX001") {
+  window.location.href = user.role === "admin"
+    ? "admin_dashboard.html"
+    : "employee_dashboard.html";
+  return;
+}
+
 
       cachedUserData = user;
       document.getElementById("mfaModal").classList.remove("hidden");
