@@ -21,32 +21,33 @@ window.addEventListener("DOMContentLoaded", function authGate() {
 
   function redirect(path) {
     if (window.location.pathname !== path) {
+      console.warn("🔁 Redirecting to:", path);
       window.location.replace(path);
     }
   }
 
   function clearSessionAndRedirect() {
+    console.warn("❌ Clearing session & redirecting");
     localStorage.removeItem("emp_session");
     localStorage.removeItem("mfa_verified");
-    document.cookie = "nikagenyx_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     redirect("/employee_portal.html");
   }
 
   try {
-    if (PUBLIC_PAGES.includes(currentPath)) return;
-
     console.log("auth-gate.js running");
-    console.log("localStorage sessionStr:", sessionStr);
+    console.log("🔍 localStorage sessionStr:", sessionStr);
 
     if (!sessionStr) {
-      clearSessionAndRedirect();
-      return;
+      console.warn("⚠️ sessionStr not found");
+      return; // <-- Don't redirect, just skip gate
     }
 
     const session = JSON.parse(sessionStr);
+    console.log("✅ Parsed session:", session);
+
     if (!session || !session.emp_id) {
-      clearSessionAndRedirect();
-      return;
+      console.warn("⚠️ Invalid session structure");
+      return; // <-- Again, don't redirect immediately
     }
 
     const isSuperAdmin = session.emp_id.toUpperCase() === "NGX001";
