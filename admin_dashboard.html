@@ -15,14 +15,18 @@
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
   
 <script>
-  const session = localStorage.getItem("emp_session");
-  console.warn("🚀 admin_dashboard.html loaded");
-  console.warn("Session found:", session);
-  if (!session) {
-    console.warn("❌ No session found, redirecting...");
-    window.location.href = "/employee_portal.html";
-  }
+  window.addEventListener("DOMContentLoaded", () => {
+    const session = localStorage.getItem("emp_session");
+    console.warn("🚀 admin_dashboard.html loaded");
+    console.warn("Session found:", session);
+
+    if (!session) {
+      console.warn("❌ No session found, redirecting...");
+      window.location.href = "/employee_portal.html";
+    }
+  });
 </script>
+
 
 
 
