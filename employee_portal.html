@@ -46,95 +46,115 @@
 </footer>
 
 <script>
-  let cachedUserData = null;
+ let cachedUserData = null;
 
-  document.getElementById("loginForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const empId = document.getElementById("empId").value.trim();
-    const pin = document.getElementById("pin").value.trim();
-    const error = document.getElementById("error");
-    error.classList.add("hidden");
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
 
-    try {
-      const loginRes = await fetch("/.netlify/functions/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empId, pin }),
-        credentials: "include"
-      });
+  const empIdInput = document.getElementById("empId");
+  const pinInput = document.getElementById("pin");
+  const error = document.getElementById("error");
+  error.classList.add("hidden");
 
-      if (loginRes.status !== 200) throw new Error("Invalid credentials");
+  const empId = empIdInput.value.trim().toUpperCase();
+  const pin = pinInput.value.trim();
 
-      const profileRes = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-      if (profileRes.status !== 200) throw new Error("Login succeeded, but profile fetch failed");
+  try {
+    // Disable login button while processing
+    this.querySelector("button[type='submit']").disabled = true;
 
-      const user = await profileRes.json();
-
-      // NGX001 fallback as admin
-      if (user.emp_id === "NGX001" && !user.role) user.role = "admin";
-
-      console.log("✅ Storing session for:", user.emp_id);
-      localStorage.setItem("emp_session", JSON.stringify(user));
-      cachedUserData = user;
-
-      // Skip MFA for super-admin
-      if (user.emp_id === "NGX001") {
-        window.location.href = user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
-        return;
-      }
-
-      // Show MFA modal
-      document.getElementById("mfaModal").classList.remove("hidden");
-
-    } catch (err) {
-      console.error("Login error:", err);
-      error.textContent = err.message || "Login failed.";
-      error.classList.remove("hidden");
-    }
-  });
-
-  async function verifyMFA() {
-    const code = document.getElementById("mfaCode").value.trim();
-    const mfaError = document.getElementById("mfaError");
-    mfaError.classList.add("hidden");
-
-    try {
-      const res = await fetch("/.netlify/functions/verify-mfa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empId: cachedUserData.emp_id, code }),
-      });
-
-      if (res.status !== 200) throw new Error("Invalid MFA code");
-
-      // Redirect after successful MFA
-      window.location.href = cachedUserData.role === "admin"
-        ? "admin_dashboard.html"
-        : "employee_dashboard.html";
-
-    } catch (err) {
-      console.error("MFA Error:", err);
-      mfaError.textContent = err.message || "Failed to verify MFA.";
-      mfaError.classList.remove("hidden");
-    }
-  }
-
-  function handleForgotPIN() {
-    const empId = prompt("Enter your Employee ID to reset your PIN:");
-    if (!empId) return;
-
-    fetch("/.netlify/functions/forgot-pin", {
+    const loginRes = await fetch("/.netlify/functions/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId }),
-    })
-    .then(res => {
-      alert(res.status === 200
-        ? "A reset link or temporary PIN has been sent to your registered email."
-        : "Unable to process your request. Please contact support."
-      );
+      body: JSON.stringify({ empId, pin }),
+      credentials: "include"
     });
+
+    if (loginRes.status !== 200) throw new Error("Invalid credentials");
+
+    const profileRes = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
+    if (profileRes.status !== 200) throw new Error("Login succeeded, but profile fetch failed");
+
+    const user = await profileRes.json();
+
+    // NGX001 fallback as admin
+    if (user.emp_id.toUpperCase() === "NGX001" && !user.role) user.role = "admin";
+
+    console.log("✅ Storing session for:", user.emp_id);
+    localStorage.setItem("emp_session", JSON.stringify(user));
+    cachedUserData = user;
+
+    // Skip MFA for super-admin
+    if (user.emp_id.toUpperCase() === "NGX001") {
+      window.location.href = user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+      return;
+    }
+
+    // Show MFA modal
+    document.getElementById("mfaModal").classList.remove("hidden");
+
+  } catch (err) {
+    console.error("Login error:", err);
+    error.textContent = err.message || "Login failed.";
+    error.classList.remove("hidden");
+  } finally {
+    this.querySelector("button[type='submit']").disabled = false;
   }
+});
+
+async function verifyMFA() {
+  const codeInput = document.getElementById("mfaCode");
+  const code = codeInput.value.trim();
+  const mfaError = document.getElementById("mfaError");
+  mfaError.classList.add("hidden");
+
+  // Basic validation
+  if (!/^\d{6}$/.test(code)) {
+    mfaError.textContent = "Please enter a valid 6-digit code.";
+    mfaError.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch("/.netlify/functions/verify-mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId: cachedUserData.emp_id, code }),
+    });
+
+    if (res.status !== 200) throw new Error("Invalid MFA code");
+
+    // Redirect after successful MFA
+    window.location.href = cachedUserData.role === "admin"
+      ? "admin_dashboard.html"
+      : "employee_dashboard.html";
+
+  } catch (err) {
+    console.error("MFA Error:", err);
+    mfaError.textContent = err.message || "Failed to verify MFA.";
+    mfaError.classList.remove("hidden");
+    codeInput.value = ""; // Clear code input for retry
+  }
+}
+
+function handleForgotPIN() {
+  const empId = prompt("Enter your Employee ID to reset your PIN:");
+  if (!empId) return;
+
+  fetch("/.netlify/functions/forgot-pin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ empId }),
+  })
+  .then(res => {
+    alert(res.status === 200
+      ? "A reset link or temporary PIN has been sent to your registered email."
+      : "Unable to process your request. Please contact support."
+    );
+  })
+  .catch(() => alert("Network error. Please try again later."));
+}
+
 </script>
 
 </body>
