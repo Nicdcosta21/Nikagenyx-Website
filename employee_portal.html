@@ -16,17 +16,18 @@
   <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
     <form id="loginForm" class="space-y-4">
-      <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-      <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+  <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+  <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+  
+  <div class="text-sm flex justify-between items-center">
+    <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
+    <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
+  </div>
 
-      <div class="text-sm flex justify-between items-center">
-        <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
-        <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
-      </div>
+  <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
+  <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
+</form>
 
-      <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded font-semibold">Login</button>
-      <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
-    </form>
   </div>
 </main>
 
@@ -50,97 +51,57 @@
 
   document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
-
-    const empIdInput = document.getElementById("empId");
-    const pinInput = document.getElementById("pin");
+    const empId = document.getElementById("empId").value.trim();
+    const pin = document.getElementById("pin").value.trim();
     const error = document.getElementById("error");
     error.classList.add("hidden");
 
-    const empIdRaw = empIdInput.value.trim();
-    const empId = empIdRaw ? empIdRaw.toUpperCase() : "";
-    const pin = pinInput.value.trim();
+    const res = await fetch("/.netlify/functions/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId, pin }),
+    });
 
-    if (!empId) {
-      error.textContent = "Please enter your Employee ID.";
-      error.classList.remove("hidden");
-      return;
-    }
-
-    try {
-      this.querySelector("button[type='submit']").disabled = true;
-
-      const loginRes = await fetch("/.netlify/functions/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empId, pin }),
-        credentials: "include"
-      });
-
-      if (loginRes.status !== 200) throw new Error("Invalid credentials");
-
-      const profileRes = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-      if (profileRes.status !== 200) throw new Error("Login succeeded, but profile fetch failed");
-
-      const user = await profileRes.json();
-
-      if (user.emp_id && user.emp_id.toUpperCase() === "NGX001" && !user.role) {
-        user.role = "admin";
-      }
-
-      cachedUserData = user;
+    if (res.status === 200) {
+      const result = await res.json();
+      const user = result.user;
       localStorage.setItem("emp_session", JSON.stringify(user));
 
-      if (user.emp_id && user.emp_id.toUpperCase() === "NGX001") {
-        window.location.href = user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+      // ✅ Skip MFA for NGX001
+      if (user.emp_id === "NGX001") {
+        window.location.href = user.role === "admin"
+          ? "admin_dashboard.html"
+          : "employee_dashboard.html";
         return;
       }
 
-      // Clear and show MFA modal
-      const mfaModal = document.getElementById("mfaModal");
-      document.getElementById("mfaCode").value = "";
-      mfaModal.classList.remove("hidden");
-      document.getElementById("mfaCode").focus();
-
-    } catch (err) {
-      console.error("Login error:", err);
-      error.textContent = err.message || "Login failed.";
+      // Otherwise, show MFA modal
+      cachedUserData = user;
+      document.getElementById("mfaModal").classList.remove("hidden");
+    } else {
+      error.textContent = "Invalid credentials. Please try again.";
       error.classList.remove("hidden");
-    } finally {
-      this.querySelector("button[type='submit']").disabled = false;
     }
   });
 
   async function verifyMFA() {
-    const codeInput = document.getElementById("mfaCode");
-    const code = codeInput.value.trim();
+    const mfaCode = document.getElementById("mfaCode").value.trim();
     const mfaError = document.getElementById("mfaError");
     mfaError.classList.add("hidden");
 
-    if (!/^\d{6}$/.test(code)) {
-      mfaError.textContent = "Please enter a valid 6-digit code.";
-      mfaError.classList.remove("hidden");
-      return;
-    }
+    const res = await fetch("/.netlify/functions/verify-mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId: cachedUserData.emp_id, code: mfaCode }),
+    });
 
-    try {
-      const res = await fetch("/.netlify/functions/verify-mfa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empId: cachedUserData.emp_id, code }),
-      });
-
-      if (res.status !== 200) throw new Error("Invalid MFA code");
-
+    if (res.status === 200) {
       window.location.href = cachedUserData.role === "admin"
         ? "admin_dashboard.html"
         : "employee_dashboard.html";
-
-    } catch (err) {
-      console.error("MFA Error:", err);
-      mfaError.textContent = err.message || "Failed to verify MFA.";
+    } else {
+      mfaError.textContent = "Invalid MFA code. Try again.";
       mfaError.classList.remove("hidden");
-      codeInput.value = "";
-      codeInput.focus();
     }
   }
 
@@ -154,14 +115,15 @@
       body: JSON.stringify({ empId }),
     })
     .then(res => {
-      alert(res.status === 200
-        ? "A reset link or temporary PIN has been sent to your registered email."
-        : "Unable to process your request. Please contact support."
-      );
-    })
-    .catch(() => alert("Network error. Please try again later."));
+      if (res.status === 200) {
+        alert("A reset link or temporary PIN has been sent to your registered email.");
+      } else {
+        alert("Unable to process your request. Please contact support.");
+      }
+    });
   }
 </script>
+
 
 </body>
 </html>
