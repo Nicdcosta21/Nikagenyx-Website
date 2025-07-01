@@ -1,7 +1,6 @@
-(function authGate() {
+window.addEventListener("DOMContentLoaded", function authGate() {
   const currentPath = window.location.pathname.toLowerCase();
 
-  // Early exit: skip gate on login page — let login complete
   if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
     console.log("🔐 On login page — gate exiting early");
     return;
@@ -23,9 +22,7 @@
   function redirect(path) {
     if (window.location.pathname !== path) {
       window.location.replace(path);
-      return true;
     }
-    return false;
   }
 
   function clearSessionAndRedirect() {
@@ -77,4 +74,4 @@
     console.error("🔐 Auth Gate Error:", err);
     clearSessionAndRedirect();
   }
-})();
+});
