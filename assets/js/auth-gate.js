@@ -1,6 +1,7 @@
 window.addEventListener("DOMContentLoaded", function authGate() {
   const currentPath = window.location.pathname.toLowerCase();
 
+  // ✅ Bypass gate on login or public pages
   if (currentPath === "/employee_portal.html" || currentPath === "/login.html") {
     console.log("🔐 On login page — gate exiting early");
     return;
@@ -27,38 +28,44 @@ window.addEventListener("DOMContentLoaded", function authGate() {
   }
 
   function clearSessionAndRedirect() {
-    console.warn("❌ Clearing session & redirecting");
+    console.warn("❌ Clearing session & redirecting to login");
     localStorage.removeItem("emp_session");
     localStorage.removeItem("mfa_verified");
     redirect("/employee_portal.html");
   }
 
   try {
-    console.log("auth-gate.js running");
-    console.log("🔍 localStorage sessionStr:", sessionStr);
+    console.log("🚨 auth-gate.js running");
+    console.log("📦 localStorage sessionStr:", sessionStr);
 
+    // 🚫 No session stored
     if (!sessionStr) {
-      console.warn("⚠️ sessionStr not found");
-      return; // <-- Don't redirect, just skip gate
+      console.warn("⚠️ No session found, skipping gate");
+      return;
     }
 
     const session = JSON.parse(sessionStr);
     console.log("✅ Parsed session:", session);
 
+    // 🚫 Malformed or missing session
     if (!session || !session.emp_id) {
-      console.warn("⚠️ Invalid session structure");
-      return; // <-- Again, don't redirect immediately
+      console.warn("❌ Invalid session structure");
+      return;
     }
 
     const isSuperAdmin = session.emp_id.toUpperCase() === "NGX001";
 
+    // 🚫 Not verified with MFA (unless superadmin)
     if (!isSuperAdmin && !mfaVerified) {
+      console.warn("⚠️ MFA not verified — redirecting");
       redirect("/employee_portal.html");
       return;
     }
 
+    // 🔒 Access Control
     if (ADMIN_PAGES.includes(currentPath)) {
-      if (!session.role || !session.role.includes("admin")) {
+      if (!session.role || session.role !== "admin") {
+        console.warn("🚫 Not an admin — redirecting to employee dashboard");
         redirect("/employee_dashboard.html");
         return;
       }
@@ -66,6 +73,7 @@ window.addEventListener("DOMContentLoaded", function authGate() {
 
     if (EMPLOYEE_PAGES.includes(currentPath)) {
       if (!session.role || session.role === "admin") {
+        console.warn("🚫 Not an employee — redirecting to admin dashboard");
         redirect("/admin_dashboard.html");
         return;
       }
