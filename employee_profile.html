@@ -73,10 +73,12 @@
       localStorage.setItem("emp_session", JSON.stringify(data.user));
       console.log("✅ Stored:", localStorage.getItem("emp_session"));
 
-      // 🕒 Redirect after short delay to allow write
-     setTimeout(() => {
+
+setTimeout(() => {
   console.log("✅ Login success. Not redirecting for now.");
-  // window.location.href = data.user.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+  // window.location.href = data.user.role === "admin"
+  //   ? "admin_dashboard.html"
+  //   : "employee_dashboard.html";
 }, 400);
 
 
