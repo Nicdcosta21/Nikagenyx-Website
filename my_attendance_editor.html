@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/assets/js/auth-gate.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .day-button.selected {
+      background-color: #2563eb; /* Tailwind's blue-600 */
+      color: white;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Nikagenyx</h1>
+    <div class="flex gap-2">
+      <button id="day-2" class="day-button bg-gray-700 text-gray-300 px-2 py-1 rounded" onclick="handleDayClick(2)">2</button>
+      <button onclick="jumpToToday()" class="bg-blue-500 px-3 py-1 text-white text-xs rounded ml-3">Today</button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-6">
+    <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
+
+    <table class="w-full text-left text-sm bg-gray-800 rounded">
+      <thead class="bg-gray-700 text-gray-300">
+        <tr>
+          <th class="p-2">Date</th>
+          <th class="p-2">Clock In</th>
+          <th class="p-2">Clock Out</th>
+          <th class="p-2">Hours</th>
+          <th class="p-2">Status</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceTableBody"></tbody>
+      <tfoot>
+        <tr class="bg-gray-700 text-white text-sm">
+          <td colspan="3" class="p-2 font-bold">Weekly Total</td>
+          <td colspan="2" id="weeklyTotal" class="p-2"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Drag Mode -->
+    <div class="flex items-center justify-center gap-3 mt-4 text-sm">
+      <span>Drag Mode:</span>
+      <select onchange="dragState = this.value" class="bg-gray-800 text-white px-2 py-1 rounded">
+        <option value="P">Present</option>
+        <option value="L">Leave</option>
+        <option value="A">Absent</option>
+      </select>
+    </div>
+
+    <!-- Attendance Blocks -->
+    <div class="mt-10">
+      <h3 class="text-lg font-semibold mb-2">Edit Attendance Blocks for Today</h3>
+      <div id="blockGrid" class="grid grid-cols-12 gap-1 text-xs text-center"></div>
+      <div id="blockSummary" class="text-sm text-gray-400 mt-3 text-center"></div>
+      <button onclick="submitBlockUpdate()" class="mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">Submit Attendance Blocks</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-4 flex gap-4 text-sm items-center justify-center">
+      <div class="flex items-center gap-1">
+        <div class="w-4 h-4 bg-red-600 rounded"></div><span>Absent (A)</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="w-4 h-4 bg-green-600 rounded"></div><span>Present (P)</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="w-4 h-4 bg-yellow-500 rounded text-black"></div><span>Leave (L)</span>
+      </div>
+    </div>
+
+    <!-- Batch Apply -->
+    <div class="flex items-center justify-center gap-3 mt-4 text-sm">
+      <span>Batch Apply:</span>
+      <select onchange="applyBatchStatus(this.value)" class="bg-gray-800 text-white px-2 py-1 rounded">
+        <option value="">Select</option>
+        <option value="P">Mark All Present</option>
+        <option value="L">Mark All Leave</option>
+        <option value="A">Mark All Absent</option>
+      </select>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-center text-xs text-gray-500 py-4">
+    &copy; 2025 Nikagenyx Vision Tech Private Limited
+  </footer>
+
+  <!-- Script -->
+  <script>
+    const session = JSON.parse(localStorage.getItem("emp_session"));
+    if (!session?.emp_id) window.location.href = "employee_portal.html";
+
+    let selectedDay = null;
+    let mouseDown = false;
+    let dragState = "P";
+    const blockGrid = document.getElementById("blockGrid");
+    const blockStates = Array(48).fill("A");
+
+    document.addEventListener("mousedown", () => mouseDown = true);
+    document.addEventListener("mouseup", () => mouseDown = false);
+
+    function handleDayClick(day) {
+      selectedDay = day;
+      document.querySelectorAll('.day-button').forEach(btn => {
+        btn.classList.remove('selected', 'bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-700', 'text-gray-300');
+      });
+      const selectedBtn = document.getElementById('day-' + day);
+      selectedBtn.classList.add('selected', 'bg-blue-600', 'text-white');
+    }
+
+    function jumpToToday() {
+      const today = new Date().getDate();
+      handleDayClick(today);
+    }
+
+    function updateBlockSummary() {
+      const counts = { A: 0, P: 0, L: 0 };
+      blockStates.forEach(s => counts[s]++);
+      document.getElementById("blockSummary").textContent =
+        `Present: ${counts.P} | Leave: ${counts.L} | Absent: ${counts.A}`;
+    }
+
+    function applyBatchStatus(status) {
+      if (!status) return;
+      for (let i = 0; i < 48; i++) {
+        blockStates[i] = status;
+        const btn = blockGrid.children[i];
+        btn.dataset.state = status;
+        btn.className = status === "P"
+          ? "bg-green-600 px-2 py-1 rounded hover:opacity-90"
+          : status === "L"
+          ? "bg-yellow-500 text-black px-2 py-1 rounded hover:opacity-90"
+          : "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+      }
+      updateBlockSummary();
+    }
+
+    for (let i = 0; i < 48; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 === 0 ? '00' : '30'}`;
+      btn.dataset.index = i;
+      btn.dataset.state = "A";
+      btn.className = "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+
+      btn.onclick = () => {
+        const newState = btn.dataset.state === "A" ? "P" : btn.dataset.state === "P" ? "L" : "A";
+        btn.dataset.state = newState;
+        blockStates[i] = newState;
+        btn.className = newState === "P"
+          ? "bg-green-600 px-2 py-1 rounded hover:opacity-90"
+          : newState === "L"
+          ? "bg-yellow-500 text-black px-2 py-1 rounded hover:opacity-90"
+          : "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+        updateBlockSummary();
+      };
+
+      btn.onmouseover = () => {
+        if (mouseDown) {
+          btn.dataset.state = dragState;
+          blockStates[i] = dragState;
+          btn.className = dragState === "P"
+            ? "bg-green-600 px-2 py-1 rounded hover:opacity-90"
+            : dragState === "L"
+            ? "bg-yellow-500 text-black px-2 py-1 rounded hover:opacity-90"
+            : "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+          updateBlockSummary();
+        }
+      };
+
+      blockGrid.appendChild(btn);
+    }
+
+    async function submitBlockUpdate() {
+      const today = new Date();
+      const emp_id = session.emp_id;
+      const year = today.getFullYear();
+      const month = today.getMonth() + 1;
+      const dayKey = String(today.getDate()).padStart(2, '0');
+
+      const status = {};
+      status[dayKey] = blockStates;
+
+      try {
+        const res = await fetch("/.netlify/functions/update_attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id, year, month, status })
+        });
+        const result = await res.json();
+        alert(result.message || result.error);
+      } catch (err) {
+        alert("Submit failed");
+        console.error(err);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("emp_session");
+      window.location.href = "employee_portal.html";
+    }
+
+    function timeDiff(clockIn, clockOut) {
+      if (!clockIn || !clockOut) return { label: "-", hours: 0, status: "NA" };
+      const [h1, m1, s1] = clockIn.split(":").map(Number);
+      const [h2, m2, s2] = clockOut.split(":").map(Number);
+      const inSecs = h1 * 3600 + m1 * 60 + s1;
+      const outSecs = h2 * 3600 + m2 * 60 + s2;
+      const total = outSecs - inSecs;
+      if (total <= 0) return { label: "-", hours: 0, status: "NA" };
+
+      const hrs = Math.floor(total / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      const hoursFloat = total / 3600;
+      const status = hoursFloat < 5 ? "A" : hoursFloat < 7 ? "L" : "P";
+      return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
+    }
+
+    fetch("/.netlify/functions/get_employee_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: session.emp_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("attendanceTableBody");
+      let totalHours = 0;
+      if (Array.isArray(data.attendance)) {
+        data.attendance.forEach(entry => {
+          const result = timeDiff(entry.clock_in, entry.clock_out);
+          totalHours += result.hours;
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td class="p-2">${entry.date}</td>
+            <td class="p-2">${entry.clock_in || '-'}</td>
+            <td class="p-2">${entry.clock_out || '-'}</td>
+            <td class="p-2">${result.label}</td>
+            <td class="p-2">${result.status}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+      document.getElementById("weeklyTotal").textContent = `${totalHours.toFixed(2)} hours`;
+    });
+  </script>
+</body>
+</html>
