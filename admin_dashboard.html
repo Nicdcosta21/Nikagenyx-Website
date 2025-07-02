@@ -280,12 +280,18 @@ tr.querySelector('.edit').addEventListener('click', () => {
         </label>
         <div class="flex justify-end gap-2 mt-4">
           <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}', this.closest('.fixed'))">Save</button>
+          <button id="saveEditBtn" class="bg-blue-600 text-white px-3 py-1 rounded">Save</button>
+
 
         </div>
       </div>
     </div>`;
   document.body.appendChild(modal);
+  const saveBtn = modal.querySelector("#saveEditBtn");
+saveBtn.addEventListener("click", () => {
+  submitEdit(emp.emp_id, emp.name, modal);
+});
+
 
 const roleOptions = {
   "Tech Team": [
