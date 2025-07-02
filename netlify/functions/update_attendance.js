@@ -21,23 +21,17 @@ exports.handler = async (event) => {
       };
     }
 
-    // Step 1: Normalize to status{} format
     let processedStatus = status;
 
     if (!processedStatus && Array.isArray(slots) && typeof day === 'number') {
+      // Convert slots[] to status{"DD": []}
       const blocks = Array(48).fill("A");
       slots.forEach(({ slot, status }) => {
-        blocks[slot] = ["P", "L"].includes(status) ? status : "A";
+        blocks[slot] = status;
       });
+
       const dayKey = String(day).padStart(2, '0');
       processedStatus = { [dayKey]: blocks };
-    }
-
-    if (!processedStatus || typeof processedStatus !== 'object') {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid status format after processing.' }),
-      };
     }
 
     await client.connect();
@@ -46,33 +40,32 @@ exports.handler = async (event) => {
     for (let d = 0; d < daysInMonth; d++) {
       const dayKey = String(d + 1).padStart(2, '0');
       const blocks = processedStatus[dayKey];
+      if (!blocks) continue;
 
-      if (!Array.isArray(blocks)) continue;
-
+      const presentSlots = blocks.filter(b => b === 'P').length;
       const date = `${year}-${String(month).padStart(2, '0')}-${dayKey}`;
-
-      const presentCount = blocks.filter(b => b === 'P').length;
-      const leaveCount = blocks.filter(b => b === 'L').length;
-
-      const clockInSlot = blocks.findIndex(b => b === 'P' || b === 'L');
-      const clockOutSlot = blocks.reduce((last, b, i) => (b === 'P' || b === 'L') ? i : last, -1);
-
-      const clock_in = clockInSlot >= 0 ? minutesToTime(clockInSlot * 30) : null;
-      const clock_out = clockOutSlot >= 0 ? minutesToTime((clockOutSlot + 1) * 30) : null;
 
       const exists = await client.query(
         `SELECT id FROM attendance WHERE emp_id = $1 AND date = $2`,
         [emp_id, date]
       );
 
-      const totalEffective = presentCount + leaveCount;
-
-      if (totalEffective === 0) {
+      if (presentSlots === 0) {
+        // Delete if nothing present
         if (exists.rowCount > 0) {
           await client.query(`DELETE FROM attendance WHERE emp_id = $1 AND date = $2`, [emp_id, date]);
         }
         continue;
       }
+
+      const clockInSlot = blocks.findIndex(b => b === 'P');
+      const clockOutSlot = blocks.lastIndexOf('P');
+      if (clockInSlot === -1 || clockOutSlot === -1) continue;
+
+      const clockInMinutes = clockInSlot * 30;
+      const clockOutMinutes = (clockOutSlot + 1) * 30;
+      const clock_in = minutesToTime(clockInMinutes);
+      const clock_out = minutesToTime(clockOutMinutes);
 
       if (exists.rowCount > 0) {
         await client.query(
@@ -89,14 +82,13 @@ exports.handler = async (event) => {
     }
 
     await client.end();
-
     return {
       statusCode: 200,
       body: JSON.stringify({ message: 'Attendance updated successfully.' }),
     };
 
   } catch (err) {
-    console.error("❌ update_attendance error:", err);
+    console.error("❌ update_attendance error:", err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
