@@ -80,17 +80,17 @@ exports.handler = async (event) => {
 
         try {
           const query = `
-            UPDATE employees SET
-              phone = COALESCE(NULLIF($1, ''), phone),
-              dob = COALESCE(NULLIF($2, ''), dob),
-              department = COALESCE(NULLIF($3, ''), department),
-              role = COALESCE(NULLIF($4, ''), role),
-              pin = COALESCE(NULLIF($5, ''), pin),
-              email = COALESCE(NULLIF($6, ''), email)
-            WHERE emp_id = $7
-          `;
+  UPDATE employees SET
+    phone = CASE WHEN $1 = '' THEN phone ELSE $1 END,
+    dob = CASE WHEN $2 = '' THEN dob ELSE $2::DATE END,
+    department = CASE WHEN $3 = '' THEN department ELSE $3 END,
+    role = CASE WHEN $4 = '' THEN role ELSE $4 END,
+    pin = CASE WHEN $5 = '' THEN pin ELSE $5 END,
+    email = CASE WHEN $6 = '' THEN email ELSE $6 END
+  WHERE emp_id = $7
+`;
+const values = [phone, dob, department, role, new_pin, email, emp_id];
 
-          const values = [phone, dob, department, role, new_pin, email, emp_id];
 
           await pool.query(query, values);
 
