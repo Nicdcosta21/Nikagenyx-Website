@@ -11,7 +11,10 @@ exports.handler = async (event) => {
   });
 
   try {
+    console.log("📥 Incoming body:", event.body);
+
     const { emp_id, month, year, status } = JSON.parse(event.body);
+
     if (!emp_id || !month || !year || !status) {
       return {
         statusCode: 400,
@@ -23,10 +26,10 @@ exports.handler = async (event) => {
     const daysInMonth = new Date(year, month, 0).getDate();
 
     for (let d = 0; d < daysInMonth; d++) {
-      const blocks = status[d] || [];
+      const dayKey = String(d + 1).padStart(2, '0');  // ✅ Fix
+      const blocks = status[dayKey] || [];
       const presentSlots = blocks.filter(b => b === 'P').length;
 
-      // Skip if there's no 'P' blocks
       if (presentSlots === 0) continue;
 
       const clockInSlot = blocks.findIndex(b => b === 'P');
@@ -37,8 +40,7 @@ exports.handler = async (event) => {
       const clockOutMinutes = (clockOutSlot + 1) * 30;
       const clock_in = minutesToTime(clockInMinutes);
       const clock_out = minutesToTime(clockOutMinutes);
-      const day = String(d + 1).padStart(2, '0');
-      const date = `${year}-${String(month).padStart(2, '0')}-${day}`;
+      const date = `${year}-${String(month).padStart(2, '0')}-${dayKey}`;
 
       const exists = await client.query(
         `SELECT id FROM attendance WHERE emp_id = $1 AND date = $2`,
@@ -66,7 +68,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ message: 'Attendance updated successfully.' }),
     };
   } catch (err) {
-    console.error("❌ update_attendance error:", err.message);
+    console.error("❌ update_attendance error:", err);  // ✅ full error
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
