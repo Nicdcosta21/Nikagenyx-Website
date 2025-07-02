@@ -365,6 +365,9 @@ const roleOptions = {
       });
     });
 
+    const session = localStorage.getItem("emp_session");
+    const currentUser = session ? JSON.parse(session) : null;
+    
     const me = employees.find(e => e.emp_id === currentUser.emp_id);
     if (me) {
       document.getElementById("p_name").textContent = me.name || "-";
