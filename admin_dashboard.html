@@ -110,9 +110,22 @@
     <h2 class="text-xl font-bold mb-4" id="modalEmpId"></h2>
     <div id="modalDetails" class="space-y-2"></div>
     <div id="modalDocs" class="mt-4">
-      <h3 class="text-lg font-semibold mb-2">Uploaded Documents:</h3>
-      <ul id="docLinks" class="list-disc pl-5 space-y-1"></ul>
-    </div>
+  <h3 class="text-lg font-semibold mb-2">Uploaded Documents:</h3>
+  <ul id="docLinks" class="list-disc pl-5 space-y-1"></ul>
+</div>
+
+<div class="mt-6 flex justify-between items-center gap-4">
+  <button onclick="printModalContent()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded text-sm">
+    🖨️ Print
+  </button>
+  <button onclick="exportModalToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+    📄 Export to PDF
+  </button>
+  <button onclick="closeModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm ml-auto">
+    Close
+  </button>
+</div>
+
   </div>
 </div>
 <script>
@@ -504,9 +517,47 @@ async function loadPayrollMode() {
 loadPayrollMode();
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function printModalContent() {
+  const printContents = document.getElementById('employeeModal').innerHTML;
+  const originalContents = document.body.innerHTML;
+  document.body.innerHTML = printContents;
+  window.print();
+  document.body.innerHTML = originalContents;
+  location.reload();
+}
+
+async function exportModalToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const empId = document.getElementById("modalEmpId").textContent;
+  const details = document.getElementById("modalDetails").innerText;
+  const docs = Array.from(document.querySelectorAll("#docLinks li")).map(li => li.innerText).join("\n");
+
+  let y = 20;
+  doc.setFont("helvetica", "bold");
+  doc.text(empId, 10, 10);
+  doc.setFont("helvetica", "normal");
+
+  details.split("\n").forEach(line => {
+    doc.text(line, 10, y);
+    y += 10;
+  });
+
+  if (docs) {
+    doc.text("Documents:", 10, y + 10);
+    y += 20;
+    docs.split("\n").forEach(line => {
+      doc.text(line, 10, y);
+      y += 10;
+    });
+  }
+
+  doc.save(`${empId.replace("Employee ID: ", "")}_profile.pdf`);
+}
 </script>
-
-
 
 </body>
 </html>
