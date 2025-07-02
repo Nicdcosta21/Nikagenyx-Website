@@ -29,7 +29,8 @@ exports.handler = async (event) => {
 
     return new Promise((resolve) => {
       const form = new IncomingForm({
-        maxFileSize: 1024 * 1024,  // 1MB max
+        maxFileSize: 1024 * 1024,
+        maxTotalFileSize: 5 * 1024 * 1024,
         allowEmptyFiles: true,
         multiples: false,
       });
