@@ -26,7 +26,9 @@ exports.handler = async (event) => {
     const daysInMonth = new Date(year, month, 0).getDate();
 
     for (let d = 0; d < daysInMonth; d++) {
-      const dayKey = String(d + 1).padStart(2, '0');  // ✅ Fix
+      const dayKey = String(d + 1).padStart(2, '0');
+      console.log(`Day ${dayKey}:`, status[dayKey]);
+
       const blocks = status[dayKey] || [];
       const presentSlots = blocks.filter(b => b === 'P').length;
 
