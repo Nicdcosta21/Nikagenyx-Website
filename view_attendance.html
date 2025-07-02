@@ -5,7 +5,6 @@
   <title>My Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="/assets/js/auth-gate.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -19,6 +18,7 @@
   <!-- Main Content -->
   <main class="flex-grow p-6">
     <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
+    
     <table class="w-full text-left text-sm bg-gray-800 rounded">
       <thead class="bg-gray-700 text-gray-300">
         <tr>
@@ -37,6 +37,9 @@
         </tr>
       </tfoot>
     </table>
+
+    <!-- Test Button -->
+    <button onclick="testAttendanceUpdate()" class="mt-6 bg-blue-600 px-4 py-2 rounded text-sm">Test Update Attendance</button>
   </main>
 
   <!-- Footer -->
@@ -45,44 +48,95 @@
   </footer>
 
   <!-- Script -->
-  <button onclick="testAttendanceUpdate()" class="mt-4 bg-blue-600 px-4 py-2 rounded text-sm">Test Update Attendance</button>
+  <script>
+    const session = JSON.parse(localStorage.getItem("emp_session"));
+    if (!session?.emp_id) window.location.href = "employee_portal.html";
 
-<script>
-  async function testAttendanceUpdate() {
-    const today = new Date();
-    const emp_id = session.emp_id;
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1; // JS months are 0-indexed
-
-    const status = {};
-    const dayKey = String(today.getDate()).padStart(2, '0');
-
-    // Fake status array with 48 blocks — mark some as 'P'
-    const blocks = Array(48).fill('A');
-    blocks[12] = 'P';
-    blocks[13] = 'P';
-    blocks[14] = 'P';
-    status[dayKey] = blocks;
-
-    const payload = { emp_id, year, month, status };
-
-    try {
-      const res = await fetch("/.netlify/functions/update_attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      alert(result.message || result.error);
-      console.log("✅ Update response:", result);
-    } catch (err) {
-      console.error("❌ Update failed:", err);
-      alert("Update failed");
+    function logout() {
+      localStorage.removeItem("emp_session");
+      window.location.href = "employee_portal.html";
     }
-  }
-</script>
 
+    function timeDiff(clockIn, clockOut) {
+      if (!clockIn || !clockOut) return { label: "-", hours: 0, status: "NA" };
+      const [h1, m1, s1] = clockIn.split(":").map(Number);
+      const [h2, m2, s2] = clockOut.split(":").map(Number);
+      const inSecs = h1 * 3600 + m1 * 60 + s1;
+      const outSecs = h2 * 3600 + m2 * 60 + s2;
+      const total = outSecs - inSecs;
+      if (total <= 0) return { label: "-", hours: 0, status: "NA" };
 
+      const hrs = Math.floor(total / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      const hoursFloat = total / 3600;
+      const status = hoursFloat < 5 ? "A" : hoursFloat < 7 ? "L" : "P";
+      return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
+    }
+
+    // Load existing attendance
+    fetch("/.netlify/functions/get_employee_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: session.emp_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("attendanceTableBody");
+      let totalHours = 0;
+
+      if (Array.isArray(data.attendance)) {
+        data.attendance.forEach(entry => {
+          const result = timeDiff(entry.clock_in, entry.clock_out);
+          totalHours += result.hours;
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td class="p-2">${entry.date}</td>
+            <td class="p-2">${entry.clock_in || '-'}</td>
+            <td class="p-2">${entry.clock_out || '-'}</td>
+            <td class="p-2">${result.label}</td>
+            <td class="p-2">${result.status}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      document.getElementById("weeklyTotal").textContent = `${totalHours.toFixed(2)} hours`;
+    });
+
+    // Test update button
+    async function testAttendanceUpdate() {
+      const today = new Date();
+      const emp_id = session.emp_id;
+      const year = today.getFullYear();
+      const month = today.getMonth() + 1;
+      const dayKey = String(today.getDate()).padStart(2, '0');
+
+      const blocks = Array(48).fill('A');
+      blocks[12] = 'P';
+      blocks[13] = 'P';
+      blocks[14] = 'P';
+
+      const status = {};
+      status[dayKey] = blocks;
+
+      const payload = { emp_id, year, month, status };
+
+      try {
+        const res = await fetch("/.netlify/functions/update_attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        alert(result.message || result.error);
+        console.log("✅ Update response:", result);
+      } catch (err) {
+        console.error("❌ Update failed:", err);
+        alert("Update failed");
+      }
+    }
+  </script>
 </body>
 </html>
