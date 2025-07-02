@@ -14,66 +14,45 @@ exports.handler = async (event) => {
   }
 
   try {
-    const data = JSON.parse(event.body);
-    const { emp_id, name, phone, dob, role, department, base_salary } = data;
+    const data = JSON.parse(event.body || "{}");
 
-    console.log("🔄 Update request received:", data);
+    const {
+      emp_id,
+      name,
+      phone = "",
+      dob = "",
+      department = "",
+      role = "",
+      base_salary = 0
+    } = data;
 
     if (!emp_id || !name) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Employee ID and Name are required." }),
+        body: JSON.stringify({ message: "Missing emp_id or name" }),
       };
     }
 
-    const updates = [];
-    const values = [];
-    let index = 1;
+    const query = `
+      UPDATE employees SET
+        name = CASE WHEN $1 = '' THEN name ELSE $1 END,
+        phone = CASE WHEN $2 = '' THEN phone ELSE $2 END,
+        dob = CASE WHEN $3 = '' THEN dob ELSE $3::DATE END,
+        department = CASE WHEN $4 = '' THEN department ELSE $4 END,
+        role = CASE WHEN $5 = '' THEN role ELSE $5 END,
+        base_salary = CASE WHEN $6::int = 0 THEN base_salary ELSE $6::int END
+      WHERE emp_id = $7
+    `;
 
-    if (name) {
-      updates.push(`name = $${index++}`);
-      values.push(name);
-    }
-    if (phone) {
-      updates.push(`phone = $${index++}`);
-      values.push(phone);
-    }
-    if (dob) {
-      updates.push(`dob = $${index++}`);
-      values.push(dob);
-    }
-    if (role) {
-      updates.push(`role = $${index++}`);
-      values.push(role);
-    }
-    if (department) {
-      updates.push(`department = $${index++}`);
-      values.push(department);
-    }
-    if (base_salary !== undefined) {
-      updates.push(`base_salary = $${index++}`);
-      values.push(parseInt(base_salary));
-    }
-
-    if (updates.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "No fields to update." }),
-      };
-    }
-
-    values.push(emp_id);
-    const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
+    const values = [name, phone, dob, department, role, base_salary, emp_id];
     await pool.query(query, values);
-    await pool.end(); // ✅ Important!
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Profile updated successfully" }),
+      body: JSON.stringify({ message: `Profile updated for ${emp_id}` }),
     };
-
   } catch (err) {
-    console.error("❌ Update error:", err.message);
+    console.error("Update failed:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: "Server error", error: err.message }),
