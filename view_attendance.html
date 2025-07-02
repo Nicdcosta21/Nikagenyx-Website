@@ -218,9 +218,12 @@ function updateSummary(empId) {
     const { data } = await res.json();
     employees = data;
     data.forEach(emp => {
-      const blocks = emp.status[currentDay - 1] || Array(48).fill("A");
-      selectedDateBlocks[emp.emp_id] = blocks;
-    });
+  const fullMonthData = emp.status || [];
+  selectedDateBlocks[emp.emp_id] = fullMonthData.map(day =>
+    day?.blocks ? { blocks: [...day.blocks], hours: day.hours || 0 } : { blocks: Array(48).fill("A"), hours: 0 }
+  );
+});
+
     handleDayClick(currentDay);
   }
 
