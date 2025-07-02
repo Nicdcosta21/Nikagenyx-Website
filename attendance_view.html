@@ -136,20 +136,25 @@
       row.appendChild(title);
 
       const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
-      let summary = { P: 0, A: 0, L: 0 };
-      const blockWrap = document.createElement("div");
-      blockWrap.className = "block-wrap";
+emp.blockStates = [...blocks];  // store a working copy
 
-      blocks.forEach((state, i) => {
-        summary[state] = (summary[state] || 0) + 1;
-        const box = document.createElement("div");
-        box.className = `half-hour-box ${state}`;
-        box.dataset.index = i;
-        box.dataset.state = state;
-        box.onclick = () => toggleBlock(box, emp.emp_id);
-        box.onmouseover = () => dragBlock(box, emp.emp_id);
-        blockWrap.appendChild(box);
-      });
+let summary = { P: 0, A: 0, L: 0 };
+const blockWrap = document.createElement("div");
+blockWrap.className = "block-wrap";
+
+emp.blockStates.forEach((state, i) => {
+  summary[state] = (summary[state] || 0) + 1;
+
+  const box = document.createElement("div");
+  box.className = `half-hour-box ${state}`;
+  box.dataset.index = i;
+  box.dataset.state = state;
+  box.onclick = () => toggleBlock(box, emp.emp_id);
+  box.onmouseover = () => dragBlock(box, emp.emp_id);
+
+  blockWrap.appendChild(box);
+});
+
 
       row.appendChild(blockWrap);
 
@@ -179,18 +184,28 @@
     let next = states[(states.indexOf(current) + 1) % 3];
     box.dataset.state = next;
     box.className = `half-hour-box ${next}`;
+
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = next;
   }
+
 
   function dragBlock(box, empId) {
     if (!mouseDown) return;
     box.dataset.state = dragStatus;
     box.className = `half-hour-box ${dragStatus}`;
+
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = dragStatus;
   }
 
   async function submit(empId, blocksContainer) {
-    const boxes = [...document.querySelectorAll(`#row-${empId} .half-hour-box`)];
-    const slots = boxes.map((b, i) => ({
-      slot: i, status: b.dataset.state
+    const emp = employees.find(e => e.emp_id === empId);
+    const slots = emp.blockStates.map((state, i) => ({
+      slot: i,
+      status: state
     }));
     const res = await fetch("/.netlify/functions/update_attendance", {
       method: "POST",
