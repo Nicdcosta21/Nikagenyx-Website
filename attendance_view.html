@@ -315,7 +315,13 @@
         const hourLabels = renderHourLabels();
         row.appendChild(hourLabels);
 
-        const blocks = emp.status[selectedDate - 1] || Array(48).fill("NA");
+        const selectedDayData = emp.status[selectedDate - 1];
+
+const blocks = selectedDayData && Array.isArray(selectedDayData.blocks)
+  ? selectedDayData.blocks
+  : Array(48).fill("A");  // default fallback
+
+blocks.forEach((code, idx) => {
 
         blocks.forEach((code, idx) => {
           const box = document.createElement("div");
