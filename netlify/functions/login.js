@@ -45,7 +45,6 @@ exports.handler = async (event) => {
       { expiresIn: '2h' }
     );
 
-    // ✅ Insert session tracking into DB
     await pool.query(
       `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
