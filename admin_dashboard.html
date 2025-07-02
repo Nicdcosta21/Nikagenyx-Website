@@ -141,12 +141,12 @@ function showToast(msg) {
 }
 
   
-function submitEdit(emp_id, name) {
-  const phone = document.getElementById("editPhone").value;
-  const dob = document.getElementById("editDob").value;
-  const role = document.getElementById("editRole").value;
-  const department = document.getElementById("editDept").value;
-  const base_salary = document.getElementById("editSalary").value;
+function submitEdit(emp_id, name, modal) {
+  const phone = modal.querySelector("#editPhone").value;
+  const dob = modal.querySelector("#editDob").value;
+  const role = modal.querySelector("#editRole").value;
+  const department = modal.querySelector("#editDept").value;
+  const base_salary = modal.querySelector("#editSalary").value;
 
   fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
@@ -156,7 +156,7 @@ function submitEdit(emp_id, name) {
   .then(res => res.json())
   .then(data => {
     showToast(data.message || "Profile updated");
-    document.querySelector(".fixed").remove();
+    modal.remove();  // ✅ closes the correct modal
     setTimeout(() => location.reload(), 1000);
   })
   .catch(err => {
@@ -164,6 +164,7 @@ function submitEdit(emp_id, name) {
     alert("❌ Failed to update profile");
   });
 }
+
 
 
 window.onload = async () => {
@@ -279,7 +280,8 @@ tr.querySelector('.edit').addEventListener('click', () => {
         </label>
         <div class="flex justify-end gap-2 mt-4">
           <button class="bg-gray-500 text-white px-3 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}')">Save</button>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded" onclick="submitEdit('${emp.emp_id}', '${emp.name}', this.closest('.fixed'))">Save</button>
+
         </div>
       </div>
     </div>`;
