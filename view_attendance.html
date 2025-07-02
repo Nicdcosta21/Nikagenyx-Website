@@ -19,7 +19,7 @@
   <main class="flex-grow p-6">
     <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
     
-    <table class="w-full text-left text-sm bg-gray-800 rounded">
+        <table class="w-full text-left text-sm bg-gray-800 rounded">
       <thead class="bg-gray-700 text-gray-300">
         <tr>
           <th class="p-2">Date</th>
@@ -38,8 +38,33 @@
       </tfoot>
     </table>
 
-    <!-- Test Button -->
-    <button onclick="testAttendanceUpdate()" class="mt-6 bg-blue-600 px-4 py-2 rounded text-sm">Test Update Attendance</button>
+    <!-- ✅ Keep only this block outside the table -->
+    <div class="mt-10">
+      <h3 class="text-lg font-semibold mb-2">Edit Attendance Blocks for Today</h3>
+      <div id="blockGrid" class="grid grid-cols-12 gap-1 text-xs text-center"></div>
+      <button onclick="submitBlockUpdate()" class="mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">Submit Attendance Blocks</button>
+    </div>
+
+    <!-- Legend -->
+<div class="mt-4 flex gap-4 text-sm items-center justify-center">
+  <div class="flex items-center gap-1">
+    <div class="w-4 h-4 bg-red-600 rounded"></div>
+    <span>Absent (A)</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <div class="w-4 h-4 bg-green-600 rounded"></div>
+    <span>Present (P)</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <div class="w-4 h-4 bg-yellow-500 rounded text-black"></div>
+    <span>Leave (L)</span>
+  </div>
+</div>
+
+    
+
+
+
   </main>
 
   <!-- Footer -->
@@ -49,6 +74,65 @@
 
   <!-- Script -->
   <script>
+
+    // Create 48 toggle blocks (30-min intervals)
+const blockGrid = document.getElementById("blockGrid");
+const blockStates = Array(48).fill("A"); // A = Absent, P = Present, L = Leave
+
+for (let i = 0; i < 48; i++) {
+  const btn = document.createElement("button");
+  btn.textContent = `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 === 0 ? '00' : '30'}`;
+  btn.dataset.index = i;
+  btn.dataset.state = "A";
+  btn.className = "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+
+  btn.onclick = () => {
+    let state = btn.dataset.state;
+    const newState = state === "A" ? "P" : state === "P" ? "L" : "A";
+    btn.dataset.state = newState;
+    btn.className = newState === "P"
+      ? "bg-green-600 px-2 py-1 rounded hover:opacity-90"
+      : newState === "L"
+      ? "bg-yellow-500 text-black px-2 py-1 rounded hover:opacity-90"
+      : "bg-red-600 px-2 py-1 rounded hover:opacity-90";
+    blockStates[i] = newState;
+  };
+
+  blockGrid.appendChild(btn);
+}
+
+// Submit block update
+async function submitBlockUpdate() {
+  const today = new Date();
+  const emp_id = session.emp_id;
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const dayKey = String(today.getDate()).padStart(2, '0');
+
+  const status = {};
+  status[dayKey] = blockStates;
+
+  const payload = { emp_id, year, month, status };
+
+  try {
+    const res = await fetch("/.netlify/functions/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    alert(result.message || result.error);
+    console.log("✅ Attendance blocks submitted:", result);
+  } catch (err) {
+    console.error("❌ Submit failed:", err);
+    alert("Submit failed");
+  }
+}
+
+
+
+    
     const session = JSON.parse(localStorage.getItem("emp_session"));
     if (!session?.emp_id) window.location.href = "employee_portal.html";
 
