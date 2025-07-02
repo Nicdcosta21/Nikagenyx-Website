@@ -15,6 +15,12 @@ exports.handler = async (event) => {
 
     const { emp_id, month, year, status } = JSON.parse(event.body);
 
+console.log("📥 EMP ID:", emp_id);
+console.log("📆 Year:", year, "Month:", month);
+console.log("🧩 Status Object Keys:", Object.keys(status));
+console.log("🧩 Day 02 Block Sample:", status["02"]);
+
+
     if (!emp_id || !month || !year || !status) {
       return {
         statusCode: 400,
@@ -28,9 +34,13 @@ exports.handler = async (event) => {
 for (let d = 0; d < daysInMonth; d++) {
   const dayKey = String(d + 1).padStart(2, '0'); // e.g., "01", "02"
   const blocks = status[dayKey] || [];
+  console.log(`🔍 Processing ${dayKey}:`, blocks);
+  
   const presentSlots = blocks.filter(b => b === 'P').length;
-
-  if (presentSlots === 0) continue;
+  if (presentSlots === 0) {
+    console.log(`⏩ Skipping ${dayKey}, no 'P' blocks`);
+    continue;
+  }
 
   const clockInSlot = blocks.findIndex(b => b === 'P');
   const clockOutSlot = blocks.lastIndexOf('P');
@@ -48,17 +58,20 @@ for (let d = 0; d < daysInMonth; d++) {
   );
 
   if (exists.rowCount > 0) {
-    await client.query(
-      `UPDATE attendance SET clock_in = $1, clock_out = $2, updated_at = NOW() WHERE emp_id = $3 AND date = $4`,
-      [clock_in, clock_out, emp_id, date]
-    );
-  } else {
-    await client.query(
-      `INSERT INTO attendance (emp_id, date, clock_in, clock_out, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-      [emp_id, date, clock_in, clock_out]
-    );
-  }
+  console.log(`📝 Updating attendance for ${date}`);
+  await client.query(
+    `UPDATE attendance SET clock_in = $1, clock_out = $2, updated_at = NOW() WHERE emp_id = $3 AND date = $4`,
+    [clock_in, clock_out, emp_id, date]
+  );
+} else {
+  console.log(`➕ Inserting attendance for ${date}`);
+  await client.query(
+    `INSERT INTO attendance (emp_id, date, clock_in, clock_out, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+    [emp_id, date, clock_in, clock_out]
+  );
+}
+
 }
 
 
