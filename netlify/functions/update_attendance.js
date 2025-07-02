@@ -100,4 +100,20 @@ exports.handler = async (event) => {
 
     console.log("✅ Attendance updated successfully.");
     return {
-      statusCode: 2
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Attendance updated successfully.' }),
+    };
+  } catch (err) {
+    console.error("❌ update_attendance error:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
+  }
+};
+
+function minutesToTime(totalMinutes) {
+  const h = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+  const m = String(totalMinutes % 60).padStart(2, '0');
+  return `${h}:${m}:00`;
+}
