@@ -64,6 +64,11 @@
         <label>Passport <span class="text-sm text-gray-400">(Optional)</span></label>
         <input type="file" name="passport" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
+        <div class="mt-2">
+  <a href="#" onclick="openAddressModal()" class="text-blue-400 underline text-sm">Add / Update Address</a>
+</div>
+
+
         <div class="flex justify-between mt-6">
           <button type="submit" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Save Changes</button>
           <button type="button" onclick="cancelUpdate()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Cancel</button>
@@ -158,7 +163,115 @@ function cancelUpdate() {
   const redirectTo = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
   window.location.href = redirectTo;
 }
+
+function openAddressModal() {
+  document.getElementById("addressModal").classList.remove("hidden");
+}
+
+function closeAddressModal() {
+  document.getElementById("addressModal").classList.add("hidden");
+}
+
+function populateStates() {
+  const country = document.querySelector("select[name='country']").value;
+  const stateSelect = document.querySelector("select[name='state']");
+  const districtSelect = document.querySelector("select[name='district']");
+  stateSelect.innerHTML = `<option value="">Select State</option>`;
+  districtSelect.innerHTML = `<option value="">Select District</option>`;
+
+  const statesByCountry = {
+    India: ["Maharashtra", "Goa", "Karnataka", "Delhi"],
+    UK: ["England", "Scotland", "Wales", "Northern Ireland"],
+    USA: ["California", "New York", "Texas", "Florida"]
+  };
+
+  (statesByCountry[country] || []).forEach(state => {
+    const opt = document.createElement("option");
+    opt.value = state;
+    opt.textContent = state;
+    stateSelect.appendChild(opt);
+  });
+}
+
+function populateDistricts() {
+  const state = document.querySelector("select[name='state']").value;
+  const districtSelect = document.querySelector("select[name='district']");
+  districtSelect.innerHTML = `<option value="">Select District</option>`;
+
+  const districtsByState = {
+    Maharashtra: ["Mumbai", "Pune", "Nagpur"],
+    Goa: ["North Goa", "South Goa"],
+    Karnataka: ["Bengaluru", "Mysore"],
+    Delhi: ["North Delhi", "South Delhi"],
+    California: ["Los Angeles", "San Diego"],
+    Texas: ["Dallas", "Houston"],
+    England: ["London", "Manchester"]
+  };
+
+  (districtsByState[state] || []).forEach(dist => {
+    const opt = document.createElement("option");
+    opt.value = dist;
+    opt.textContent = dist;
+    districtSelect.appendChild(opt);
+  });
+}
+
+function submitAddress(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    line1: form.line1.value,
+    line2: form.line2.value,
+    line3: form.line3.value,
+    country: form.country.value,
+    state: form.state.value,
+    district: form.district.value,
+    pincode: form.pincode.value
+  };
+  console.log("📦 Address Submitted:", data);
+  closeAddressModal();
+  alert("✅ Address saved locally. You can now link this to your DB.");
+}
+
+  
 </script>
+<div id="addressModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white text-black p-6 rounded shadow-lg max-w-md w-full">
+    <h2 class="text-lg font-bold mb-4">Enter Address Details</h2>
+    <form id="addressForm" onsubmit="submitAddress(event)">
+      <label class="block mb-2 text-sm font-semibold">Address Line 1 *</label>
+      <input type="text" name="line1" class="w-full mb-2 px-2 py-1 border" required>
+
+      <label class="block mb-2 text-sm font-semibold">Address Line 2 *</label>
+      <input type="text" name="line2" class="w-full mb-2 px-2 py-1 border" required>
+
+      <label class="block mb-2 text-sm font-semibold">Address Line 3</label>
+      <input type="text" name="line3" class="w-full mb-2 px-2 py-1 border">
+
+      <label class="block mb-2 text-sm font-semibold">Country *</label>
+      <select name="country" class="w-full mb-2 px-2 py-1 border" onchange="populateStates()" required>
+        <option value="">Select Country</option>
+        <option value="India">India</option>
+        <option value="UK">United Kingdom</option>
+        <option value="USA">United States</option>
+      </select>
+
+      <label class="block mb-2 text-sm font-semibold">State *</label>
+      <select name="state" class="w-full mb-2 px-2 py-1 border" onchange="populateDistricts()" required></select>
+
+      <label class="block mb-2 text-sm font-semibold">District *</label>
+      <select name="district" class="w-full mb-2 px-2 py-1 border" required></select>
+
+      <label class="block mb-2 text-sm font-semibold">PIN Code *</label>
+      <input type="text" name="pincode" class="w-full mb-4 px-2 py-1 border" required pattern="[0-9]{4,10}" title="Enter a valid PIN code">
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeAddressModal()" class="bg-gray-500 text-white px-3 py-1 rounded">Cancel</button>
+        <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">Save Address</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 </body>
 </html>
