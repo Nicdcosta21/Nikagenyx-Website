@@ -10,6 +10,11 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
+  <!-- Dark Mode Toggle -->
+<div class="absolute top-4 right-4 z-50">
+  <button onclick="toggleDarkMode()" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600">Toggle Dark Mode</button>
+</div>
+
   <!-- Navbar -->
   <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
     <div class="text-xl font-bold">Nikagenyx</div>
@@ -41,6 +46,38 @@
         Already clocked out or not clocked in yet.
       </p>
     </div>
+    <!-- Profile Snapshot -->
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6 my-10">
+  <img src="https://via.placeholder.com/100" alt="Profile Pic" class="rounded-full w-24 h-24" />
+  <div class="text-left">
+    <p><strong>ID:</strong> NGX001</p>
+    <p><strong>Department:</strong> Development</p>
+    <p><strong>Email:</strong> employee@nikagenyx.com</p>
+  </div>
+</div>
+
+<!-- Attendance Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 w-full max-w-4xl">
+  <div class="bg-green-600 p-6 rounded-xl shadow-md">Days Present: 22</div>
+  <div class="bg-yellow-500 p-6 rounded-xl shadow-md">Late Entries: 3</div>
+  <div class="bg-red-600 p-6 rounded-xl shadow-md">Absents: 2</div>
+</div>
+
+<!-- Attendance Chart -->
+<div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-10 w-full max-w-3xl">
+  <canvas id="attendanceChart" class="w-full"></canvas>
+</div>
+
+<!-- Announcements -->
+<div class="bg-gray-700 p-6 rounded-xl shadow-md w-full max-w-2xl mx-auto mb-10">
+  <h2 class="text-xl font-semibold mb-2">Announcements</h2>
+  <ul class="list-disc list-inside text-left">
+    <li>Team meeting at 3 PM today.</li>
+    <li>Payroll for June has been disbursed.</li>
+    <li>Complete your profile update by Friday.</li>
+  </ul>
+</div>
+    
   </main>
 
   <!-- Footer -->
@@ -145,6 +182,43 @@ function calculateHours(clockIn, clockOut) {
   </script>
 
   
+  <!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('attendanceChart')?.getContext('2d');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [{
+          label: 'Hours Worked',
+          data: [8, 7, 9, 6, 8], // You can replace these with actual values from backend later
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+</script>
+
+  <script>
+  function toggleDarkMode() {
+    const body = document.body;
+    body.classList.toggle('bg-gray-900');
+    body.classList.toggle('bg-white');
+    body.classList.toggle('text-white');
+    body.classList.toggle('text-black');
+  }
+</script>
 
 </body>
 </html>
