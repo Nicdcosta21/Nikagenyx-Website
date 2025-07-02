@@ -228,10 +228,31 @@ function submitAddress(e) {
     district: form.district.value,
     pincode: form.pincode.value
   };
-  console.log("📦 Address Submitted:", data);
-  closeAddressModal();
-  alert("✅ Address saved locally. You can now link this to your DB.");
+
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  if (!session?.emp_id) {
+    alert("Session expired. Please log in again.");
+    return;
+  }
+
+  data.emp_id = session.emp_id;
+
+  fetch("/.netlify/functions/update_address", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  .then(res => res.json())
+  .then(result => {
+    alert(result.message || "✅ Address updated");
+    closeAddressModal();
+  })
+  .catch(err => {
+    console.error("Address update failed:", err);
+    alert("❌ Failed to update address.");
+  });
 }
+
 
   
 </script>
