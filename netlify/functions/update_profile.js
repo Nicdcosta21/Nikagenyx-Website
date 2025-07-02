@@ -72,12 +72,13 @@ exports.handler = async (event) => {
           });
         }
 
-        if (email && !/^[\w\.-]+@[\w\.-]+\.\w{2,}$/.test(email)) {
-          return resolve({
-            statusCode: 400,
-            body: JSON.stringify({ message: "Invalid email format" }),
-          });
-        }
+        if (email && email.trim() !== '' && !/^[\w\.-]+@[\w\.-]+\.\w{2,}$/.test(email)) {
+  return resolve({
+    statusCode: 400,
+    body: JSON.stringify({ message: "Invalid email format" }),
+  });
+}
+
 
         try {
           const query = `
