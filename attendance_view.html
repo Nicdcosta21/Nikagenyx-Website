@@ -1,14 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Attendance Date View - Nikagenyx</title>
-
   <script src="/assets/js/auth-gate.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
     body {
       font-family: 'Questrial', sans-serif;
@@ -26,205 +24,59 @@
       color: #c7d2fe;
       text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
     }
-    #monthSelector {
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-    }
-    .month-btn {
+    .month-btn, .date-btn {
       background-color: #1e293b;
       color: #e0e7ff;
       padding: 0.4rem 1.2rem;
       border-radius: 8px;
       font-weight: 600;
-      box-shadow: 0 0 6px transparent;
-      transition: all 0.3s ease;
+      margin: 2px;
       cursor: pointer;
       user-select: none;
-      border: 2px solid transparent;
-      font-size: 0.9rem;
     }
-    .month-btn:hover {
-      background-color: #3730a3;
-      box-shadow: 0 0 12px #818cf8;
-    }
-    .month-btn.bg-indigo-700,
-    .month-btn.active-month {
-      background-color: #4f46e5;
-      box-shadow: 0 0 15px #a5b4fc;
-      border-color: #c7d2fe;
-      color: #fefefe;
-    }
-    #dateSelector {
-      margin-bottom: 2rem;
-      overflow-x: auto;
-      padding: 0 1rem;
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      scrollbar-width: thin;
-      scrollbar-color: #6366f1 #1e293b;
-    }
-    #dateSelector::-webkit-scrollbar {
-      height: 6px;
-    }
-    #dateSelector::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    #dateSelector::-webkit-scrollbar-thumb {
+    .month-btn.active, .date-btn.active {
       background-color: #6366f1;
-      border-radius: 3px;
-    }
-    .date-btn {
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      font-weight: 600;
-      border-radius: 6px;
-      background-color: #1e293b;
-      color: #cbd5e1;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      text-align: center;
-      user-select: none;
-      border: 2px solid transparent;
-      box-shadow: 0 0 3px transparent;
-    }
-    .date-btn:hover {
-      background-color: #4338ca;
-      color: #eef2ff;
-      box-shadow: 0 0 8px #818cf8;
-    }
-    .date-btn.active {
-      background-color: #6366f1;
-      color: #f0f0f0;
-      border-color: #a5b4fc;
-      box-shadow: 0 0 12px #a5b4fc;
-    }
-    #attendanceGrid {
-      max-width: 100%;
-    }
-    .employee-row {
-      background-color: #1e293b;
-      padding: 1rem 1.5rem 1rem 1.8rem;
-      border-radius: 12px;
-      margin-bottom: 2rem;
-      box-shadow: 0 0 15px #334155cc;
-      border: 1px solid #334155;
-      user-select: none;
-    }
-    .employee-row:hover {
-      box-shadow: 0 0 20px #6366f1cc;
-    }
-    .employee-header {
-      font-weight: 700;
-      margin-bottom: 0.8rem;
-      font-size: 1.1rem;
-      color: #e0e7ff;
-      letter-spacing: 0.02em;
-    }
-    .hour-labels {
-      display: flex;
-      justify-content: flex-start;
-      overflow-x: auto;
-      white-space: nowrap;
-      font-size: 12px;
-      color: rgb(148, 163, 184);
-      border-bottom: 1px solid rgb(51, 65, 85);
-      padding-bottom: 4px;
-      padding-left: 0.3rem;
-      font-family: monospace;
-      margin-bottom: 6px;
-    }
-    .hour-label {
-      width: 36px;
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      padding-top: 2px;
-      flex-shrink: 0;
-      user-select: none;
+      color: white;
     }
     .half-hour-box {
-      width: 14px;
-      height: 28px;
-      margin-left: 2px;
-      margin-right: 0;
+      width: 12px;
+      height: 24px;
+      margin: 1px;
+      border-radius: 3px;
       display: inline-block;
-      cursor: pointer;
-      border-radius: 4px;
-      background-color: #475569;
-      transition: background-color 0.3s ease;
-      box-shadow: 0 0 3px transparent;
-      box-sizing: border-box;
     }
-    /* Add bigger margin after every 2 blocks */
-    .half-hour-box:nth-child(2n) {
-      margin-right: 12px;
-    }
-    .half-hour-box:hover {
-      box-shadow: 0 0 6px #818cf8;
-    }
-    .half-hour-box.P {
-      background-color: #22c55e;
-      box-shadow: 0 0 10px #22c55ecc;
-    }
-    .half-hour-box.A {
-      background-color: #ef4444;
-      box-shadow: 0 0 10px #ef4444cc;
-    }
-    .half-hour-box.L {
-      background-color: #eab308;
-      box-shadow: 0 0 10px #eab308cc;
-    }
-    .half-hour-box.H {
-      background-color: #3b82f6;
-      box-shadow: 0 0 10px #3b82f6cc;
-    }
-    button.confirm-btn {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      background-color: #4f46e5;
-      border-radius: 8px;
-      color: white;
-      font-weight: 600;
-      box-shadow: 0 0 10px #818cf8;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      border: none;
-    }
-    button.confirm-btn:hover {
-      background-color: #4338ca;
-    }
-    button.confirm-btn:disabled {
-      background-color: #a5b4fc;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
+    .P { background-color: #22c55e; }
+    .A { background-color: #ef4444; }
+    .L { background-color: #eab308; }
+    .row-green { background-color: #15803d33; }
+    .row-yellow { background-color: #facc1533; }
+    .row-red { background-color: #ef444433; }
   </style>
 </head>
 <body>
-
   <h1>📅 Employee Attendance - Date View</h1>
-
   <div id="monthSelector"></div>
-
-  <div id="dateSelector"></div>
-
+  <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
+  <div class="text-center mb-4">
+    <label class="mr-2">Drag Mode:</label>
+    <select id="dragMode" class="bg-gray-800 text-white p-1 rounded">
+      <option value="P">Present</option>
+      <option value="L">Leave</option>
+      <option value="A">Absent</option>
+    </select>
+  </div>
   <div id="attendanceGrid"></div>
-
 <script>
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-
+  const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
   const today = new Date();
   let currentMonth = today.getMonth();
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
+  let mouseDown = false;
+  let dragStatus = "P";
+  document.addEventListener("mousedown", () => mouseDown = true);
+  document.addEventListener("mouseup", () => mouseDown = false);
+  document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
@@ -233,17 +85,13 @@
   function renderMonthSelector() {
     const container = document.getElementById("monthSelector");
     container.innerHTML = "";
-
     months.forEach((m, i) => {
       const btn = document.createElement("button");
       btn.textContent = `${m} ${currentYear}`;
-      btn.className = `month-btn ${i === currentMonth ? "bg-indigo-700" : "bg-gray-700 hover:bg-gray-600"}`;
+      btn.className = `month-btn ${i === currentMonth ? "active" : ""}`;
       btn.onclick = () => {
-        currentMonth = i;
-        selectedDate = 1;
-        renderMonthSelector();
-        renderDateSelector();
-        loadAttendance();
+        currentMonth = i; selectedDate = 1;
+        renderMonthSelector(); renderDateSelector(); loadAttendance();
       };
       container.appendChild(btn);
     });
@@ -252,153 +100,107 @@
   function renderDateSelector() {
     const container = document.getElementById("dateSelector");
     container.innerHTML = "";
-
-    const days = daysInMonth(currentMonth, currentYear);
-    for(let d = 1; d <= days; d++) {
-      const btn = document.createElement("div");
+    for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
+      const btn = document.createElement("button");
       btn.textContent = d;
-      btn.className = "date-btn" + (d === selectedDate ? " active" : "");
-      btn.onclick = () => {
-        selectedDate = d;
-        renderDateSelector();
-        loadAttendance();
-      };
+      btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
+      btn.onclick = () => { selectedDate = d; renderDateSelector(); loadAttendance(); };
       container.appendChild(btn);
     }
   }
 
-  // Render hour labels centered over each 2 half-hour blocks
-  function renderHourLabels() {
-    const container = document.createElement("div");
-    container.className = "hour-labels";
-
-    for (let h = 0; h < 24; h++) {
-      const label = document.createElement("div");
-      label.className = "hour-label";
-      label.textContent = h.toString().padStart(2, "0");
-      container.appendChild(label);
-    }
-
-    return container;
-  }
-
   async function loadAttendance() {
-    const container = document.getElementById("attendanceGrid");
-    container.innerHTML = "Loading...";
+    const grid = document.getElementById("attendanceGrid");
+    grid.innerHTML = "Loading...";
+    const res = await fetch(`/.netlify/functions/get_attendance_calendar?month=${currentMonth + 1}&year=${currentYear}`);
+    const { data } = await res.json();
+    grid.innerHTML = "";
 
-    const url = "/.netlify/functions/get_attendance_calendar";
+    data.forEach(emp => {
+      const row = document.createElement("div");
+      row.className = "employee-row p-4 mb-4 rounded shadow";
+      row.id = `row-${emp.emp_id}`;
 
-    try {
-      const res = await fetch(`${url}?month=${currentMonth + 1}&year=${currentYear}`);
-      if (!res.ok) throw new Error("Failed to fetch data");
+      const title = document.createElement("div");
+      title.className = "font-bold mb-2";
+      title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
+      row.appendChild(title);
 
-      const json = await res.json();
-      const data = json.data || [];
+      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+      let summary = { P: 0, A: 0, L: 0 };
+      const blockWrap = document.createElement("div");
 
-      container.innerHTML = "";
-
-      if (data.length === 0) {
-        container.innerHTML = "<p class='text-center text-gray-400'>No attendance data for this month.</p>";
-        return;
-      }
-
-      data.forEach(emp => {
-        const row = document.createElement("div");
-        row.className = "employee-row";
-
-        const header = document.createElement("div");
-        header.className = "employee-header";
-        header.textContent = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
-        row.appendChild(header);
-
-        // Add hour labels above attendance blocks
-        const hourLabels = renderHourLabels();
-        row.appendChild(hourLabels);
-
-        const selectedDayData = emp.status[selectedDate - 1];
-
-const blocks = selectedDayData && Array.isArray(selectedDayData.blocks)
-  ? selectedDayData.blocks
-  : Array(48).fill("A");  // default fallback
-
-blocks.forEach((code, idx) => {
-
-        blocks.forEach((code, idx) => {
-          const box = document.createElement("div");
-          box.className = `half-hour-box ${code}`;
-          box.title = `${code} - Slot ${idx + 1}`;
-          box.dataset.empId = emp.emp_id;
-          box.dataset.slot = idx;
-          box.dataset.date = selectedDate;
-          box.dataset.code = code;
-
-          box.onclick = () => {
-            if (box.dataset.code === "P") {
-              box.dataset.code = "A";
-              box.className = "half-hour-box A";
-            } else {
-              box.dataset.code = "P";
-              box.className = "half-hour-box P";
-            }
-            showConfirmButton(row, emp.emp_id);
-          };
-
-          row.appendChild(box);
-        });
-
-        const confirmBtn = document.createElement("button");
-        confirmBtn.textContent = "Confirm Changes";
-        confirmBtn.className = "confirm-btn hidden";
-        confirmBtn.onclick = () => submitChanges(emp.emp_id, row);
-        row.appendChild(confirmBtn);
-
-        container.appendChild(row);
+      blocks.forEach((state, i) => {
+        summary[state] = (summary[state] || 0) + 1;
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${state}`;
+        box.dataset.index = i;
+        box.dataset.state = state;
+        box.onclick = () => toggleBlock(box, emp.emp_id);
+        box.onmouseover = () => dragBlock(box, emp.emp_id);
+        blockWrap.appendChild(box);
       });
-    } catch (error) {
-      container.innerHTML = `<p class="text-red-500 text-center">Error loading attendance data: ${error.message}</p>`;
-    }
+
+      row.appendChild(blockWrap);
+
+      const info = document.createElement("div");
+      const totalHours = summary.P * 0.5 + summary.L * 0.25;
+      info.textContent = `P: ${summary.P} | L: ${summary.L} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      info.className = "text-sm mt-2 text-gray-300";
+      row.appendChild(info);
+
+      if (totalHours === 0) row.classList.add("row-red");
+      else if (totalHours < 5) row.classList.add("row-yellow");
+      else if (totalHours >= 7) row.classList.add("row-green");
+
+      const btn = document.createElement("button");
+      btn.textContent = "Confirm Changes";
+      btn.className = "confirm-btn mt-2";
+      btn.onclick = () => submit(emp.emp_id, blocks);
+      row.appendChild(btn);
+
+      grid.appendChild(row);
+    });
   }
 
-  function showConfirmButton(row, empId) {
-    const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
-    if (btn) btn.classList.remove("hidden");
+  function toggleBlock(box, empId) {
+    const states = ["A", "P", "L"];
+    let current = box.dataset.state;
+    let next = states[(states.indexOf(current) + 1) % 3];
+    box.dataset.state = next;
+    box.className = `half-hour-box ${next}`;
   }
 
-  async function submitChanges(empId, row) {
-    const boxes = [...row.getElementsByClassName("half-hour-box")];
-    const updatedSlots = boxes.map(box => ({
-      slot: parseInt(box.dataset.slot),
-      status: box.dataset.code
+  function dragBlock(box, empId) {
+    if (!mouseDown) return;
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
+  }
+
+  async function submit(empId, blocksContainer) {
+    const boxes = [...document.querySelectorAll(`#row-${empId} .half-hour-box`)];
+    const slots = boxes.map((b, i) => ({
+      slot: i, status: b.dataset.state
     }));
-
-    try {
-      const res = await fetch("/.netlify/functions/update_attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emp_id: empId,
-          year: currentYear,
-          month: currentMonth + 1,
-          day: selectedDate,
-          slots: updatedSlots
-        })
-      });
-
-      if (!res.ok) throw new Error("Failed to update attendance");
-
-      alert(`Attendance updated for ${empId} on ${currentYear}-${currentMonth + 1}-${selectedDate}`);
-
-      const btn = [...row.getElementsByTagName("button")].find(b => b.textContent === "Confirm Changes");
-      if (btn) btn.classList.add("hidden");
-    } catch (error) {
-      alert(`Error updating attendance: ${error.message}`);
-    }
+    const res = await fetch("/.netlify/functions/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emp_id: empId,
+        year: currentYear,
+        month: currentMonth + 1,
+        day: selectedDate,
+        slots
+      })
+    });
+    const result = await res.json();
+    alert(result.message || result.error);
+    loadAttendance();
   }
 
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
 </script>
-
 </body>
 </html>
