@@ -136,72 +136,81 @@ function updateSummary(empId) {
 
 
   function renderAttendanceGrid() {
-    const container = document.getElementById("attendanceContainer");
-    container.innerHTML = "";
+  const container = document.getElementById("attendanceContainer");
+  container.innerHTML = "";
 
-    employees.forEach(emp => {
-      const blocks = selectedDateBlocks[emp.emp_id] || Array(48).fill("A");
-      selectedDateBlocks[emp.emp_id] = blocks;
+  employees.forEach(emp => {
+    const dayData = selectedDateBlocks[emp.emp_id][currentDay - 1] || { blocks: Array(48).fill("A"), hours: 0 };
+    const blocks = dayData.blocks;
 
-      const row = document.createElement("div");
-      row.id = "row-" + emp.emp_id;
-      row.className = "bg-gray-800 p-4 rounded shadow";
+    // Ensure we're editing the current day only
+    selectedDateBlocks[emp.emp_id][currentDay - 1] = {
+      blocks: [...blocks], // clone to prevent mutation
+      hours: dayData.hours
+    };
 
-      const name = document.createElement("div");
-      name.className = "mb-2 font-semibold";
-      name.innerText = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
-      row.appendChild(name);
+    const row = document.createElement("div");
+    row.id = "row-" + emp.emp_id;
+    row.className = "bg-gray-800 p-4 rounded shadow";
 
-      const blockWrap = document.createElement("div");
-      blockWrap.className = "flex flex-wrap gap-1 mb-2";
+    const name = document.createElement("div");
+    name.className = "mb-2 font-semibold";
+    name.innerText = `Name: ${emp.name} | Role: ${emp.role} | Department: ${emp.department}`;
+    row.appendChild(name);
 
-      for (let i = 0; i < 48; i++) {
-        const b = document.createElement("button");
-        b.className = `block-btn block-${blocks[i]}`;
-        b.dataset.state = blocks[i];
-        b.innerText = "";
-        b.onclick = () => toggleStatus(b, emp.emp_id, i);
-        b.onmouseover = () => dragApply(b, emp.emp_id, i);
-        blockWrap.appendChild(b);
-      }
+    const blockWrap = document.createElement("div");
+    blockWrap.className = "flex flex-wrap gap-1 mb-2";
 
-      const summary = document.createElement("div");
-      summary.className = "text-sm text-gray-400 mb-2";
-      summary.id = "summary-" + emp.emp_id;
-      row.appendChild(blockWrap);
-      row.appendChild(summary);
-      updateSummary(emp.emp_id);
+    for (let i = 0; i < 48; i++) {
+      const state = blocks[i];
+      const b = document.createElement("button");
+      b.className = `block-btn block-${state}`;
+      b.dataset.state = state;
+      b.innerText = state;
+      b.onclick = () => toggleStatus(b, emp.emp_id, i);
+      b.onmouseover = () => dragApply(b, emp.emp_id, i);
+      blockWrap.appendChild(b);
+    }
 
-      const confirm = document.createElement("button");
-      confirm.innerText = "Confirm Changes";
-      confirm.className = "bg-indigo-600 hover:bg-indigo-700 px-4 py-1 text-sm rounded";
-      confirm.onclick = () => {
-        const status = selectedDateBlocks[emp.emp_id];
-        const payload = {
-          emp_id: emp.emp_id,
-          year: 2025,
-          month: 7,
-          day: currentDay,
-          slots: status.map((s, i) => ({ slot: i, status: s }))
-        };
+    const summary = document.createElement("div");
+    summary.className = "text-sm text-gray-400 mb-2";
+    summary.id = "summary-" + emp.emp_id;
+    row.appendChild(blockWrap);
+    row.appendChild(summary);
+    updateSummary(emp.emp_id);
 
-        fetch('/.netlify/functions/update_attendance', {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
+    const confirm = document.createElement("button");
+    confirm.innerText = "Confirm Changes";
+    confirm.className = "bg-indigo-600 hover:bg-indigo-700 px-4 py-1 text-sm rounded";
+    confirm.onclick = () => {
+      const blockArray = selectedDateBlocks[emp.emp_id][currentDay - 1].blocks;
+
+      const payload = {
+        emp_id: emp.emp_id,
+        year: 2025,
+        month: 7,
+        day: currentDay,
+        slots: blockArray.map((s, i) => ({ slot: i, status: s }))
+      };
+
+      fetch('/.netlify/functions/update_attendance', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
         .then(res => res.json())
         .then(data => alert(data.message || data.error))
         .catch(err => {
           console.error("❌ Update error:", err);
           alert("Update failed");
         });
-      };
-      row.appendChild(confirm);
+    };
 
-      container.appendChild(row);
-    });
-  }
+    row.appendChild(confirm);
+    container.appendChild(row);
+  });
+}
+
 
   // Initial fetch
   async function loadAttendance() {
