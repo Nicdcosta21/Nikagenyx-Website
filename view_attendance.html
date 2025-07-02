@@ -55,7 +55,14 @@
       <button onclick="jumpToToday()" class="bg-blue-500 px-3 py-1 text-white text-xs rounded">Today</button>
     </div>
   </div>
-
+<div class="flex justify-center items-center gap-3 mt-4">
+  <label class="text-sm">Drag Mode:</label>
+  <select onchange="dragStatus = this.value" class="bg-gray-800 text-white px-2 py-1 rounded text-sm">
+    <option value="P">Present</option>
+    <option value="L">Leave</option>
+    <option value="A">Absent</option>
+  </select>
+</div>
   <!-- Attendance Grid -->
   <main class="p-4 space-y-6" id="attendanceContainer">
     <!-- JS will inject employee rows here -->
