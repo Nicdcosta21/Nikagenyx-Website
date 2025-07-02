@@ -16,13 +16,9 @@ window.addEventListener("DOMContentLoaded", async function authGate() {
   try {
     if (PUBLIC_PAGES.includes(currentPath)) return;
 
-    const res = await fetch("/.netlify/functions/verify-session", {
-      credentials: "include" // ✅ Send cookies!
-    });
-
+    const res = await fetch("/.netlify/functions/verify-session");
     const data = await res.json();
     if (!data.ok) {
-      console.warn("❌ Session invalid:", data.message);
       redirect("/employee_portal.html");
       return;
     }
