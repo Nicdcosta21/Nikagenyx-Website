@@ -5,7 +5,7 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
-  const empId = event.queryStringParameters?.id;
+  const empId = event.queryStringParameters?.emp_id;
   if (!empId) {
     return {
       statusCode: 400,
