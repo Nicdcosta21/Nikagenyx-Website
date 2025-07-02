@@ -38,14 +38,26 @@
         <label class="block mb-1 text-sm">Phone Number *</label>
         <input type="tel" name="phone" pattern="[0-9]{10}" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
       </div>
+     <div class="mb-4">
+  <label class="block mb-1 text-sm">Email Address *</label>
+  <input type="email" name="email" required
+         pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+         class="w-full p-2 bg-gray-700 border border-gray-600 rounded"
+         placeholder="e.g. johndoe@example.com">
+</div>
+
+
       <div class="mb-4">
         <label class="block mb-1 text-sm">Date of Birth *</label>
         <input type="date" name="dob" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-sm">4 Digits PIN *</label>
-        <input type="password" name="pin" pattern="[0-9]{4}" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-      </div>
+  <label class="block mb-1 text-sm">4 Digit PIN *</label>
+  <input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required
+         class="w-full p-2 bg-gray-700 border border-gray-600 rounded"
+         placeholder="e.g. 1234">
+</div>
+
       <div class="mb-4">
         <label class="block mb-1 text-sm">Department *</label>
         <select name="department" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
@@ -126,19 +138,31 @@
   });
 
   form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!capturedPhoto) return alert('Please capture a photo first.');
+  if (!capturedPhoto) return alert('Please capture a photo first.');
 
-    const data = {
-      firstName: form.firstName.value,
-      lastName: form.lastName.value,
-      phone: form.phone.value,
-      dob: form.dob.value,
-      pin: form.pin.value,
-      photo: capturedPhoto,
-      department: form.department.value
-    };
+  const email = form.email.value.trim();
+  const pin = form.pin.value.trim();
+
+  if (!/^[0-9]{4}$/.test(pin)) {
+    return alert("PIN must be exactly 4 digits.");
+  }
+
+  if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) {
+    return alert("Please enter a valid email address.");
+  }
+
+  const data = {
+    firstName: form.firstName.value,
+    lastName: form.lastName.value,
+    phone: form.phone.value,
+    email: email,
+    dob: form.dob.value,
+    pin: pin,
+    photo: capturedPhoto,
+    department: form.department.value
+  };
 
     const res = await fetch('/.netlify/functions/register', {
       method: 'POST',
@@ -175,6 +199,7 @@
       firstName: form.firstName.value,
       lastName: form.lastName.value,
       phone: form.phone.value,
+      email: form.email.value,
       dob: form.dob.value,
       pin: form.pin.value,
       photo: capturedPhoto,
@@ -192,14 +217,27 @@
     const result = await res.json();
 
     if (res.ok) {
-      finishBtn.disabled = false;
-      finishBtn.classList.remove("opacity-50", "cursor-not-allowed");
-      message.innerHTML = `<span class="text-green-400">🎉 MFA verified. Registered as <strong>${empId}</strong></span>`;
-    } else {
-      message.innerHTML = `<span class="text-red-400">❌ MFA failed: ${result.message}</span>`;
-      finishBtn.disabled = true;
-      finishBtn.classList.add("opacity-50", "cursor-not-allowed");
-    }
+  finishBtn.disabled = false;
+  finishBtn.classList.remove("opacity-50", "cursor-not-allowed");
+
+  message.innerHTML = `
+    <div class="bg-green-700 bg-opacity-90 border-l-4 border-green-400 p-4 rounded shadow-md text-sm text-white">
+      <p class="font-semibold mb-1">✅ MFA verified successfully!</p>
+      <p class="mb-1">You have been registered as <span class="font-mono bg-gray-900 px-2 py-1 rounded">${empId}</span>.</p>
+      <p class="mt-2 text-yellow-300">📌 Please make sure to <strong>note down your Employee ID and 4-digit PIN</strong>. You will need them to log in.</p>
+    </div>
+  `;
+} else {
+  message.innerHTML = `
+    <div class="bg-red-700 bg-opacity-90 border-l-4 border-red-400 p-4 rounded shadow-md text-sm text-white">
+      <p class="font-semibold mb-1">❌ MFA verification failed:</p>
+      <p>${result.message}</p>
+    </div>
+  `;
+  finishBtn.disabled = true;
+  finishBtn.classList.add("opacity-50", "cursor-not-allowed");
+}
+
   });
 
   function copySecret() {
