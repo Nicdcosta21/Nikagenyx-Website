@@ -29,10 +29,10 @@ exports.handler = async (event) => {
 
     return new Promise((resolve) => {
       const form = new IncomingForm({
-        maxFileSize: 1024 * 1024,
-        maxTotalFileSize: 5 * 1024 * 1024,
+        maxFileSize: 1024 * 1024,          // 1MB per file
+        maxTotalFileSize: 5 * 1024 * 1024, // Total up to 5MB
         allowEmptyFiles: true,
-         minFileSize: 0,
+        minFileSize: 0,
         multiples: false,
       });
 
@@ -45,6 +45,7 @@ exports.handler = async (event) => {
           });
         }
 
+        // Normalize fields
         const unwrap = (obj) => {
           const out = {};
           for (const key in obj) {
@@ -53,17 +54,17 @@ exports.handler = async (event) => {
           return out;
         };
 
+        const normalize = (val) =>
+          val === undefined || val === null ? "" : String(val).trim();
+
         const f = unwrap(fields);
-
-        const emp_id     = f.emp_id || null;
-        const phone      = f.phone || null;
-        const dob        = f.dob || null;
-        const department = f.department || null;
-        const role       = f.role || null;
-        const new_pin    = f.new_pin || '';
-        const email      = f.email || null;
-
-        console.log("Received fields:", f);
+        const emp_id = normalize(f.emp_id);
+        const phone = normalize(f.phone);
+        const dob = normalize(f.dob);
+        const department = normalize(f.department);
+        const role = normalize(f.role);
+        const new_pin = normalize(f.new_pin);
+        const email = normalize(f.email);
 
         if (!emp_id) {
           return resolve({
@@ -72,50 +73,59 @@ exports.handler = async (event) => {
           });
         }
 
-        if (email && email.trim() !== '' && !/^[\w\.-]+@[\w\.-]+\.\w{2,}$/.test(email)) {
-  return resolve({
-    statusCode: 400,
-    body: JSON.stringify({ message: "Invalid email format" }),
-  });
-}
-
+        if (email && email !== "" && !/^[\w\.-]+@[\w\.-]+\.\w{2,}$/.test(email)) {
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ message: "Invalid email format" }),
+          });
+        }
 
         try {
-          const query = `
-  UPDATE employees SET
-    phone = CASE WHEN $1 = '' THEN phone ELSE $1 END,
-    dob = CASE WHEN $2 = '' THEN dob ELSE $2::DATE END,
-    department = CASE WHEN $3 = '' THEN department ELSE $3 END,
-    role = CASE WHEN $4 = '' THEN role ELSE $4 END,
-    pin = CASE WHEN $5 = '' THEN pin ELSE $5 END,
-    email = CASE WHEN $6 = '' THEN email ELSE $6 END
-  WHERE emp_id = $7
-`;
-const values = [phone, dob, department, role, new_pin, email, emp_id];
+          // Skip file updates if nothing was uploaded
+          const hasUploaded = (file) =>
+            file && file.originalFilename && file.size > 0;
 
+          const updateQuery = `
+            UPDATE employees SET
+              phone = CASE WHEN $1 = '' THEN phone ELSE $1 END,
+              dob = CASE WHEN $2 = '' THEN dob ELSE $2::DATE END,
+              department = CASE WHEN $3 = '' THEN department ELSE $3 END,
+              role = CASE WHEN $4 = '' THEN role ELSE $4 END,
+              pin = CASE WHEN $5 = '' THEN pin ELSE $5 END,
+              email = CASE WHEN $6 = '' THEN email ELSE $6 END
+            WHERE emp_id = $7
+          `;
 
-          await pool.query(query, values);
+          const values = [phone, dob, department, role, new_pin, email, emp_id];
+          await pool.query(updateQuery, values);
+
+          // Optional: You could handle uploaded files here (store to DB or cloud)
+          // Only if `hasUploaded(files.pan)` or similar
 
           return resolve({
             statusCode: 200,
             body: JSON.stringify({ message: "Profile updated successfully" }),
           });
-
         } catch (dbErr) {
           console.error("Database update error:", dbErr);
           return resolve({
             statusCode: 500,
-            body: JSON.stringify({ error: "Database update failed", message: dbErr.message }),
+            body: JSON.stringify({
+              error: "Database update failed",
+              message: dbErr.message,
+            }),
           });
         }
       });
     });
-
   } catch (err) {
     console.error("Outer handler error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Unhandled server error", message: err.message }),
+      body: JSON.stringify({
+        error: "Unhandled server error",
+        message: err.message,
+      }),
     };
   }
 };
