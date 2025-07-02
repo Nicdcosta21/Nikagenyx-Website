@@ -82,6 +82,7 @@
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
   let mouseDown = false;
+  let employees = [];
   let dragStatus = "P";
   document.addEventListener("mousedown", () => mouseDown = true);
   document.addEventListener("mouseup", () => mouseDown = false);
@@ -123,6 +124,7 @@
     grid.innerHTML = "Loading...";
     const res = await fetch(`/.netlify/functions/get_attendance_calendar?month=${currentMonth + 1}&year=${currentYear}`);
     const { data } = await res.json();
+    employees = data;
     grid.innerHTML = "";
 
     data.forEach(emp => {
@@ -171,7 +173,7 @@ emp.blockStates.forEach((state, i) => {
       const btn = document.createElement("button");
       btn.textContent = "Confirm Changes";
       btn.className = "confirm-btn mt-2";
-      btn.onclick = () => submit(emp.emp_id, blocks);
+      btn.onclick = () => submit(emp.emp_id);
       row.appendChild(btn);
 
       grid.appendChild(row);
@@ -201,7 +203,7 @@ emp.blockStates.forEach((state, i) => {
     if (emp) emp.blockStates[index] = dragStatus;
   }
 
-  async function submit(empId, blocksContainer) {
+  async function submit(empId) {
     const emp = employees.find(e => e.emp_id === empId);
     const slots = emp.blockStates.map((state, i) => ({
       slot: i,
