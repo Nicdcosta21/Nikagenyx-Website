@@ -2,7 +2,6 @@ const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 const { Readable } = require("stream");
 
-// PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -16,102 +15,61 @@ exports.handler = async (event) => {
     };
   }
 
-  // Convert body buffer to stream for formidable
-  const bodyBuffer = event.isBase64Encoded
-    ? Buffer.from(event.body, "base64")
-    : Buffer.from(event.body);
+  try {
+    const bodyBuffer = event.isBase64Encoded
+      ? Buffer.from(event.body, "base64")
+      : Buffer.from(event.body);
 
-  const req = new Readable();
-  req.push(bodyBuffer);
-  req.push(null);
-  req.headers = event.headers;
-  req.method = event.httpMethod;
-  req.url = event.path;
+    const req = new Readable();
+    req.push(bodyBuffer);
+    req.push(null);
+    req.headers = event.headers;
+    req.method = event.httpMethod;
+    req.url = event.path;
 
-  return new Promise((resolve) => {
-    const form = new IncomingForm({
-      maxFileSize: 1024 * 1024, // 1MB max
-      allowEmptyFiles: true,
-      minFileSize: 0,
-    });
+    return new Promise((resolve) => {
+      const form = new IncomingForm({
+        maxFileSize: 1024 * 1024,  // 1MB max
+        allowEmptyFiles: true,
+        multiples: false,
+      });
 
-    form.parse(req, async (err, fields, files) => {
-      try {
+      form.parse(req, async (err, fields, files) => {
         if (err) {
-          console.error("❌ Form parse failed:", err);
-          return resolve({
-            statusCode: 400,
-            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
-          });
+          console.error("Form parse error:", err);
+          return resolve({ statusCode: 500, body: "Form parsing failed" });
         }
 
-        // Unwrap emp_id from array if needed
-        const emp_id = Array.isArray(fields.emp_id) ? fields.emp_id[0] : fields.emp_id;
+        try {
+          const { emp_id, phone, dob, department, role, new_pin } = fields;
+          console.log("Received fields:", fields);
 
-        if (!emp_id || typeof emp_id !== "string" || emp_id.trim() === "") {
-          return resolve({
-            statusCode: 400,
-            body: JSON.stringify({ message: "Missing or invalid employee ID" }),
-          });
-        }
-
-        const updates = [];
-        const values = [];
-        let idx = 1;
-
-        // Add non-empty text fields to update
-        ["phone", "dob", "role", "department", "new_pin"].forEach((field) => {
-          const value = Array.isArray(fields[field]) ? fields[field][0] : fields[field];
-          if (value && typeof value === "string" && value.trim() !== "") {
-            updates.push(`${field === "new_pin" ? "pin" : field} = $${idx++}`);
-            values.push(value.trim());
+          if (!emp_id) {
+            return resolve({ statusCode: 400, body: "Missing emp_id" });
           }
-        });
 
-        // Add file fields if uploaded with size > 0
-        ["pan", "aadhaar", "resume", "qualification", "photo", "passport"].forEach((fileField) => {
-          if (files[fileField] && files[fileField].size > 0) {
-            updates.push(`${fileField}_filename = $${idx++}`);
-            values.push(files[fileField].originalFilename || "");
-            // Optional: handle file storage here
-          }
-        });
+          // Update query logic here – make sure your SQL handles nullable fields
+          await pool.query(
+            `UPDATE employees SET phone = $1, dob = $2, department = $3, role = $4, pin = COALESCE(NULLIF($5, ''), pin) WHERE emp_id = $6`,
+            [phone || null, dob || null, department || null, role || null, new_pin || '', emp_id]
+          );
 
-        if (updates.length === 0) {
-          // Nothing to update
-          return resolve({
+          resolve({
             statusCode: 200,
-            body: JSON.stringify({ message: "No changes detected. Profile not updated." }),
+            body: JSON.stringify({ message: "Profile updated successfully" }),
           });
+        } catch (dbErr) {
+          console.error("Database update error:", dbErr);
+          resolve({ statusCode: 500, body: "Database update failed" });
         }
-
-        values.push(emp_id.trim());
-        const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${idx}`;
-
-        // Uncomment for debugging:
-        // console.log("Executing query:", query);
-        // console.log("With values:", values);
-
-        const result = await pool.query(query, values);
-
-        if (result.rowCount === 0) {
-          return resolve({
-            statusCode: 404,
-            body: JSON.stringify({ message: "No employee found with the given ID" }),
-          });
-        }
-
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify({ message: "Profile updated successfully" }),
-        });
-      } catch (error) {
-        console.error("❌ Unexpected error in form parse callback:", error);
-        resolve({
-          statusCode: 500,
-          body: JSON.stringify({ message: "Unexpected error", error: error.message }),
-        });
-      }
+      });
     });
-  });
+
+  } catch (err) {
+    console.error("Outer handler error:", err);
+    return {
+      statusCode: 500,
+      body: "Unhandled server error",
+    };
+  }
 };
