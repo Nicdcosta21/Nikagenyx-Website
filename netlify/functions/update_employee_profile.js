@@ -17,6 +17,8 @@ exports.handler = async (event) => {
     const data = JSON.parse(event.body);
     const { emp_id, name, phone, dob, role, department, base_salary } = data;
 
+    console.log("🔄 Update request received:", data);
+
     if (!emp_id || !name) {
       return {
         statusCode: 400,
@@ -53,9 +55,17 @@ exports.handler = async (event) => {
       values.push(parseInt(base_salary));
     }
 
+    if (updates.length === 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "No fields to update." }),
+      };
+    }
+
     values.push(emp_id);
     const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
     await pool.query(query, values);
+    await pool.end(); // ✅ Important!
 
     return {
       statusCode: 200,
