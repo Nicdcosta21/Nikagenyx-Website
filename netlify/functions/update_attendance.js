@@ -60,10 +60,24 @@ exports.handler = async (event) => {
       console.log(`🔍 Processing ${dayKey}:`, blocks);
 
       const presentSlots = blocks.filter(b => b === 'P').length;
-      if (presentSlots === 0) {
-        console.log(`⏩ Skipping ${dayKey}, no 'P' blocks`);
-        continue;
-      }
+const date = `${year}-${String(month).padStart(2, '0')}-${dayKey}`;
+
+const exists = await client.query(
+  `SELECT id FROM attendance WHERE emp_id = $1 AND date = $2`,
+  [emp_id, date]
+);
+
+if (presentSlots === 0) {
+  // Delete attendance if exists and no 'P' blocks
+  if (exists.rowCount > 0) {
+    console.log(`🗑 Deleting ${date}, all blocks are 'A'`);
+    await client.query(`DELETE FROM attendance WHERE emp_id = $1 AND date = $2`, [emp_id, date]);
+  } else {
+    console.log(`⏩ Nothing to delete for ${date}`);
+  }
+  continue;
+}
+
 
       const clockInSlot = blocks.findIndex(b => b === 'P');
       const clockOutSlot = blocks.lastIndexOf('P');
