@@ -102,6 +102,64 @@
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
+
+<!-- Employee Detail Modal -->
+<div id="employeeModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-70 flex items-center justify-center">
+  <div class="bg-white text-black w-11/12 md:w-2/3 lg:w-1/2 rounded-xl p-6 relative shadow-xl max-h-[90vh] overflow-y-auto">
+    <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black">&times;</button>
+    <h2 class="text-xl font-bold mb-4" id="modalEmpId"></h2>
+    <div id="modalDetails" class="space-y-2"></div>
+    <div id="modalDocs" class="mt-4">
+      <h3 class="text-lg font-semibold mb-2">Uploaded Documents:</h3>
+      <ul id="docLinks" class="list-disc pl-5 space-y-1"></ul>
+    </div>
+  </div>
+</div>
+<script>
+async function showEmployeeDetails(empId) {
+  try {
+    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+    const data = await res.json();
+
+    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+    
+    const detailsHTML = `
+      <p><strong>Name:</strong> ${data.name}</p>
+      <p><strong>Email:</strong> ${data.email}</p>
+      <p><strong>Phone:</strong> ${data.phone}</p>
+      <p><strong>DOB:</strong> ${data.dob}</p>
+      <p><strong>Department:</strong> ${data.department}</p>
+      <p><strong>Role:</strong> ${data.role}</p>
+      <p><strong>Total Pay:</strong> ₹${data.total_pay}</p>
+      <p><strong>Total Hours:</strong> ${data.total_hours} hrs</p>
+    `;
+    document.getElementById('modalDetails').innerHTML = detailsHTML;
+
+    const docList = document.getElementById('docLinks');
+    docList.innerHTML = '';
+    if (data.documents && data.documents.length > 0) {
+      data.documents.forEach(doc => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+        docList.appendChild(li);
+      });
+    } else {
+      docList.innerHTML = '<li>No documents uploaded</li>';
+    }
+
+    document.getElementById('employeeModal').classList.remove('hidden');
+  } catch (err) {
+    alert("❌ Failed to fetch employee details.");
+    console.error(err);
+  }
+}
+
+function closeModal() {
+  document.getElementById('employeeModal').classList.add('hidden');
+}
+</script>
+
 <script>
 function logout() {
   localStorage.removeItem("emp_session");
@@ -178,31 +236,34 @@ window.onload = async () => {
     const employees = data.employees || data;
     const table = document.getElementById("employeeTable");
 
-    employees.forEach(emp => {
-      const tr = document.createElement("tr");
-      tr.id = `row-${emp.emp_id}`;
-      tr.innerHTML = `
-        <td class="border p-2 cursor-pointer">${emp.emp_id}</td>
-        <td class="border p-2">${emp.name}</td>
-        <td class="border p-2">${emp.phone || '-'}</td>
-        <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-        <td class="border p-2 flex items-center gap-2 justify-center">
-          <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
-            <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
-            <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
-          </select>
-          <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-        </td>
-        <td class="border p-2">${emp.department || '-'}</td>
-        <td class="border p-2 space-x-1">
-          <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
-          <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
-          <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-          <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
-          <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
-        </td>
-      `;
-      table.appendChild(tr);
+   employees.forEach(emp => {
+  const tr = document.createElement("tr");
+  tr.id = `row-${emp.emp_id}`;
+  tr.innerHTML = `
+    <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">
+      ${emp.emp_id}
+    </td>
+    <td class="border p-2">${emp.name}</td>
+    <td class="border p-2">${emp.phone || '-'}</td>
+    <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
+    <td class="border p-2 flex items-center gap-2 justify-center">
+      <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
+        <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
+        <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
+      </select>
+      <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+    </td>
+    <td class="border p-2">${emp.department || '-'}</td>
+    <td class="border p-2 space-x-1">
+      <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
+      <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
+      <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
+      <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+      <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
+    </td>
+  `;
+  table.appendChild(tr);
+
 
       tr.querySelector('.confirm-role').addEventListener('click', () => {
         const newRole = tr.querySelector('.role-select').value;
@@ -391,7 +452,7 @@ const roleOptions = {
   } catch (err) {
     console.error("Failed to load employees:", err);
   }
-};;
+};
 function setupPayrollConfirm() {
   document.getElementById("confirmPayroll").addEventListener("click", async () => {
     const selected = document.getElementById("payrollToggle").value;
@@ -444,6 +505,8 @@ loadPayrollMode();
 
 
 </script>
+
+
 
 </body>
 </html>
