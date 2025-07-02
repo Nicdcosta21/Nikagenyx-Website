@@ -83,14 +83,19 @@ exports.handler = async (event, context) => {
       log.hours = (pCount * 0.5 + lCount * 0.25).toFixed(2);
     });
 
-    const result = employees.map(emp => ({
-      emp_id: emp.emp_id,
-      name: emp.name,
-      role: emp.role,
-      department: emp.department,
-      from: "2025-01-01",
-      status: logsByEmp[emp.emp_id]
-    }));
+   const result = employees.map(emp => ({
+  emp_id: emp.emp_id,
+  name: emp.name,
+  role: emp.role,
+  department: emp.department,
+  from: "2025-01-01",
+  status: logsByEmp[emp.emp_id].map(day =>
+    day && Array.isArray(day.blocks)
+      ? { blocks: day.blocks, hours: day.hours || 0 }
+      : { blocks: Array(48).fill("A"), hours: 0 }
+  )
+}));
+
 
     await client.end();
 
