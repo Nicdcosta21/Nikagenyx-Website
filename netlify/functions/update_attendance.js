@@ -25,43 +25,42 @@ exports.handler = async (event) => {
     await client.connect();
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    for (let d = 0; d < daysInMonth; d++) {
-      const dayKey = String(d + 1).padStart(2, '0');
-      console.log(`Day ${dayKey}:`, status[dayKey]);
+for (let d = 0; d < daysInMonth; d++) {
+  const dayKey = String(d + 1).padStart(2, '0'); // e.g., "01", "02"
+  const blocks = status[dayKey] || [];
+  const presentSlots = blocks.filter(b => b === 'P').length;
 
-      const blocks = status[dayKey] || [];
-      const presentSlots = blocks.filter(b => b === 'P').length;
+  if (presentSlots === 0) continue;
 
-      if (presentSlots === 0) continue;
+  const clockInSlot = blocks.findIndex(b => b === 'P');
+  const clockOutSlot = blocks.lastIndexOf('P');
+  if (clockInSlot === -1 || clockOutSlot === -1) continue;
 
-      const clockInSlot = blocks.findIndex(b => b === 'P');
-      const clockOutSlot = blocks.lastIndexOf('P');
-      if (clockInSlot === -1 || clockOutSlot === -1) continue;
+  const clockInMinutes = clockInSlot * 30;
+  const clockOutMinutes = (clockOutSlot + 1) * 30;
+  const clock_in = minutesToTime(clockInMinutes);
+  const clock_out = minutesToTime(clockOutMinutes);
+  const date = `${year}-${String(month).padStart(2, '0')}-${dayKey}`; // 👈 FIXED
 
-      const clockInMinutes = clockInSlot * 30;
-      const clockOutMinutes = (clockOutSlot + 1) * 30;
-      const clock_in = minutesToTime(clockInMinutes);
-      const clock_out = minutesToTime(clockOutMinutes);
-      const date = `${year}-${String(month).padStart(2, '0')}-${dayKey}`;
+  const exists = await client.query(
+    `SELECT id FROM attendance WHERE emp_id = $1 AND date = $2`,
+    [emp_id, date]
+  );
 
-      const exists = await client.query(
-        `SELECT id FROM attendance WHERE emp_id = $1 AND date = $2`,
-        [emp_id, date]
-      );
+  if (exists.rowCount > 0) {
+    await client.query(
+      `UPDATE attendance SET clock_in = $1, clock_out = $2, updated_at = NOW() WHERE emp_id = $3 AND date = $4`,
+      [clock_in, clock_out, emp_id, date]
+    );
+  } else {
+    await client.query(
+      `INSERT INTO attendance (emp_id, date, clock_in, clock_out, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [emp_id, date, clock_in, clock_out]
+    );
+  }
+}
 
-      if (exists.rowCount > 0) {
-        await client.query(
-          `UPDATE attendance SET clock_in = $1, clock_out = $2, updated_at = NOW() WHERE emp_id = $3 AND date = $4`,
-          [clock_in, clock_out, emp_id, date]
-        );
-      } else {
-        await client.query(
-          `INSERT INTO attendance (emp_id, date, clock_in, clock_out, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-          [emp_id, date, clock_in, clock_out]
-        );
-      }
-    }
 
     await client.end();
 
