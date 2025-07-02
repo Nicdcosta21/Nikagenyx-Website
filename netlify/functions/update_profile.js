@@ -32,6 +32,7 @@ exports.handler = async (event) => {
         maxFileSize: 1024 * 1024,
         maxTotalFileSize: 5 * 1024 * 1024,
         allowEmptyFiles: true,
+         minFileSize: 0,
         multiples: false,
       });
 
