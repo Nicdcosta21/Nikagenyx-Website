@@ -47,7 +47,7 @@
     }
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
-    .L { background-color: #eab308; }
+    
     .row-green { background-color: #15803d33; }
     .row-yellow { background-color: #facc1533; }
     .row-red { background-color: #ef444433; }
@@ -137,38 +137,46 @@
       title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
       row.appendChild(title);
 
-      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
-emp.blockStates = [...blocks];  // store a working copy
+const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+emp.blockStates = [...blocks]; // store editable copy
 
-let summary = { P: 0, A: 0, L: 0 };
+let summary = { P: 0, A: 0 };
 const blockWrap = document.createElement("div");
 blockWrap.className = "block-wrap";
 
 emp.blockStates.forEach((state, i) => {
-  summary[state] = (summary[state] || 0) + 1;
+  const finalState = state === "P" ? "P" : "A"; // Only allow P or A display
+  summary[finalState] = (summary[finalState] || 0) + 1;
 
   const box = document.createElement("div");
-  box.className = `half-hour-box ${state}`;
+  box.className = `half-hour-box ${finalState}`;
   box.dataset.index = i;
-  box.dataset.state = state;
+  box.dataset.state = finalState;
   box.onclick = () => toggleBlock(box, emp.emp_id);
   box.onmouseover = () => dragBlock(box, emp.emp_id);
-
   blockWrap.appendChild(box);
 });
+
 
 
       row.appendChild(blockWrap);
 
       const info = document.createElement("div");
-      const totalHours = summary.P * 0.5 + summary.L * 0.25;
-      info.textContent = `P: ${summary.P} | L: ${summary.L} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      const totalHours = summary.P * 0.5;
+      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
 
-      if (totalHours === 0) row.classList.add("row-red");
-      else if (totalHours < 5) row.classList.add("row-yellow");
-      else if (totalHours >= 7) row.classList.add("row-green");
+row.classList.remove("row-red", "row-yellow", "row-green");
+
+if (totalHours < 5) {
+  row.classList.add("row-red");
+} else if (totalHours >= 5 && totalHours < 7) {
+  row.classList.add("row-yellow");
+} else {
+  row.classList.add("row-green");
+}
+
 
       const btn = document.createElement("button");
       btn.textContent = "Confirm Changes";
@@ -181,9 +189,10 @@ emp.blockStates.forEach((state, i) => {
   }
 
   function toggleBlock(box, empId) {
-    const states = ["A", "P", "L"];
+    const states = ["A", "P"];
     let current = box.dataset.state;
-    let next = states[(states.indexOf(current) + 1) % 3];
+    let next = states[(states.indexOf(current) + 1) % states.length];
+
     box.dataset.state = next;
     box.className = `half-hour-box ${next}`;
 
