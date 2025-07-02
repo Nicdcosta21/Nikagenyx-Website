@@ -170,6 +170,10 @@ window.onload = async () => {
   try {
     const res = await fetch("/.netlify/functions/get_employees");
     const data = await res.json();
+
+    const session = localStorage.getItem("emp_session");
+    const currentUser = session ? JSON.parse(session) : null;
+
     const employees = data.employees || data;
     const table = document.getElementById("employeeTable");
 
@@ -365,9 +369,7 @@ const roleOptions = {
       });
     });
 
-    const session = localStorage.getItem("emp_session");
-    const currentUser = session ? JSON.parse(session) : null;
-    
+
     const me = employees.find(e => e.emp_id === currentUser.emp_id);
     if (me) {
       document.getElementById("p_name").textContent = me.name || "-";
@@ -377,10 +379,11 @@ const roleOptions = {
       document.getElementById("p_role").textContent = me.role || "-";
       document.getElementById("adminName").textContent = me.name || "Admin";
     }
+
   } catch (err) {
     console.error("Failed to load employees:", err);
   }
-};
+};;
 function setupPayrollConfirm() {
   document.getElementById("confirmPayroll").addEventListener("click", async () => {
     const selected = document.getElementById("payrollToggle").value;
