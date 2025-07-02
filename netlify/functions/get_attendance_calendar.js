@@ -2,7 +2,7 @@ const { Client } = require('pg');
 
 exports.handler = async (event, context) => {
   const client = new Client({
-    connectionString: process.env.NETLIFY_DATABASE_URL,  // ✅ use the correct env var
+    connectionString: process.env.NETLIFY_DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
 
@@ -30,21 +30,29 @@ exports.handler = async (event, context) => {
     const logsByEmp = {};
     employees.forEach(emp => {
       logsByEmp[emp.emp_id] = Array.from({ length: daysInMonth }, () =>
-        Array(48).fill("NA")
+        Array(48).fill("A")  // default all as Absent
       );
     });
 
     attRes.rows.forEach(({ emp_id, date, clock_in, clock_out }) => {
-      if (!logsByEmp[emp_id] || !clock_in || !clock_out) return;
+      if (!logsByEmp[emp_id]) return;
 
       const dayIndex = new Date(date).getDate() - 1;
-      const [h1, m1] = clock_in.split(":").map(Number);
-      const [h2, m2] = clock_out.split(":").map(Number);
-      const startSlot = Math.floor((h1 * 60 + m1) / 30);
-      const endSlot = Math.ceil((h2 * 60 + m2) / 30);
 
-      for (let i = startSlot; i < endSlot && i < 48; i++) {
-        logsByEmp[emp_id][dayIndex][i] = "P";
+      if (clock_in && clock_out) {
+        const [h1, m1] = clock_in.split(":").map(Number);
+        const [h2, m2] = clock_out.split(":").map(Number);
+        const startSlot = Math.floor((h1 * 60 + m1) / 30);
+        const endSlot = Math.ceil((h2 * 60 + m2) / 30);
+
+        for (let i = startSlot; i < endSlot && i < 48; i++) {
+          logsByEmp[emp_id][dayIndex][i] = "P";
+        }
+
+      } else if (clock_in && !clock_out) {
+        const [h1, m1] = clock_in.split(":").map(Number);
+        const startSlot = Math.floor((h1 * 60 + m1) / 30);
+        logsByEmp[emp_id][dayIndex][startSlot] = "L";  // mark as partial
       }
     });
 
