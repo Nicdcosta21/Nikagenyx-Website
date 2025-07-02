@@ -2,7 +2,6 @@ const { IncomingForm } = require("formidable");
 const { Pool } = require("pg");
 const { Readable } = require("stream");
 
-// PostgreSQL pool
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -30,8 +29,8 @@ exports.handler = async (event) => {
 
     return new Promise((resolve) => {
       const form = new IncomingForm({
-        maxFileSize: 1024 * 1024,          // 1MB per file
-        maxTotalFileSize: 5 * 1024 * 1024, // 5MB total
+        maxFileSize: 1024 * 1024,
+        maxTotalFileSize: 5 * 1024 * 1024,
         allowEmptyFiles: true,
         multiples: false,
       });
@@ -41,14 +40,10 @@ exports.handler = async (event) => {
           console.error("Form parse error:", err);
           return resolve({
             statusCode: 400,
-            body: JSON.stringify({
-              error: "Form parse failed",
-              message: err.message,
-            }),
+            body: JSON.stringify({ error: "Form parse failed", message: err.message }),
           });
         }
 
-        // Auto-unwrapping helper: converts { key: [val] } to { key: val }
         const unwrap = (obj) => {
           const out = {};
           for (const key in obj) {
@@ -57,14 +52,15 @@ exports.handler = async (event) => {
           return out;
         };
 
-        const f = unwrap(fields); // flattened field values
+        const f = unwrap(fields);
 
-        const emp_id    = f.emp_id || null;
-        const phone     = f.phone || null;
-        const dob       = f.dob || null;
-        const department= f.department || null;
-        const role      = f.role || null;
-        const new_pin   = f.new_pin || '';
+        const emp_id     = f.emp_id || null;
+        const phone      = f.phone || null;
+        const dob        = f.dob || null;
+        const department = f.department || null;
+        const role       = f.role || null;
+        const new_pin    = f.new_pin || '';
+        const email      = f.email || null;
 
         console.log("Received fields:", f);
 
@@ -75,6 +71,13 @@ exports.handler = async (event) => {
           });
         }
 
+        if (email && !/^[\w\.-]+@[\w\.-]+\.\w{2,}$/.test(email)) {
+          return resolve({
+            statusCode: 400,
+            body: JSON.stringify({ message: "Invalid email format" }),
+          });
+        }
+
         try {
           const query = `
             UPDATE employees SET
@@ -82,11 +85,12 @@ exports.handler = async (event) => {
               dob = COALESCE(NULLIF($2, ''), dob),
               department = COALESCE(NULLIF($3, ''), department),
               role = COALESCE(NULLIF($4, ''), role),
-              pin = COALESCE(NULLIF($5, ''), pin)
-            WHERE emp_id = $6
+              pin = COALESCE(NULLIF($5, ''), pin),
+              email = COALESCE(NULLIF($6, ''), email)
+            WHERE emp_id = $7
           `;
 
-          const values = [phone, dob, department, role, new_pin, emp_id];
+          const values = [phone, dob, department, role, new_pin, email, emp_id];
 
           await pool.query(query, values);
 
@@ -99,10 +103,7 @@ exports.handler = async (event) => {
           console.error("Database update error:", dbErr);
           return resolve({
             statusCode: 500,
-            body: JSON.stringify({
-              error: "Database update failed",
-              message: dbErr.message,
-            }),
+            body: JSON.stringify({ error: "Database update failed", message: dbErr.message }),
           });
         }
       });
@@ -112,10 +113,7 @@ exports.handler = async (event) => {
     console.error("Outer handler error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Unhandled server error",
-        message: err.message,
-      }),
+      body: JSON.stringify({ error: "Unhandled server error", message: err.message }),
     };
   }
 };
