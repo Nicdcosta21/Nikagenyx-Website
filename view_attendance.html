@@ -107,13 +107,33 @@
     updateSummary(empId);
   }
 
-  function updateSummary(empId) {
-    const blocks = selectedDateBlocks[empId] || [];
-    const summary = { A: 0, P: 0, L: 0 };
-    blocks.forEach(s => summary[s]++);
-    document.getElementById("summary-" + empId).textContent =
-      `Present: ${summary.P} | Leave: ${summary.L} | Absent: ${summary.A}`;
+function updateSummary(empId) {
+  const blocks = selectedDateBlocks[empId] || [];
+  const summary = { A: 0, P: 0, L: 0 };
+  blocks.forEach(s => summary[s]++);
+
+  const hours = summary.P * 0.5 + summary.L * 0.25;
+
+  // Update the summary text
+  const summaryEl = document.getElementById("summary-" + empId);
+  summaryEl.textContent = `Present: ${summary.P} | Leave: ${summary.L} | Absent: ${summary.A} → Total: ${hours.toFixed(1)} hrs`;
+
+  // Apply background color based on hours
+  const row = document.getElementById("row-" + empId);
+  row.classList.remove("bg-yellow-500", "bg-green-600", "bg-red-600", "text-black", "bg-gray-800");
+
+  if (hours === 0) {
+    row.classList.add("bg-red-600");
+  } else if (hours < 5) {
+    row.classList.add("bg-yellow-500", "text-black");
+  } else if (hours >= 7) {
+    row.classList.add("bg-green-600");
+  } else {
+    row.classList.add("bg-gray-800");
   }
+}
+
+
 
   function renderAttendanceGrid() {
     const container = document.getElementById("attendanceContainer");
@@ -124,6 +144,7 @@
       selectedDateBlocks[emp.emp_id] = blocks;
 
       const row = document.createElement("div");
+      row.id = "row-" + emp.emp_id;
       row.className = "bg-gray-800 p-4 rounded shadow";
 
       const name = document.createElement("div");
