@@ -1,4 +1,4 @@
-// admin_dashboard.js
+// admin_dashboard.js (Refactored)
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
@@ -67,6 +67,9 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
+    const pinDisabled = emp.failed_pin_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
+    const mfaDisabled = emp.failed_mfa_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
@@ -82,11 +85,10 @@ async function fetchEmployees(currentUser) {
       </td>
       <td class="border p-2">${emp.department || '-'}</td>
       <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs">Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs">Reset MFA</button>
+        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs ${pinDisabled}" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
+        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs ${mfaDisabled}" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
         <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
         <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
-        <button class="mark-attendance bg-green-500 px-2 py-1 rounded text-xs">Mark Attendance</button>
       </td>`;
 
     table.appendChild(tr);
@@ -117,12 +119,28 @@ function setupRowListeners(tr, emp, currentUser) {
       .catch(err => console.error("Role change failed:", err));
   };
 
-  tr.querySelector(".reset-pin").onclick = () => triggerReset("reset_pin", emp.emp_id);
-  tr.querySelector(".reset-mfa").onclick = () => triggerReset("reset_mfa", emp.emp_id);
+  if (emp.failed_pin_attempts >= 3) {
+    tr.querySelector(".reset-pin").onclick = () => triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh the page to continue.");
+  }
 
-  tr.querySelector(".delete").onclick = () => {
+  if (emp.failed_mfa_attempts >= 3) {
+    tr.querySelector(".reset-mfa").onclick = () => triggerReset("reset_mfa", emp.emp_id, "MFA token reset by admin. Please refresh the page to continue.");
+  }
+
+  tr.querySelector(".delete").onclick = async () => {
     if (emp.emp_id === currentUser.emp_id) return;
     if (!confirm(`Delete ${emp.emp_id}?`)) return;
+
+    const token = prompt("Enter your MFA token to confirm deletion:");
+    if (!token) return;
+
+    const res = await fetch("/.netlify/functions/verify_mfa_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_id: currentUser.emp_id, token })
+    });
+    const verified = await res.json();
+    if (!verified.valid) return showToast("❌ MFA verification failed.");
 
     fetch("/.netlify/functions/delete_employee", {
       method: "POST",
@@ -136,21 +154,16 @@ function setupRowListeners(tr, emp, currentUser) {
       })
       .catch(err => console.error("Delete failed:", err));
   };
-
-  tr.querySelector(".mark-attendance").onclick = () => {
-    localStorage.setItem("verify_emp_id", emp.emp_id);
-    window.open("face_attendance.html", "_blank");
-  };
 }
 
-function triggerReset(type, empId) {
+function triggerReset(type, empId, message) {
   fetch(`/.netlify/functions/${type}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ emp_id: empId })
   })
     .then(res => res.json())
-    .then(data => showToast(data.message || `${type.toUpperCase()} success`))
+    .then(() => showToast(message))
     .catch(err => console.error(`${type} failed:`, err));
 }
 
@@ -160,7 +173,7 @@ window.showEmployeeDetails = async function(empId) {
     const data = await res.json();
 
     document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
-    
+
     const detailsHTML = `
       <p><strong>Name:</strong> ${data.name}</p>
       <p><strong>Email:</strong> ${data.email}</p>
@@ -191,8 +204,8 @@ window.showEmployeeDetails = async function(empId) {
     alert("❌ Failed to fetch employee details.");
     console.error(err);
   }
-}
+};
 
 window.closeModal = function () {
   document.getElementById('employeeModal').classList.add('hidden');
-}
+};
