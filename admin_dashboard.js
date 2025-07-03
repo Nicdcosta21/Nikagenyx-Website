@@ -69,8 +69,8 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    const pinDisabled = emp.failed_pin_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
-    const mfaDisabled = emp.failed_mfa_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
+    const pinDisabled = emp.failed_pin_attempts >= 3 ? '' : 'opacity-30 filter blur-[1px] cursor-not-allowed';
+    const mfaDisabled = emp.failed_mfa_attempts >= 3 ? '' : 'opacity-30 filter blur-[1px] cursor-not-allowed';
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
