@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Nikagenyx</title>
   <script src="/assets/js/auth-gate.js"></script>
-  <script src="/assets/js/admin_dashboard.js" defer></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/assets/js/admin_dashboard.js" defer></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
@@ -95,19 +95,12 @@
       <ul id="docLinks" class="list-disc pl-5 space-y-1"></ul>
     </div>
     <div class="mt-6 flex justify-between items-center gap-4">
-      <button onclick="printModalContent()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded text-sm">
-        🖸️ Print
-      </button>
-      <button onclick="exportModalToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
-        📄 Export to PDF
-      </button>
-      <button onclick="closeModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm ml-auto">
-        Close
-      </button>
+      <button onclick="printModalContent()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded text-sm">🖨️ Print</button>
+      <button onclick="exportModalToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">📄 Export to PDF</button>
+      <button onclick="closeModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm ml-auto">Close</button>
     </div>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
