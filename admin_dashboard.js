@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadPayrollMode();
   await fetchEmployees(currentUser);
 
-  document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
   if (!session) return (window.location.href = "/employee_portal.html");
 
