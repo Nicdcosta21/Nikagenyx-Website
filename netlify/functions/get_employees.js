@@ -1,7 +1,5 @@
-// File: netlify/functions/get_employees.js
-
 const { Pool } = require('pg');
-const verify = require('./verifySession'); // 🔐 Import session verifier
+const verify = require('./verifySession'); // 🔐 JWT from cookies
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -17,7 +15,6 @@ exports.handler = async (event) => {
   }
 
   try {
-    // 🔐 Verify JWT and role
     const user = verify(event);
 
     if (!user || user.role !== 'admin') {
