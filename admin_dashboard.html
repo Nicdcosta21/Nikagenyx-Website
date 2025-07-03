@@ -11,20 +11,45 @@
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
-    /* Add this to your existing styles */
-    .reset-pin[disabled],
-    .reset-mfa[disabled] {
-        filter: grayscale(100%) blur(1px);
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
+    /* Reset buttons styling */
+    .reset-pin,
+    .reset-mfa {
+        transition: all 0.2s ease;
     }
     
-    /* Force normal appearance when enabled */
+    /* Disabled state - will definitely work */
+    button.reset-pin[disabled],
+    button.reset-mfa[disabled] {
+        position: relative;
+        color: transparent !important;
+        text-shadow: 0 0 8px rgba(255,255,255,0.5);
+    }
+    
+    button.reset-pin[disabled]::after,
+    button.reset-mfa[disabled]::after {
+        content: "Reset PIN";
+        position: absolute;
+        left: 0;
+        right: 0;
+        color: white;
+        filter: blur(1px);
+        opacity: 0.7;
+    }
+    
+    button.reset-mfa[disabled]::after {
+        content: "Reset MFA";
+    }
+    
+    /* Enabled state */
     .reset-pin:not([disabled]),
     .reset-mfa:not([disabled]) {
-        filter: none !important;
-        opacity: 1 !important;
+        filter: none;
+        opacity: 1;
+    }
+    
+    /* Prevent interactions */
+    button[disabled] {
+        pointer-events: none;
     }
 </style>
 </head>
