@@ -12,14 +12,15 @@
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
     /* Add this to your existing styles */
-    .reset-btn-disabled {
-        filter: blur(2px);
-        opacity: 0.6;
+    .reset-pin[disabled],
+    .reset-mfa[disabled] {
+        filter: grayscale(100%) blur(1px);
+        opacity: 0.5;
         cursor: not-allowed;
-    }
-    button[disabled] {
         pointer-events: none;
     }
+    
+    /* Force normal appearance when enabled */
     .reset-pin:not([disabled]),
     .reset-mfa:not([disabled]) {
         filter: none !important;
