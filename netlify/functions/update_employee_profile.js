@@ -1,57 +1,32 @@
 const { Pool } = require("pg");
 const speakeasy = require("speakeasy");
 
-const pool = new Pool({
-  connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: "Method Not Allowed" }),
-    };
-  }
+  if (event.httpMethod !== "POST")
+    return { statusCode: 405, body: "Method Not Allowed" };
 
-  try {
-    const { emp_id, name, phone, dob, role, department, base_salary, admin_id, mfa_token } = JSON.parse(event.body);
+  const { emp_id, name, phone, dob, role, department, base_salary, token, admin_id } = JSON.parse(event.body || "{}");
 
-    if (!emp_id || !admin_id || !mfa_token) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Missing parameters" }),
-      };
-    }
+  if (!emp_id || !token || !admin_id) return { statusCode: 400, body: "Missing data" };
 
-    const mfaRes = await fetch(`${process.env.URL}/.netlify/functions/verify_mfa_token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ admin_id, token: mfa_token }),
-    });
-    const mfaResult = await mfaRes.json();
+  const db = new Pool({ connectionString: process.env.NETLIFY_DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
-    if (!mfaResult.valid) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Invalid MFA token" }),
-      };
-    }
+  const admin = await db.query("SELECT mfa_secret FROM employees WHERE emp_id = $1", [admin_id]);
+  if (!admin.rowCount) return { statusCode: 403, body: "Admin not found" };
 
-    await pool.query(
-      "UPDATE employees SET name=$1, phone=$2, dob=$3, role=$4, department=$5, base_salary=$6 WHERE emp_id=$7",
-      [name, phone, dob, role, department, base_salary, emp_id]
-    );
+  const verified = speakeasy.totp.verify({
+    secret: admin.rows[0].mfa_secret,
+    encoding: "base32",
+    token
+  });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Employee profile updated." }),
-    };
-  } catch (err) {
-    console.error("Update Error:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Internal Server Error" }),
-    };
-  }
+  if (!verified) return { statusCode: 401, body: "MFA failed" };
+
+  await db.query(
+    `UPDATE employees SET name=$1, phone=$2, dob=$3, role=$4, department=$5, base_salary=$6 WHERE emp_id=$7`,
+    [name, phone, dob, role, department, base_salary, emp_id]
+  );
+  await db.end();
+
+  return { statusCode: 200, body: JSON.stringify({ message: "Profile updated successfully" }) };
 };
