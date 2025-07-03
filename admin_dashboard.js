@@ -69,10 +69,6 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    // Determine if buttons should be disabled
-    const pinDisabled = emp.failed_pin_attempts < 3;
-    const mfaDisabled = emp.failed_mfa_attempts < 3;
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
@@ -88,34 +84,24 @@ async function fetchEmployees(currentUser) {
       </td>
       <td class="border p-2">${emp.department || '-'}</td>
       <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs" ${pinDisabled ? 'disabled' : ''}>
+        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>
           Reset PIN
         </button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs" ${mfaDisabled ? 'disabled' : ''}>
+        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>
           Reset MFA
         </button>
-        <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+        <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
+        <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs" ${emp.emp_id === currentUser.emp_id ? 'disabled' : ''}>
+          Delete
+        </button>
       </td>`;
 
-    // Apply visual styling based on disabled state
-    const pinBtn = tr.querySelector('.reset-pin');
-    const mfaBtn = tr.querySelector('.reset-mfa');
-    
-    if (pinDisabled) {
-        pinBtn.classList.add('reset-btn-disabled');
-    }
-    if (mfaDisabled) {
-        mfaBtn.classList.add('reset-btn-disabled');
-    }
-
+    // Apply visual styling (now handled by CSS attribute selectors)
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
-});
+  });
 
-
-}
-
+  // Profile section update
   const me = employees.find(e => e.emp_id === currentUser.emp_id);
   if (me) {
     document.getElementById("p_name").textContent = me.name || "-";
