@@ -10,57 +10,65 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      body: JSON.stringify({ message: 'Method Not Allowed' })
+      body: JSON.stringify({ message: 'Method Not Allowed' }),
     };
   }
 
   try {
-    const { empId, code } = JSON.parse(event.body);
+    const { emp_id, token } = JSON.parse(event.body || '{}');
 
-    // Bypass MFA for the very first user
-    if (empId === 'NGX001') {
+    if (!emp_id || !token) {
       return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'MFA bypassed for first admin' })
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Missing emp_id or token' }),
       };
     }
 
     const result = await pool.query(
       'SELECT mfa_secret FROM employees WHERE emp_id = $1',
-      [empId]
+      [emp_id]
     );
 
-    if (result.rows.length === 0 || !result.rows[0].mfa_secret) {
+    if (result.rows.length === 0) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'MFA secret not found for this user' })
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Employee not found' }),
       };
     }
 
-    const verified = speakeasy.totp.verify({
-      secret: result.rows[0].mfa_secret,
+    const secret = result.rows[0].mfa_secret;
+
+    if (!secret) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'MFA not set up for this user' }),
+      };
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret,
       encoding: 'base32',
-      token: code,
-      window: 1
+      token,
+      window: 1,
     });
 
-    if (!verified) {
+    if (!isValid) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ message: 'Invalid MFA token' })
+        body: JSON.stringify({ message: 'Invalid MFA token' }),
       };
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'MFA verified successfully' })
+      body: JSON.stringify({ message: 'Token verified' }),
     };
 
   } catch (err) {
-    console.error('❌ MFA Verification Error:', err.message);
+    console.error('MFA validation error:', err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Internal Server Error', error: err.message })
+      body: JSON.stringify({ message: 'Server Error', error: err.message }),
     };
   }
 };
