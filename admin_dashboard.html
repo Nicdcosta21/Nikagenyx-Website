@@ -11,28 +11,20 @@
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
-    /* Added styles for disabled buttons */
-    .blur-sm {
-      filter: blur(1px);
-      opacity: 0.5;
+    /* New styles for disabled buttons */
+    .reset-btn-disabled {
+        filter: blur(1px);
+        opacity: 0.5;
+        cursor: not-allowed;
     }
-    .blur-sm:hover {
-      filter: blur(1px) !important;
-      opacity: 0.5 !important;
+    .reset-btn-disabled:hover {
+        filter: blur(1px) !important;
+        opacity: 0.5 !important;
     }
     button[disabled] {
-      pointer-events: none;
+        pointer-events: none;
     }
-    .reset-pin:not([disabled]):hover,
-    .reset-mfa:not([disabled]):hover {
-      filter: none;
-      opacity: 1;
-      transform: translateY(-1px);
-    }
-    .reset-pin, .reset-mfa {
-      transition: all 0.2s ease;
-    }
-  </style>
+</style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
