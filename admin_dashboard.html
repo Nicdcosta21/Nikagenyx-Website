@@ -11,23 +11,18 @@
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
-    /* Reset buttons styling */
-    .reset-pin,
-    .reset-mfa {
-        transition: all 0.2s ease;
-    }
-    
-    /* Disabled state - will definitely work */
+    /* Disabled state - guaranteed to work */
     button.reset-pin[disabled],
     button.reset-mfa[disabled] {
         position: relative;
         color: transparent !important;
         text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        background-color: #6b7280 !important; /* gray-500 */
     }
     
     button.reset-pin[disabled]::after,
     button.reset-mfa[disabled]::after {
-        content: "Reset PIN";
+        content: attr(data-text);
         position: absolute;
         left: 0;
         right: 0;
@@ -36,20 +31,24 @@
         opacity: 0.7;
     }
     
-    button.reset-mfa[disabled]::after {
-        content: "Reset MFA";
-    }
-    
     /* Enabled state */
-    .reset-pin:not([disabled]),
-    .reset-mfa:not([disabled]) {
-        filter: none;
-        opacity: 1;
+    .reset-pin:not([disabled]):hover,
+    .reset-mfa:not([disabled]):hover {
+        transform: translateY(-1px);
     }
     
     /* Prevent interactions */
     button[disabled] {
         pointer-events: none;
+    }
+    
+    /* Button transitions */
+    .reset-pin,
+    .reset-mfa,
+    .edit,
+    .delete,
+    .confirm-role {
+        transition: all 0.2s ease;
     }
 </style>
 </head>
