@@ -240,7 +240,10 @@ function submitEdit(emp_id, name, modal) {
 
 window.onload = async () => {
   try {
-    const res = await fetch("/.netlify/functions/get_employees");
+    const res = await fetch("/.netlify/functions/get_employees", {
+  credentials: "include"
+});
+
     const data = await res.json();
 
     const session = localStorage.getItem("emp_session");
