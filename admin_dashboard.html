@@ -11,18 +11,20 @@
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
-    /* New styles for disabled buttons */
-    .reset-btn-disabled {
-        filter: blur(10px);
+    /* Add this to your existing styles */
+    .reset-pin[disabled],
+    .reset-mfa[disabled] {
+        filter: blur(2px);
         opacity: 0.5;
         cursor: not-allowed;
-    }
-    .reset-btn-disabled:hover {
-        filter: blur(10px) !important;
-        opacity: 0.5 !important;
-    }
-    button[disabled] {
         pointer-events: none;
+    }
+
+    /* Force normal appearance when NOT disabled */
+    .reset-pin:not([disabled]),
+    .reset-mfa:not([disabled]) {
+        filter: none !important;
+        opacity: 1 !important;
     }
 </style>
 </head>
