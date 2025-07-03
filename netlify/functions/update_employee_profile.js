@@ -1,4 +1,5 @@
 const { Pool } = require("pg");
+const speakeasy = require("speakeasy");
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -14,48 +15,43 @@ exports.handler = async (event) => {
   }
 
   try {
-    const data = JSON.parse(event.body || "{}");
+    const { emp_id, name, phone, dob, role, department, base_salary, admin_id, mfa_token } = JSON.parse(event.body);
 
-    const {
-      emp_id,
-      name,
-      phone = "",
-      dob = "",
-      department = "",
-      role = "",
-      base_salary = 0
-    } = data;
-
-    if (!emp_id || !name) {
+    if (!emp_id || !admin_id || !mfa_token) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Missing emp_id or name" }),
+        body: JSON.stringify({ message: "Missing parameters" }),
       };
     }
 
-    const query = `
-      UPDATE employees SET
-        name = CASE WHEN $1 = '' THEN name ELSE $1 END,
-        phone = CASE WHEN $2 = '' THEN phone ELSE $2 END,
-        dob = CASE WHEN $3 = '' THEN dob ELSE $3::DATE END,
-        department = CASE WHEN $4 = '' THEN department ELSE $4 END,
-        role = CASE WHEN $5 = '' THEN role ELSE $5 END,
-        base_salary = CASE WHEN $6::int = 0 THEN base_salary ELSE $6::int END
-      WHERE emp_id = $7
-    `;
+    const mfaRes = await fetch(`${process.env.URL}/.netlify/functions/verify_mfa_token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_id, token: mfa_token }),
+    });
+    const mfaResult = await mfaRes.json();
 
-    const values = [name, phone, dob, department, role, base_salary, emp_id];
-    await pool.query(query, values);
+    if (!mfaResult.valid) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: "Invalid MFA token" }),
+      };
+    }
+
+    await pool.query(
+      "UPDATE employees SET name=$1, phone=$2, dob=$3, role=$4, department=$5, base_salary=$6 WHERE emp_id=$7",
+      [name, phone, dob, role, department, base_salary, emp_id]
+    );
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: `Profile updated for ${emp_id}` }),
+      body: JSON.stringify({ message: "Employee profile updated." }),
     };
   } catch (err) {
-    console.error("Update failed:", err);
+    console.error("Update Error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: err.message }),
+      body: JSON.stringify({ message: "Internal Server Error" }),
     };
   }
 };

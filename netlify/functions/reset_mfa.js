@@ -1,17 +1,16 @@
-const { Pool } = require('pg');
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
+const { Pool } = require("pg");
+const speakeasy = require("speakeasy");
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
-      body: JSON.stringify({ message: "Method Not Allowed" })
+      body: JSON.stringify({ message: "Method Not Allowed" }),
     };
   }
 
@@ -20,49 +19,43 @@ exports.handler = async (event) => {
     if (!emp_id) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: "Employee ID is required." })
+        body: JSON.stringify({ message: "Missing emp_id" }),
       };
     }
 
-    // Fetch employee name
-    const result = await pool.query('SELECT name FROM employees WHERE emp_id = $1', [emp_id]);
-    if (result.rowCount === 0) {
+    const { rows } = await pool.query(
+      "SELECT failed_mfa_attempts FROM employees WHERE emp_id = $1",
+      [emp_id]
+    );
+
+    if (!rows.length || rows[0].failed_mfa_attempts < 3) {
       return {
-        statusCode: 404,
-        body: JSON.stringify({ message: "Employee not found." })
+        statusCode: 403,
+        body: JSON.stringify({ message: "MFA reset not allowed. Less than 3 failed attempts." }),
       };
     }
 
-    const fullName = result.rows[0].name;
+    const secret = speakeasy.generateSecret({ length: 20 });
+    const qr_code_url = `otpauth://totp/Nikagenyx:${emp_id}?secret=${secret.base32}&issuer=Nikagenyx`;
 
-    // Generate new MFA secret
-    const secret = speakeasy.generateSecret({
-      name: `Nikagenyx (${fullName})`,
-    });
-
-    const otpAuthUrl = secret.otpauth_url;
-    const qr_code_url = await QRCode.toDataURL(otpAuthUrl);
-
-    // Update secret in DB
     await pool.query(
-      `UPDATE employees SET mfa_secret = $1 WHERE emp_id = $2`,
+      "UPDATE employees SET mfa_secret = $1, failed_mfa_attempts = 0 WHERE emp_id = $2",
       [secret.base32, emp_id]
     );
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "MFA secret reset successfully",
-        mfa_secret: secret.base32,
+        message: "MFA reset. Please reconfigure MFA.",
+        secret_key: secret.base32,
         qr_code_url
-      })
+      }),
     };
-
   } catch (err) {
-    console.error("❌ Reset MFA Error:", err.message);
+    console.error("Reset MFA Error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: err.message })
+      body: JSON.stringify({ message: "Internal Server Error" }),
     };
   }
 };
