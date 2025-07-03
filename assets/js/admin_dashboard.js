@@ -257,9 +257,15 @@ async function submitEdit(empId, btn) {
   const role = parent.querySelector("#editRole")?.value;
   const base_salary = parent.querySelector("#editSalary")?.value;
 
-  if (!name) return showToast("❌ Name is required");
-  if (!/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
-  if (!/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
+  // Optional field validation
+if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+  return showToast("❌ Invalid email format");
+}
+
+if (phone && !/^\d{10}$/.test(phone)) {
+  return showToast("❌ Phone must be 10 digits");
+}
+
 
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
 
