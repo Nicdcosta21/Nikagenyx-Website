@@ -10,6 +10,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadPayrollMode();
   await fetchEmployees(currentUser);
+
+  document.addEventListener("DOMContentLoaded", async () => {
+  const session = localStorage.getItem("emp_session");
+  if (!session) return (window.location.href = "/employee_portal.html");
+
+  console.log("🚀 admin_dashboard.js loaded");
+  const currentUser = JSON.parse(session);
+
+  await loadPayrollMode();
+  await fetchEmployees(currentUser);
+
+  // 🔍 Add Search Filtering Logic
+  const searchInput = document.getElementById("search");
+  const employeeTable = document.getElementById("employeeTable");
+
+  searchInput.addEventListener("input", function () {
+    const term = this.value.toLowerCase();
+    const rows = employeeTable.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      const id = row.children[0]?.textContent.toLowerCase();
+      const name = row.children[1]?.textContent.toLowerCase();
+      if (id.includes(term) || name.includes(term)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  });
+});
+
 });
 
 function logout() {
