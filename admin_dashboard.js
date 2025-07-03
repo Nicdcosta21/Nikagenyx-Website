@@ -69,8 +69,9 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    const pinDisabled = emp.failed_pin_attempts >= 3 ? '' : 'reset-btn-disabled';
-    const mfaDisabled = emp.failed_mfa_attempts >= 3 ? '' : 'reset-btn-disabled';
+    // Determine if buttons should be disabled
+    const pinDisabled = emp.failed_pin_attempts < 3;
+    const mfaDisabled = emp.failed_mfa_attempts < 3;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -87,15 +88,30 @@ async function fetchEmployees(currentUser) {
       </td>
       <td class="border p-2">${emp.department || '-'}</td>
       <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs ${pinDisabled}" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs ${mfaDisabled}" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
+        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs" ${pinDisabled ? 'disabled' : ''}>
+          Reset PIN
+        </button>
+        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs" ${mfaDisabled ? 'disabled' : ''}>
+          Reset MFA
+        </button>
         <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
         <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
       </td>`;
 
+    // Apply visual styling based on disabled state
+    const pinBtn = tr.querySelector('.reset-pin');
+    const mfaBtn = tr.querySelector('.reset-mfa');
+    
+    if (pinDisabled) {
+        pinBtn.classList.add('reset-btn-disabled');
+    }
+    if (mfaDisabled) {
+        mfaBtn.classList.add('reset-btn-disabled');
+    }
+
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
-  });
+});
 
 }
 
