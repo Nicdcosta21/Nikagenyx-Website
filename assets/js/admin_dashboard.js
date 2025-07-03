@@ -248,36 +248,71 @@ function triggerReset(type, empId, message) {
 
 async function submitEdit(empId, btn) {
   const parent = btn.closest(".fixed");
-  const token = prompt("Enter MFA token to confirm update:");
-  if (!token) return;
 
-  const verify = await fetch("/.netlify/functions/verify_mfa_token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ admin_id: localStorage.getItem("emp_session") ? JSON.parse(localStorage.getItem("emp_session")).emp_id : "", token })
-  });
-  const result = await verify.json();
-  if (!result.valid) return showToast("❌ MFA verification failed");
+  // Collect values from form inputs
+  const email = parent.querySelector("#editEmail")?.value.trim();
+  const phone = parent.querySelector("#editPhone")?.value.trim();
+  const dob = parent.querySelector("#editDob")?.value;
+  const department = parent.querySelector("#editDept")?.value;
+  const role = parent.querySelector("#editRole")?.value;
+  const base_salary = parent.querySelector("#editSalary")?.value;
 
-  const body = {
-    emp_id: empId,
-    email: parent.querySelector("#editEmail").value,
-    phone: parent.querySelector("#editPhone").value,
-    department: parent.querySelector("#editDept").value,
-    role: parent.querySelector("#editRole").value,
-    base_salary: parent.querySelector("#editSalary").value
-  };
+  // Basic validation
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return showToast("❌ Invalid email format");
+  }
 
+  if (!/^\d{10}$/.test(phone)) {
+    return showToast("❌ Phone must be 10 digits");
+  }
+
+  // MFA verification (unless NGX001)
+  const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
+  if (currentUser.emp_id !== "NGX001") {
+    const token = prompt("Enter your MFA token to confirm changes:");
+    if (!token) return;
+
+    const verify = await fetch("/.netlify/functions/verify_mfa_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        admin_id: currentUser.emp_id,
+        token
+      })
+    });
+
+    const result = await verify.json();
+    if (!result.valid) {
+      return showToast("❌ MFA verification failed.");
+    }
+  }
+
+  // Proceed with profile update
   const res = await fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      emp_id: empId,
+      email,
+      phone,
+      dob,
+      department,
+      role,
+      base_salary
+    })
   });
-  const data = await res.json();
-  showToast(data.message || "Updated");
-  parent.remove();
-  setTimeout(() => location.reload(), 1000);
+
+  const result = await res.json();
+  if (res.ok) {
+    showToast(result.message || "✅ Profile updated");
+    parent.remove();
+    setTimeout(() => window.location.reload(), 800);
+  } else {
+    showToast("❌ Failed to update profile");
+    console.error(result);
+  }
 }
+
 
 window.showEmployeeDetails = async function(empId) {
   const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
