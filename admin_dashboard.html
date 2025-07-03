@@ -128,6 +128,49 @@
 
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function printModalContent() {
+  const printContents = document.getElementById('employeeModal').innerHTML;
+  const originalContents = document.body.innerHTML;
+  document.body.innerHTML = printContents;
+  window.print();
+  document.body.innerHTML = originalContents;
+  location.reload();
+}
+
+async function exportModalToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const empId = document.getElementById("modalEmpId").textContent;
+  const details = document.getElementById("modalDetails").innerText;
+  const docs = Array.from(document.querySelectorAll("#docLinks li")).map(li => li.innerText).join("\n");
+
+  let y = 20;
+  doc.setFont("helvetica", "bold");
+  doc.text(empId, 10, 10);
+  doc.setFont("helvetica", "normal");
+
+  details.split("\n").forEach(line => {
+    doc.text(line, 10, y);
+    y += 10;
+  });
+
+  if (docs) {
+    doc.text("Documents:", 10, y + 10);
+    y += 20;
+    docs.split("\n").forEach(line => {
+      doc.text(line, 10, y);
+      y += 10;
+    });
+  }
+
+  doc.save(`${empId.replace("Employee ID: ", "")}_profile.pdf`);
+}
+</script>
+  
 <script>
 async function showEmployeeDetails(empId) {
   try {
@@ -243,8 +286,12 @@ window.onload = async () => {
     const res = await fetch("/.netlify/functions/get_employees", {
   credentials: "include"
 });
+if (!res.ok) {
+  console.warn("❌ get_employees failed:", res.status);
+  return;
+}
+const data = await res.json();
 
-    const data = await res.json();
 
     const session = localStorage.getItem("emp_session");
     const currentUser = session ? JSON.parse(session) : null;
@@ -519,48 +566,6 @@ async function loadPayrollMode() {
 
 loadPayrollMode();
 
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script>
-function printModalContent() {
-  const printContents = document.getElementById('employeeModal').innerHTML;
-  const originalContents = document.body.innerHTML;
-  document.body.innerHTML = printContents;
-  window.print();
-  document.body.innerHTML = originalContents;
-  location.reload();
-}
-
-async function exportModalToPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const empId = document.getElementById("modalEmpId").textContent;
-  const details = document.getElementById("modalDetails").innerText;
-  const docs = Array.from(document.querySelectorAll("#docLinks li")).map(li => li.innerText).join("\n");
-
-  let y = 20;
-  doc.setFont("helvetica", "bold");
-  doc.text(empId, 10, 10);
-  doc.setFont("helvetica", "normal");
-
-  details.split("\n").forEach(line => {
-    doc.text(line, 10, y);
-    y += 10;
-  });
-
-  if (docs) {
-    doc.text("Documents:", 10, y + 10);
-    y += 20;
-    docs.split("\n").forEach(line => {
-      doc.text(line, 10, y);
-      y += 10;
-    });
-  }
-
-  doc.save(`${empId.replace("Employee ID: ", "")}_profile.pdf`);
-}
-</script>
 
 </body>
 </html>
