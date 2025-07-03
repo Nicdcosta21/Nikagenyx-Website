@@ -21,25 +21,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadPayrollMode();
   await fetchEmployees(currentUser);
 
-  // 🔍 Add Search Filtering Logic
-  const searchInput = document.getElementById("search");
-  const employeeTable = document.getElementById("employeeTable");
-
-  searchInput.addEventListener("input", function () {
-    const term = this.value.toLowerCase();
-    const rows = employeeTable.querySelectorAll("tr");
-
-    rows.forEach((row) => {
-      const id = row.children[0]?.textContent.toLowerCase();
-      const name = row.children[1]?.textContent.toLowerCase();
-      if (id.includes(term) || name.includes(term)) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
-    });
-  });
+  // ✅ Setup live search filter
+  setupSearchFilter();
 });
+
 
 });
 
@@ -350,3 +335,23 @@ window.showEmployeeDetails = async function(empId) {
 window.closeModal = function () {
   document.getElementById('employeeModal').classList.add('hidden');
 };
+
+function setupSearchFilter() {
+  const searchInput = document.getElementById("search");
+  const employeeTable = document.getElementById("employeeTable");
+
+  searchInput.addEventListener("input", function () {
+    const searchTerm = this.value.toLowerCase();
+    const rows = employeeTable.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      const id = row.children[0]?.textContent.toLowerCase();
+      const name = row.children[1]?.textContent.toLowerCase();
+      if (id.includes(searchTerm) || name.includes(searchTerm)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  });
+}
