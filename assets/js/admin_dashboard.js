@@ -249,29 +249,33 @@ function triggerReset(type, empId, message) {
 async function submitEdit(empId, btn) {
   const parent = btn.closest(".fixed");
 
-  const name = parent.querySelector("#editName")?.value.trim();
   const email = parent.querySelector("#editEmail")?.value.trim();
   const phone = parent.querySelector("#editPhone")?.value.trim();
-  const dob = parent.querySelector("#editDob")?.value;
   const department = parent.querySelector("#editDept")?.value;
   const role = parent.querySelector("#editRole")?.value;
   const base_salary = parent.querySelector("#editSalary")?.value;
 
-  // Optional field validation
-if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-  return showToast("❌ Invalid email format");
-}
+  // Optional validation
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+    return showToast("❌ Invalid email format");
+  }
+  if (phone && !/^\d{10}$/.test(phone)) {
+    return showToast("❌ Phone must be 10 digits");
+  }
 
-if (phone && !/^\d{10}$/.test(phone)) {
-  return showToast("❌ Phone must be 10 digits");
-}
-
+  // Prepare dynamic payload
+  const updateData = { emp_id: empId };
+  if (email) updateData.email = email;
+  if (phone) updateData.phone = phone;
+  if (department) updateData.department = department;
+  if (role) updateData.role = role;
+  if (base_salary) updateData.base_salary = base_salary;
 
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
 
-  let token = null;
+  // MFA token check (skip for NGX001)
   if (currentUser.emp_id !== "NGX001") {
-    token = prompt("Enter MFA token to confirm changes:");
+    const token = prompt("Enter MFA token to confirm changes:");
     if (!token) return;
 
     const verify = await fetch("/.netlify/functions/verify_mfa_token", {
@@ -279,31 +283,26 @@ if (phone && !/^\d{10}$/.test(phone)) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ admin_id: currentUser.emp_id, token })
     });
+
     const result = await verify.json();
-    if (!result.valid) return showToast("❌ MFA failed.");
+    if (!result.valid) return showToast("❌ MFA verification failed");
+
+    updateData.token = token;
+    updateData.admin_id = currentUser.emp_id;
   }
 
+  // Send update
   const res = await fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      emp_id: empId,
-      name,
-      phone,
-      dob,
-      role,
-      department,
-      base_salary,
-      token,
-      admin_id: currentUser.emp_id
-    })
+    body: JSON.stringify(updateData)
   });
 
   const result = await res.json();
   if (res.ok) {
     showToast(result.message || "✅ Profile updated");
     parent.remove();
-    setTimeout(() => location.reload(), 800);
+    setTimeout(() => window.location.reload(), 700);
   } else {
     showToast(result.message || "❌ Update failed");
     console.error(result);
