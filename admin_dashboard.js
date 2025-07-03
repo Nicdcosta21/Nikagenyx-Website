@@ -69,8 +69,8 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    const pinDisabled = emp.failed_pin_attempts >= 3 ? '' : 'opacity-30 filter blur-[1px] cursor-not-allowed';
-    const mfaDisabled = emp.failed_mfa_attempts >= 3 ? '' : 'opacity-30 filter blur-[1px] cursor-not-allowed';
+    const pinDisabled = emp.failed_pin_attempts >= 3 ? '' : 'reset-btn-disabled';
+    const mfaDisabled = emp.failed_mfa_attempts >= 3 ? '' : 'reset-btn-disabled';
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -96,6 +96,8 @@ async function fetchEmployees(currentUser) {
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
   });
+
+}
 
   const me = employees.find(e => e.emp_id === currentUser.emp_id);
   if (me) {
