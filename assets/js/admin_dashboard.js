@@ -255,25 +255,23 @@ async function submitEdit(empId, btn) {
   const role = parent.querySelector("#editRole")?.value;
   const base_salary = parent.querySelector("#editSalary")?.value;
 
-  // Optional validation
-  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-    return showToast("❌ Invalid email format");
-  }
-  if (phone && !/^\d{10}$/.test(phone)) {
-    return showToast("❌ Phone must be 10 digits");
-  }
+  // Validate optional fields
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
+  if (phone && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
 
-  // Prepare dynamic payload
-  const updateData = { emp_id: empId };
+  const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
+  const updateData = {
+    emp_id: empId,
+    admin_id: currentUser.emp_id  // ✅ always include admin_id
+  };
+
   if (email) updateData.email = email;
   if (phone) updateData.phone = phone;
   if (department) updateData.department = department;
   if (role) updateData.role = role;
   if (base_salary) updateData.base_salary = base_salary;
 
-  const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
-
-  // MFA token check (skip for NGX001)
+  // ✅ MFA if not NGX001
   if (currentUser.emp_id !== "NGX001") {
     const token = prompt("Enter MFA token to confirm changes:");
     if (!token) return;
@@ -283,15 +281,12 @@ async function submitEdit(empId, btn) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ admin_id: currentUser.emp_id, token })
     });
-
     const result = await verify.json();
-    if (!result.valid) return showToast("❌ MFA verification failed");
+    if (!result.valid) return showToast("❌ MFA verification failed.");
 
     updateData.token = token;
-    updateData.admin_id = currentUser.emp_id;
   }
 
-  // Send update
   const res = await fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -302,12 +297,13 @@ async function submitEdit(empId, btn) {
   if (res.ok) {
     showToast(result.message || "✅ Profile updated");
     parent.remove();
-    setTimeout(() => window.location.reload(), 700);
+    setTimeout(() => location.reload(), 800);
   } else {
     showToast(result.message || "❌ Update failed");
     console.error(result);
   }
 }
+
 
 
 window.showEmployeeDetails = async function(empId) {
