@@ -31,23 +31,19 @@ exports.handler = async (event) => {
       ssl: { rejectUnauthorized: false }
     });
 
-    // If not NGX001, perform MFA check
     if (admin_id !== "NGX001") {
       if (!token) {
         await db.end();
         return {
           statusCode: 400,
-          body: JSON.stringify({ message: "MFA token required" })
+          body: JSON.stringify({ message: "Missing MFA token" })
         };
       }
 
       const admin = await db.query("SELECT mfa_secret FROM employees WHERE emp_id = $1", [admin_id]);
       if (!admin.rowCount) {
         await db.end();
-        return {
-          statusCode: 403,
-          body: JSON.stringify({ message: "Admin not found" })
-        };
+        return { statusCode: 403, body: JSON.stringify({ message: "Admin not found" }) };
       }
 
       const verified = speakeasy.totp.verify({
@@ -58,34 +54,49 @@ exports.handler = async (event) => {
 
       if (!verified) {
         await db.end();
-        return {
-          statusCode: 401,
-          body: JSON.stringify({ message: "MFA verification failed" })
-        };
+        return { statusCode: 401, body: JSON.stringify({ message: "MFA verification failed" }) };
       }
     }
 
-    await db.query(
-      `UPDATE employees SET
-        name = COALESCE($1, name),
-        phone = COALESCE($2, phone),
-        dob = COALESCE($3, dob),
-        role = COALESCE($4, role),
-        department = COALESCE($5, department),
-        base_salary = COALESCE($6, base_salary)
-      WHERE emp_id = $7`,
-      [
-        name || null,
-        phone || null,
-        dob || null,
-        role || null,
-        department || null,
-        base_salary || null,
-        emp_id
-      ]
-    );
+    const updates = [];
+    const values = [];
+    let index = 1;
 
+    if (name) {
+      updates.push(`name = $${index++}`);
+      values.push(name);
+    }
+    if (phone) {
+      updates.push(`phone = $${index++}`);
+      values.push(phone);
+    }
+    if (dob) {
+      updates.push(`dob = $${index++}`);
+      values.push(dob);
+    }
+    if (role) {
+      updates.push(`role = $${index++}`);
+      values.push(role);
+    }
+    if (department) {
+      updates.push(`department = $${index++}`);
+      values.push(department);
+    }
+    if (base_salary) {
+      updates.push(`base_salary = $${index++}`);
+      values.push(base_salary);
+    }
+
+    if (updates.length === 0) {
+      await db.end();
+      return { statusCode: 400, body: JSON.stringify({ message: "Nothing to update" }) };
+    }
+
+    values.push(emp_id);
+    const query = `UPDATE employees SET ${updates.join(", ")} WHERE emp_id = $${index}`;
+    await db.query(query, values);
     await db.end();
+
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Profile updated successfully" })
