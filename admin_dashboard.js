@@ -269,16 +269,193 @@ function setupRowListeners(tr, emp, currentUser) {
   };
 }
 
+// Updated admin_dashboard.js with Reset PIN and Reset MFA modals
+
+// ... (previous code remains the same until the triggerReset function)
+
 function triggerReset(type, empId, message) {
-  fetch(`/.netlify/functions/${type}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: empId })
-  })
-  .then(res => res.json())
-  .then(() => showToast(message))
-  .catch(err => console.error(`${type} failed:`, err));
+  if (type === "reset_pin") {
+    showPinResetModal(empId);
+  } else if (type === "reset_mfa") {
+    showMfaResetModal(empId);
+  } else {
+    fetch(`/.netlify/functions/${type}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId })
+    })
+    .then(res => res.json())
+    .then(() => showToast(message))
+    .catch(err => console.error(`${type} failed:`, err));
+  }
 }
+
+function showPinResetModal(empId) {
+  const modal = document.createElement("div");
+  modal.innerHTML = `
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm w-full">
+      <h2 class="text-lg font-bold mb-4">Reset PIN for Employee ${empId}</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1">Enter New 4-digit PIN:</label>
+          <input type="password" id="newPin" class="w-full border px-3 py-2 rounded" maxlength="4" pattern="\d{4}" inputmode="numeric">
+        </div>
+        <div>
+          <label class="block mb-1">Confirm New PIN:</label>
+          <input type="password" id="confirmPin" class="w-full border px-3 py-2 rounded" maxlength="4" pattern="\d{4}" inputmode="numeric">
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button onclick="this.closest('.fixed').remove()" class="bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
+          <button id="confirmPinReset" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector("#confirmPinReset").onclick = async () => {
+    const newPin = modal.querySelector("#newPin").value;
+    const confirmPin = modal.querySelector("#confirmPin").value;
+
+    if (!newPin || !confirmPin) {
+      return showToast("❌ Please enter and confirm your PIN");
+    }
+    if (newPin.length !== 4 || !/^\d+$/.test(newPin)) {
+      return showToast("❌ PIN must be exactly 4 digits");
+    }
+    if (newPin !== confirmPin) {
+      return showToast("❌ PINs do not match");
+    }
+
+    const res = await fetch("/.netlify/functions/reset_pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId, new_pin: newPin })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      showCountdownToast("PIN reset successfully. Logging in 3... 2... 1...", () => {
+        modal.remove();
+      });
+    } else {
+      showToast(result.message || "❌ PIN reset failed");
+    }
+  };
+}
+
+function showMfaResetModal(empId) {
+  const modal = document.createElement("div");
+  modal.innerHTML = `
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm w-full">
+      <h2 class="text-lg font-bold mb-4">Reset MFA for Employee ${empId}</h2>
+      <div class="space-y-4">
+        <div id="mfaInstructions">
+          <p class="mb-4">MFA token reset by admin. Please keep your authenticator app (Google Authenticator recommended) ready.</p>
+          <button id="continueMfaBtn" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Continue</button>
+        </div>
+        <div id="mfaSetup" class="hidden">
+          <div class="text-center mb-4">
+            <p class="mb-2">Scan this QR code with your authenticator app:</p>
+            <div id="qrCodeContainer" class="flex justify-center mb-4"></div>
+            <div class="mb-4">
+              <p class="mb-1">Or enter this key manually:</p>
+              <div class="flex items-center justify-center">
+                <code id="mfaSecret" class="bg-gray-100 p-2 rounded mr-2"></code>
+                <button id="copySecretBtn" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-sm">Copy</button>
+              </div>
+            </div>
+            <div>
+              <label class="block mb-1">Enter 6-digit token from your app:</label>
+              <input type="text" id="mfaToken" class="w-full border px-3 py-2 rounded text-center" maxlength="6" pattern="\d{6}" inputmode="numeric">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button onclick="this.closest('.fixed').remove()" class="bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
+            <button id="confirmMfaBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector("#continueMfaBtn").onclick = async () => {
+    const res = await fetch("/.netlify/functions/reset_mfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      modal.querySelector("#mfaInstructions").classList.add("hidden");
+      modal.querySelector("#mfaSetup").classList.remove("hidden");
+      
+      // Display QR code (assuming the function returns a QR code URL or data)
+      const qrContainer = modal.querySelector("#qrCodeContainer");
+      qrContainer.innerHTML = `<img src="${result.qr_code_url}" alt="MFA QR Code" class="w-48 h-48">`;
+      
+      modal.querySelector("#mfaSecret").textContent = result.secret_key;
+      
+      modal.querySelector("#copySecretBtn").onclick = () => {
+        navigator.clipboard.writeText(result.secret_key);
+        showToast("Secret key copied to clipboard");
+      };
+    } else {
+      showToast(result.message || "❌ MFA reset failed");
+    }
+  };
+
+  modal.querySelector("#confirmMfaBtn").onclick = async () => {
+    const token = modal.querySelector("#mfaToken").value;
+    
+    if (!token || token.length !== 6 || !/^\d+$/.test(token)) {
+      return showToast("❌ Please enter a valid 6-digit token");
+    }
+
+    const res = await fetch("/.netlify/functions/verify_mfa_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId, token })
+    });
+
+    const result = await res.json();
+    if (result.valid) {
+      showCountdownToast("MFA setup complete. Logging in 3... 2... 1...", () => {
+        modal.remove();
+      });
+    } else {
+      showToast("❌ Invalid token. Please try again.");
+    }
+  };
+}
+
+function showCountdownToast(message, callback) {
+  const toast = document.createElement("div");
+  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  let count = 3;
+  const interval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      toast.textContent = message.replace(/\d+/, count);
+    } else {
+      clearInterval(interval);
+      toast.remove();
+      if (callback) callback();
+      // Here you would typically redirect or trigger login
+      // For now we'll just refresh
+      setTimeout(() => window.location.reload(), 500);
+    }
+  }, 1000);
+}
+
+// ... (rest of the existing code remains the same)
 
 window.showEmployeeDetails = async function(empId) {
   try {
