@@ -153,3 +153,46 @@ function triggerReset(type, empId) {
     .then(data => showToast(data.message || `${type.toUpperCase()} success`))
     .catch(err => console.error(`${type} failed:`, err));
 }
+
+window.showEmployeeDetails = async function(empId) {
+  try {
+    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+    const data = await res.json();
+
+    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+    
+    const detailsHTML = `
+      <p><strong>Name:</strong> ${data.name}</p>
+      <p><strong>Email:</strong> ${data.email}</p>
+      <p><strong>Phone:</strong> ${data.phone}</p>
+      <p><strong>DOB:</strong> ${data.dob}</p>
+      <p><strong>Department:</strong> ${data.department}</p>
+      <p><strong>Role:</strong> ${data.role}</p>
+      <p><strong>Total Pay:</strong> ₹${data.total_pay}</p>
+      <p><strong>Total Hours:</strong> ${data.total_hours} hrs</p>
+    `;
+    document.getElementById('modalDetails').innerHTML = detailsHTML;
+
+    const docList = document.getElementById('docLinks');
+    docList.innerHTML = '';
+    if (data.documents && data.documents.length > 0) {
+      data.documents.forEach(doc => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+        docList.appendChild(li);
+      });
+    } else {
+      docList.innerHTML = '<li>No documents uploaded</li>';
+    }
+
+    document.getElementById('employeeModal').classList.remove('hidden');
+  } catch (err) {
+    alert("❌ Failed to fetch employee details.");
+    console.error(err);
+  }
+}
+
+window.closeModal = function () {
+  document.getElementById('employeeModal').classList.add('hidden');
+}
