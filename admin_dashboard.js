@@ -11,20 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadPayrollMode();
   await fetchEmployees(currentUser);
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const session = localStorage.getItem("emp_session");
-  if (!session) return (window.location.href = "/employee_portal.html");
-
-  console.log("🚀 admin_dashboard.js loaded");
-  const currentUser = JSON.parse(session);
-
-  await loadPayrollMode();
-  await fetchEmployees(currentUser);
-
-  // ✅ Setup live search filter
-  setupSearchFilter();
-});
-
 
 });
 
@@ -335,23 +321,3 @@ window.showEmployeeDetails = async function(empId) {
 window.closeModal = function () {
   document.getElementById('employeeModal').classList.add('hidden');
 };
-
-function setupSearchFilter() {
-  const searchInput = document.getElementById("search");
-  const employeeTable = document.getElementById("employeeTable");
-
-  searchInput.addEventListener("input", function () {
-    const searchTerm = this.value.toLowerCase();
-    const rows = employeeTable.querySelectorAll("tr");
-
-    rows.forEach((row) => {
-      const id = row.children[0]?.textContent.toLowerCase();
-      const name = row.children[1]?.textContent.toLowerCase();
-      if (id.includes(searchTerm) || name.includes(searchTerm)) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
-    });
-  });
-}
