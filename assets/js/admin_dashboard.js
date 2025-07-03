@@ -1,3 +1,5 @@
+// admin_dashboard.js (Final Version with MFA + Modal Logic)
+
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
   if (!session) return (window.location.href = "/employee_portal.html");
@@ -31,7 +33,7 @@ async function loadPayrollMode() {
   const status = document.getElementById("toggleStatus");
 
   toggle.value = data.mode || "freelance";
-  status.textContent = `${toggle.value.toUpperCase()} payroll mode is active`;
+  status.textContent = `${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active`;
   status.className = toggle.value === "freelance"
     ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
     : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
@@ -39,11 +41,13 @@ async function loadPayrollMode() {
   document.getElementById("confirmPayroll").onclick = async () => {
     const selected = toggle.value;
     if (!selected) return showToast("Please select a payroll mode first.");
+
     const res = await fetch("/.netlify/functions/set_payroll_mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: selected }),
+      body: JSON.stringify({ mode: selected })
     });
+
     const data = await res.json();
     showToast(data.message || `Payroll mode updated`);
     loadPayrollMode();
@@ -52,7 +56,7 @@ async function loadPayrollMode() {
 
 async function fetchEmployees(currentUser) {
   const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-  if (!res.ok) return;
+  if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
 
   const { employees } = await res.json();
   const table = document.getElementById("employeeTable");
@@ -67,7 +71,7 @@ async function fetchEmployees(currentUser) {
       <td class="border p-2">${emp.name}</td>
       <td class="border p-2">${emp.phone || '-'}</td>
       <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-      <td class="border p-2">
+      <td class="border p-2 flex items-center gap-2 justify-center">
         <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
           <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
           <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
@@ -81,20 +85,10 @@ async function fetchEmployees(currentUser) {
         <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
         <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
       </td>`;
+    
     table.appendChild(tr);
-
     setupRowListeners(tr, emp, currentUser);
   });
-
-  const me = employees.find(e => e.emp_id === currentUser.emp_id);
-  if (me) {
-    document.getElementById("p_name").textContent = me.name;
-    document.getElementById("p_phone").textContent = me.phone;
-    document.getElementById("p_dob").textContent = formatDate(me.dob);
-    document.getElementById("p_dept").textContent = me.department;
-    document.getElementById("p_role").textContent = me.role;
-    document.getElementById("adminName").textContent = me.name;
-  }
 }
 
 function setupRowListeners(tr, emp, currentUser) {
@@ -105,41 +99,37 @@ function setupRowListeners(tr, emp, currentUser) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emp_id: emp.emp_id, role: newRole })
     })
-      .then(res => res.json())
-      .then(data => showToast(data.message || `Role updated`));
+    .then(res => res.json())
+    .then(data => showToast(data.message || `Role updated`));
   };
 
+  const resetPinBtn = tr.querySelector(".reset-pin");
   if (emp.failed_pin_attempts >= 3) {
-    tr.querySelector(".reset-pin").onclick = () => {
-      fetch("/.netlify/functions/reset_pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emp_id: emp.emp_id })
-      })
-      .then(res => res.json())
-      .then(() => showToast("PIN reset by admin. Please refresh the page to continue."));
-    };
+    resetPinBtn.disabled = false;
+    resetPinBtn.onclick = () => triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
   }
 
+  const resetMfaBtn = tr.querySelector(".reset-mfa");
   if (emp.failed_mfa_attempts >= 3) {
-    tr.querySelector(".reset-mfa").onclick = async () => {
+    resetMfaBtn.disabled = false;
+    resetMfaBtn.onclick = async () => {
       const res = await fetch("/.netlify/functions/reset_mfa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emp_id: emp.emp_id })
       });
       const data = await res.json();
-      showToast("MFA token reset by admin. Please refresh the page to continue.");
+      showToast("MFA reset by admin. Please refresh and scan QR.");
 
       const modal = document.createElement("div");
       modal.innerHTML = `
-        <div class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-          <div class="bg-white text-black p-6 rounded-lg max-w-md shadow-xl">
-            <h2 class="text-lg font-bold mb-4">MFA Reset for ${emp.name}</h2>
-            <img src="${data.qr_code_url}" class="mx-auto mb-4 w-40 h-40" />
-            <p class="text-sm mb-2"><strong>Secure Key:</strong> <span id="secureKey">${data.secret_key}</span></p>
-            <button onclick="navigator.clipboard.writeText('${data.secret_key}')" class="bg-gray-800 text-white px-3 py-1 rounded">Copy Key</button>
-            <button onclick="this.closest('.fixed').remove()" class="bg-red-600 text-white px-4 py-2 rounded ml-4">Close</button>
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
+            <h2 class="text-lg font-bold mb-2">Scan MFA QR Code</h2>
+            <img src="${data.qr_code_url}" class="w-40 h-40 mx-auto mb-2" />
+            <p class="text-sm break-all mb-2"><strong>Key:</strong> ${data.secret_key}</p>
+            <button onclick="navigator.clipboard.writeText('${data.secret_key}')" class="bg-blue-600 text-white px-3 py-1 rounded">Copy Key</button>
+            <button onclick="this.closest('.fixed').remove()" class="mt-3 bg-red-600 text-white px-4 py-1 rounded block w-full">Close</button>
           </div>
         </div>`;
       document.body.appendChild(modal);
@@ -147,44 +137,38 @@ function setupRowListeners(tr, emp, currentUser) {
   }
 
   tr.querySelector(".edit").onclick = async () => {
-    const token = prompt("Enter your MFA token to edit:");
-    if (!token) return;
-
-    const res = await fetch("/.netlify/functions/verify_mfa_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ admin_id: currentUser.emp_id, token })
-    });
-    const result = await res.json();
-    if (!result.valid) return showToast("❌ Invalid MFA token.");
-
     const modal = document.createElement("div");
     modal.innerHTML = `
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div class="bg-white text-black p-6 rounded shadow max-w-md w-full">
-          <h2 class="text-lg font-bold mb-4">Edit Profile - ${emp.name}</h2>
-          <label>Email: <input type="email" class="w-full border p-1" id="editEmail" value="${emp.email}"></label>
-          <label>Phone: <input type="text" class="w-full border p-1" id="editPhone" value="${emp.phone}"></label>
-          <label>DOB: <input type="date" class="w-full border p-1" id="editDob" value="${formatDate(emp.dob)}"></label>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+          <h2 class="text-lg font-semibold mb-4">Edit - ${emp.name}</h2>
+          <label>Email: <input id="editEmail" value="${emp.email}" type="email" class="w-full border px-2 py-1 mb-2" /></label>
+          <label>Phone: <input id="editPhone" value="${emp.phone}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" /></label>
           <label>Department:
-            <select id="editDept" class="w-full border p-1">
-              <option value="Tech Team">Tech Team</option>
-              <option value="Admin Team">Admin Team</option>
+            <select id="editDept" class="w-full border px-2 py-1 mb-2">
+              <option value="">-- Select --</option>
+              <option value="Tech Team" ${emp.department === "Tech Team" ? "selected" : ""}>Tech Team</option>
+              <option value="Admin Team" ${emp.department === "Admin Team" ? "selected" : ""}>Admin Team</option>
             </select>
           </label>
           <label>Role:
-            <select id="editRole" class="w-full border p-1"></select>
+            <select id="editRole" class="w-full border px-2 py-1 mb-2">
+              <option value="">-- Select Role --</option>
+            </select>
           </label>
-          <label>Salary (INR): <input type="number" id="editSalary" class="w-full border p-1" value="${emp.base_salary || ''}"></label>
-          <div class="flex justify-end gap-2 mt-4">
-            <button onclick="this.closest('.fixed').remove()" class="bg-gray-600 text-white px-4 py-1 rounded">Cancel</button>
-            <button class="bg-blue-600 text-white px-4 py-1 rounded" id="saveEditBtn">Save</button>
+          <label>Salary (INR): <input id="editSalary" value="${emp.base_salary}" type="number" class="w-full border px-2 py-1 mb-4" /></label>
+          <div class="flex justify-between">
+            <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+            <button class="bg-blue-700 text-white px-4 py-1 rounded" onclick="submitEdit('${emp.emp_id}', this)">Save</button>
           </div>
         </div>
       </div>`;
     document.body.appendChild(modal);
 
-    const roleOptions = {
+    const dept = modal.querySelector("#editDept");
+    const role = modal.querySelector("#editRole");
+
+    const roles = {
       "Tech Team": [
         "Frontend Developer (Jr. Developer)",
         "Backend Developer (Jr. Developer)",
@@ -199,7 +183,6 @@ function setupRowListeners(tr, emp, currentUser) {
       ],
       "Admin Team": [
         "Human Resources Manager",
-        "Chief Executive Officer",
         "Finance & Accounts Officer",
         "Managing Director (MD)",
         "Regulatory Compliance Officer",
@@ -209,50 +192,21 @@ function setupRowListeners(tr, emp, currentUser) {
       ]
     };
 
-    const deptSelect = modal.querySelector("#editDept");
-    const roleSelect = modal.querySelector("#editRole");
-    deptSelect.value = emp.department;
-
-    function populateRoles(dept) {
-      roleSelect.innerHTML = `<option value="">Select Role</option>`;
-      (roleOptions[dept] || []).forEach(role => {
-        const opt = document.createElement("option");
-        opt.value = role;
-        opt.textContent = role;
-        roleSelect.appendChild(opt);
-      });
+    function updateRoleOptions(deptVal) {
+      role.innerHTML = '<option value="">-- Select Role --</option>';
+      if (roles[deptVal]) {
+        roles[deptVal].forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r;
+          opt.textContent = r;
+          if (r === emp.role) opt.selected = true;
+          role.appendChild(opt);
+        });
+      }
     }
 
-    deptSelect.onchange = () => populateRoles(deptSelect.value);
-    populateRoles(deptSelect.value);
-    roleSelect.value = emp.role;
-
-    modal.querySelector("#saveEditBtn").onclick = async () => {
-      const payload = {
-        emp_id: emp.emp_id,
-        email: modal.querySelector("#editEmail").value,
-        phone: modal.querySelector("#editPhone").value,
-        dob: modal.querySelector("#editDob").value,
-        department: modal.querySelector("#editDept").value,
-        role: modal.querySelector("#editRole").value,
-        base_salary: modal.querySelector("#editSalary").value
-      };
-
-      const saveRes = await fetch("/.netlify/functions/update_employee_profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await saveRes.json();
-      if (result.success) {
-        showToast("✅ Profile updated");
-        modal.remove();
-        setTimeout(() => location.reload(), 1000);
-      } else {
-        alert("❌ Failed to update profile");
-      }
-    };
+    dept.addEventListener("change", () => updateRoleOptions(dept.value));
+    updateRoleOptions(emp.department);
   };
 
   tr.querySelector(".delete").onclick = async () => {
@@ -260,23 +214,100 @@ function setupRowListeners(tr, emp, currentUser) {
     if (!confirm(`Delete ${emp.emp_id}?`)) return;
 
     const token = prompt("Enter your MFA token:");
-    const res = await fetch("/.netlify/functions/verify_mfa_token", {
+    if (!token) return;
+
+    const verify = await fetch("/.netlify/functions/verify_mfa_token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ admin_id: currentUser.emp_id, token })
     });
+    const result = await verify.json();
+    if (!result.valid) return showToast("❌ MFA failed");
 
-    const result = await res.json();
-    if (!result.valid) return showToast("❌ MFA verification failed.");
-
-    const delRes = await fetch("/.netlify/functions/delete_employee", {
+    const res = await fetch("/.netlify/functions/delete_employee", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emp_id: emp.emp_id })
     });
-
-    const final = await delRes.json();
+    const data = await res.json();
     tr.remove();
-    showToast(final.message || "Employee deleted");
+    showToast(data.message || "Deleted");
   };
 }
+
+function triggerReset(type, empId, message) {
+  fetch(`/.netlify/functions/${type}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: empId })
+  })
+    .then(res => res.json())
+    .then(() => showToast(message))
+    .catch(err => console.error(`${type} failed:`, err));
+}
+
+async function submitEdit(empId, btn) {
+  const parent = btn.closest(".fixed");
+  const token = prompt("Enter MFA token to confirm update:");
+  if (!token) return;
+
+  const verify = await fetch("/.netlify/functions/verify_mfa_token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ admin_id: localStorage.getItem("emp_session") ? JSON.parse(localStorage.getItem("emp_session")).emp_id : "", token })
+  });
+  const result = await verify.json();
+  if (!result.valid) return showToast("❌ MFA verification failed");
+
+  const body = {
+    emp_id: empId,
+    email: parent.querySelector("#editEmail").value,
+    phone: parent.querySelector("#editPhone").value,
+    department: parent.querySelector("#editDept").value,
+    role: parent.querySelector("#editRole").value,
+    base_salary: parent.querySelector("#editSalary").value
+  };
+
+  const res = await fetch("/.netlify/functions/update_employee_profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  showToast(data.message || "Updated");
+  parent.remove();
+  setTimeout(() => location.reload(), 1000);
+}
+
+window.showEmployeeDetails = async function(empId) {
+  const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+  const data = await res.json();
+  document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+  document.getElementById('modalDetails').innerHTML = `
+    <p><strong>Name:</strong> ${data.name}</p>
+    <p><strong>Email:</strong> ${data.email}</p>
+    <p><strong>Phone:</strong> ${data.phone}</p>
+    <p><strong>DOB:</strong> ${data.dob}</p>
+    <p><strong>Department:</strong> ${data.department}</p>
+    <p><strong>Role:</strong> ${data.role}</p>
+    <p><strong>Total Pay:</strong> ₹${data.total_pay}</p>
+    <p><strong>Total Hours:</strong> ${data.total_hours} hrs</p>
+  `;
+  const docList = document.getElementById("docLinks");
+  docList.innerHTML = '';
+  if (data.documents?.length > 0) {
+    data.documents.forEach(doc => {
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                      <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+      docList.appendChild(li);
+    });
+  } else {
+    docList.innerHTML = '<li>No documents uploaded</li>';
+  }
+  document.getElementById("employeeModal").classList.remove("hidden");
+};
+
+window.closeModal = function () {
+  document.getElementById("employeeModal").classList.add("hidden");
+};
