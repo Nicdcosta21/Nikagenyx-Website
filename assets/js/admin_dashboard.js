@@ -249,7 +249,7 @@ function triggerReset(type, empId, message) {
 async function submitEdit(empId, btn) {
   const parent = btn.closest(".fixed");
 
-  // Collect values from form inputs
+  const name = parent.querySelector("#editName")?.value.trim();
   const email = parent.querySelector("#editEmail")?.value.trim();
   const phone = parent.querySelector("#editPhone")?.value.trim();
   const dob = parent.querySelector("#editDob")?.value;
@@ -257,48 +257,39 @@ async function submitEdit(empId, btn) {
   const role = parent.querySelector("#editRole")?.value;
   const base_salary = parent.querySelector("#editSalary")?.value;
 
-  // Basic validation
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    return showToast("❌ Invalid email format");
-  }
+  if (!name) return showToast("❌ Name is required");
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
+  if (!/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
 
-  if (!/^\d{10}$/.test(phone)) {
-    return showToast("❌ Phone must be 10 digits");
-  }
-
-  // MFA verification (unless NGX001)
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
+
+  let token = null;
   if (currentUser.emp_id !== "NGX001") {
-    const token = prompt("Enter your MFA token to confirm changes:");
+    token = prompt("Enter MFA token to confirm changes:");
     if (!token) return;
 
     const verify = await fetch("/.netlify/functions/verify_mfa_token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        admin_id: currentUser.emp_id,
-        token
-      })
+      body: JSON.stringify({ admin_id: currentUser.emp_id, token })
     });
-
     const result = await verify.json();
-    if (!result.valid) {
-      return showToast("❌ MFA verification failed.");
-    }
+    if (!result.valid) return showToast("❌ MFA failed.");
   }
 
-  // Proceed with profile update
   const res = await fetch("/.netlify/functions/update_employee_profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       emp_id: empId,
-      email,
+      name,
       phone,
       dob,
-      department,
       role,
-      base_salary
+      department,
+      base_salary,
+      token,
+      admin_id: currentUser.emp_id
     })
   });
 
@@ -306,9 +297,9 @@ async function submitEdit(empId, btn) {
   if (res.ok) {
     showToast(result.message || "✅ Profile updated");
     parent.remove();
-    setTimeout(() => window.location.reload(), 800);
+    setTimeout(() => location.reload(), 800);
   } else {
-    showToast("❌ Failed to update profile");
+    showToast(result.message || "❌ Update failed");
     console.error(result);
   }
 }
