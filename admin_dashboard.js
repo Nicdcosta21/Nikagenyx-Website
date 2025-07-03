@@ -69,49 +69,25 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    // Determine if buttons should be disabled
-    const pinDisabled = emp.failed_pin_attempts < 3;
-    const mfaDisabled = emp.failed_mfa_attempts < 3;
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
-      <td class="border p-2">${emp.name}</td>
-      <td class="border p-2">${emp.phone || '-'}</td>
-      <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-      <td class="border p-2 flex items-center gap-2 justify-center">
-        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
-          <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
-          <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
-        </select>
-        <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-      </td>
-      <td class="border p-2">${emp.department || '-'}</td>
+      <!-- Other table cells... -->
       <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs" ${pinDisabled ? 'disabled' : ''}>
+        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs" 
+                ${emp.failed_pin_attempts >= 3 ? '' : 'disabled'}>
           Reset PIN
         </button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs" ${mfaDisabled ? 'disabled' : ''}>
+        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs" 
+                ${emp.failed_mfa_attempts >= 3 ? '' : 'disabled'}>
           Reset MFA
         </button>
-        <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+        <!-- Other buttons... -->
       </td>`;
-
-    // Apply visual styling based on disabled state
-    const pinBtn = tr.querySelector('.reset-pin');
-    const mfaBtn = tr.querySelector('.reset-mfa');
-    
-    if (pinDisabled) {
-        pinBtn.classList.add('reset-btn-disabled');
-    }
-    if (mfaDisabled) {
-        mfaBtn.classList.add('reset-btn-disabled');
-    }
 
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
-});
+  });
+
 
 }
 
