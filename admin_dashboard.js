@@ -71,7 +71,7 @@ async function fetchEmployees(currentUser) {
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
-      tr.id = `row-${emp.emp_id}`; // Add ID for easy targeting
+      tr.id = `row-${emp.emp_id}`;
       tr.innerHTML = `
         <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
         <td class="border p-2" data-field="name">${emp.name}</td>
@@ -93,6 +93,13 @@ async function fetchEmployees(currentUser) {
         </td>`;
 
       table.appendChild(tr);
+      
+      // Explicitly set disabled state for buttons
+      const resetPinBtn = tr.querySelector('.reset-pin');
+      const resetMfaBtn = tr.querySelector('.reset-mfa');
+      resetPinBtn.disabled = emp.failed_pin_attempts < 3;
+      resetMfaBtn.disabled = emp.failed_mfa_attempts < 3;
+      
       setupRowListeners(tr, emp, currentUser);
     });
 
@@ -173,6 +180,7 @@ function setupRowListeners(tr, emp, currentUser) {
 
 //--- ACTION MODALS ---//
 
+// Replace the existing showPinResetModal function with this
 function showPinResetModal(empId) {
   const modal = document.createElement("div");
   modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -197,32 +205,42 @@ function showPinResetModal(empId) {
   document.body.appendChild(modal);
 
   modal.querySelector(".cancel-btn").onclick = () => modal.remove();
+  
   modal.querySelector("#confirmPinReset").onclick = async () => {
     const newPin = modal.querySelector("#newPin").value;
     const confirmPin = modal.querySelector("#confirmPin").value;
 
-    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) return showToast("PIN must be exactly 4 digits.", true);
-    if (newPin !== confirmPin) return showToast("PINs do not match.", true);
+    // Enhanced validation
+    if (!/^\d{4}$/.test(newPin)) {
+      return showToast("PIN must be exactly 4 digits", true);
+    }
+    
+    if (newPin !== confirmPin) {
+      return showToast("PINs do not match", true);
+    }
 
     try {
-        const res = await fetch("/.netlify/functions/reset_pin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emp_id: empId, new_pin: newPin })
-        });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.message || 'PIN reset failed');
-        
-        showCountdownToast("PIN reset successfully. Refreshing in 3...", () => {
-          modal.remove();
-          window.location.reload();
-        });
+      const res = await fetch("/.netlify/functions/reset_pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id: empId, new_pin: newPin })
+      });
+      
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'PIN reset failed');
+      
+      // Show countdown toast and redirect
+      showCountdownToast("PIN reset successfully. Logging in 3...", () => {
+        modal.remove();
+        window.location.href = "/employee_portal.html"; // Redirect to login
+      });
     } catch (error) {
-        showToast(error.message, true);
+      showToast(error.message, true);
     }
   };
 }
 
+// Replace the existing showMfaResetModal function with this
 function showMfaResetModal(empId) {
   const modal = document.createElement("div");
   modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -230,7 +248,7 @@ function showMfaResetModal(empId) {
   <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm w-full">
     <h2 class="text-lg font-bold mb-4">Reset MFA for ${empId}</h2>
     <div id="mfaInstructions">
-      <p class="mb-4">You are about to reset the MFA for this user. They will need to re-scan a QR code with their authenticator app (e.g., Google Authenticator).</p>
+      <p class="mb-4">MFA token reset by admin. Please keep your authenticator app (Google Authenticator recommended) ready.</p>
       <button id="continueMfaBtn" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Continue</button>
       <button class="cancel-btn mt-2 bg-gray-600 text-white px-4 py-2 rounded w-full">Cancel</button>
     </div>
@@ -244,42 +262,74 @@ function showMfaResetModal(empId) {
             <button id="copySecretBtn" class="bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-sm">Copy</button>
         </div>
       </div>
-      <p class="mt-4 text-center text-red-600 font-bold">This modal will close automatically upon successful reset. There is no confirmation step for the admin.</p>
+      <div class="mt-4">
+        <label class="block mb-2">Enter 6-digit token:</label>
+        <input type="text" id="mfaToken" class="w-full border px-3 py-2 rounded" placeholder="123456" maxlength="6">
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="cancel-btn bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
+        <button id="confirmMfaReset" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm Setup</button>
+      </div>
     </div>
   </div>`;
   document.body.appendChild(modal);
 
   modal.querySelector(".cancel-btn").onclick = () => modal.remove();
+  
   modal.querySelector("#continueMfaBtn").onclick = async () => {
     try {
-        const res = await fetch("/.netlify/functions/reset_mfa", {
+      const res = await fetch("/.netlify/functions/reset_mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id: empId })
+      });
+      
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed to initiate MFA reset.");
+
+      modal.querySelector("#mfaInstructions").classList.add("hidden");
+      modal.querySelector("#mfaSetup").classList.remove("hidden");
+      
+      const qrContainer = modal.querySelector("#qrCodeContainer");
+      qrContainer.innerHTML = `<img src="${result.qr_code_url}" alt="MFA QR Code" class="w-48 h-48">`;
+      modal.querySelector("#mfaSecret").textContent = result.secret_key;
+      
+      modal.querySelector("#copySecretBtn").onclick = () => {
+        navigator.clipboard.writeText(result.secret_key);
+        showToast("Secret key copied!");
+      };
+
+      // Add confirm button handler
+      modal.querySelector("#confirmMfaReset").onclick = async () => {
+        const token = modal.querySelector("#mfaToken").value;
+        if (!token || !/^\d{6}$/.test(token)) {
+          return showToast("Please enter a valid 6-digit token", true);
+        }
+
+        try {
+          const verifyRes = await fetch("/.netlify/functions/verify_totp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emp_id: empId })
-        });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.message || "Failed to initiate MFA reset.");
-
-        modal.querySelector("#mfaInstructions").classList.add("hidden");
-        modal.querySelector("#mfaSetup").classList.remove("hidden");
-        
-        const qrContainer = modal.querySelector("#qrCodeContainer");
-        qrContainer.innerHTML = `<img src="${result.qr_code_url}" alt="MFA QR Code" class="w-48 h-48">`;
-        modal.querySelector("#mfaSecret").textContent = result.secret_key;
-        
-        modal.querySelector("#copySecretBtn").onclick = () => {
-            navigator.clipboard.writeText(result.secret_key);
-            showToast("Secret key copied!");
-        };
-
-        showCountdownToast("MFA has been reset. Refreshing in 3...", () => {
-          modal.remove();
-          window.location.reload();
-        });
-
+            body: JSON.stringify({ 
+              token: token,
+              secret: result.secret_key
+            })
+          });
+          
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok) throw new Error(verifyData.message || "Token verification failed");
+          
+          // Show countdown toast and redirect
+          showCountdownToast("MFA setup complete. Logging in 3...", () => {
+            modal.remove();
+            window.location.href = "/employee_portal.html"; // Redirect to login
+          });
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      };
     } catch(error) {
-        showToast(error.message, true);
-        modal.remove();
+      showToast(error.message, true);
     }
   };
 }
