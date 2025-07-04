@@ -12,19 +12,19 @@
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
     /* Improved disabled state styling */
-    button.reset-pin[disabled],
-    button.reset-mfa[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background-color: #6b7280 !important; /* gray-500 */
-      transform: none !important;
-    }
+  button.reset-pin[disabled],
+  button.reset-mfa[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #6b7280 !important; /* gray-500 */
+    transform: none !important;
+  }
   
-    /* Remove blur effect */
-    button.reset-pin[disabled]::after,
-    button.reset-mfa[disabled]::after {
-      content: none;
-    }
+  /* Remove blur effect */
+  button.reset-pin[disabled]::after,
+  button.reset-mfa[disabled]::after {
+    content: none;
+  }
 </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
