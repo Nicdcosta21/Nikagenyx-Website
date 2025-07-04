@@ -11,44 +11,19 @@
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
-    /* Disabled state - guaranteed to work */
+    /* Improved disabled state styling */
     button.reset-pin[disabled],
     button.reset-mfa[disabled] {
-        position: relative;
-        color: transparent !important;
-        text-shadow: 0 0 8px rgba(255,255,255,0.5);
-        background-color: #6b7280 !important; /* gray-500 */
+      opacity: 0.5;
+      cursor: not-allowed;
+      background-color: #6b7280 !important; /* gray-500 */
+      transform: none !important;
     }
-    
+  
+    /* Remove blur effect */
     button.reset-pin[disabled]::after,
     button.reset-mfa[disabled]::after {
-        content: attr(data-text);
-        position: absolute;
-        left: 0;
-        right: 0;
-        color: white;
-        filter: blur(1px);
-        opacity: 0.7;
-    }
-    
-    /* Enabled state */
-    .reset-pin:not([disabled]):hover,
-    .reset-mfa:not([disabled]):hover {
-        transform: translateY(-1px);
-    }
-    
-    /* Prevent interactions */
-    button[disabled] {
-        pointer-events: none;
-    }
-    
-    /* Button transitions */
-    .reset-pin,
-    .reset-mfa,
-    .edit,
-    .delete,
-    .confirm-role {
-        transition: all 0.2s ease;
+      content: none;
     }
 </style>
 </head>
