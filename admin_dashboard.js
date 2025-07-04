@@ -299,7 +299,7 @@ function showMfaResetModal(empId) {
         showToast("Secret key copied!");
       };
 
-      // Add confirm button handler
+      // Updated confirm button handler using verify_mfa.js
       modal.querySelector("#confirmMfaReset").onclick = async () => {
         const token = modal.querySelector("#mfaToken").value;
         if (!token || !/^\d{6}$/.test(token)) {
@@ -307,22 +307,25 @@ function showMfaResetModal(empId) {
         }
 
         try {
-          const verifyRes = await fetch("/.netlify/functions/verify_totp", {
+          const verifyRes = await fetch("/.netlify/functions/verify_mfa", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
+              emp_id: empId,
               token: token,
-              secret: result.secret_key
+              secret: result.secret_key,
+              is_reset_flow: true
             })
           });
           
           const verifyData = await verifyRes.json();
-          if (!verifyRes.ok) throw new Error(verifyData.message || "Token verification failed");
+          if (!verifyRes.ok || !verifyData.verified) {
+            throw new Error(verifyData.message || "Token verification failed");
+          }
           
-          // Show countdown toast and redirect
           showCountdownToast("MFA setup complete. Logging in 3...", () => {
             modal.remove();
-            window.location.href = "/employee_portal.html"; // Redirect to login
+            window.location.href = "/employee_portal.html";
           });
         } catch (error) {
           showToast(error.message, true);
