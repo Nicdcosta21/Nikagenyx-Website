@@ -1,5 +1,3 @@
-// netlify/functions/verify_admin_mfa.js
-
 const { Pool } = require('pg');
 const speakeasy = require('speakeasy');
 
@@ -17,8 +15,42 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { emp_id, token } = JSON.parse(event.body || '{}');
+    const { emp_id, token, secret, is_reset_flow } = JSON.parse(event.body || '{}');
 
+    // Handle MFA reset flow (when secret is provided)
+    if (is_reset_flow && secret) {
+      const isValid = speakeasy.totp.verify({
+        secret: secret,
+        encoding: 'base32',
+        token
+      });
+
+      if (!isValid) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({ 
+            message: 'Invalid MFA token',
+            verified: false
+          })
+        };
+      }
+
+      // Update the employee's MFA secret and reset attempts
+      await pool.query(
+        'UPDATE employees SET mfa_secret = $1, failed_mfa_attempts = 0 WHERE emp_id = $2',
+        [secret, emp_id]
+      );
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          message: '✅ MFA reset and verified successfully',
+          verified: true
+        })
+      };
+    }
+
+    // Normal MFA verification flow
     if (!emp_id || !token) {
       return {
         statusCode: 400,
@@ -81,14 +113,20 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: '✅ MFA verified successfully' })
+      body: JSON.stringify({ 
+        message: '✅ MFA verified successfully',
+        verified: true
+      })
     };
 
   } catch (err) {
     console.error("MFA verification error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Server error during MFA verification' })
+      body: JSON.stringify({ 
+        message: 'Server error during MFA verification',
+        verified: false
+      })
     };
   } finally {
     await pool.end();
