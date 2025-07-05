@@ -19,16 +19,29 @@
       margin: 0;
       font-family: 'Questrial', sans-serif;
     }
+
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: #0B0A1D;
     }
+
     .fade-in {
-      animation: fadeIn 1.2s ease-in-out;
+      animation: fadeIn 1s ease-in-out;
     }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-3d {
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
@@ -59,32 +72,32 @@
     <h2 class="text-3xl font-bold text-center mb-12">Our Services</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">AI Process Automation</h3>
         <p class="text-gray-300">Custom-built AI systems that streamline reporting, optimize workflows, and support decision-making — designed to reduce human effort and increase accuracy.</p>
       </div>
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">Facial Recognition Systems</h3>
         <p class="text-gray-300">High-accuracy facial recognition for identity validation, secure access, guest identification, and employee attendance — all powered by deep learning.</p>
       </div>
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">Smart Photo Matching</h3>
         <p class="text-gray-300">Face-based photo discovery for cruises, events, and galleries — allowing guests to instantly find and purchase their pictures with zero hassle.</p>
       </div>
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">Offline AI Assistants</h3>
         <p class="text-gray-300">Voice-powered AI agents that run fully offline — perfect for dashboards, task execution, productivity tools, and private environments.</p>
       </div>
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">Admin Dashboard Systems</h3>
         <p class="text-gray-300">Interactive dashboards with real-time metrics, filters, alerts, and mobile optimization — crafted for managers, creators, and analytics teams.</p>
       </div>
 
-      <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <div class="bg-gray-800 p-6 rounded-lg card-3d">
         <h3 class="text-xl font-semibold mb-2">Payroll & Attendance Engine</h3>
         <p class="text-gray-300">Automated attendance tracking with salary generation, PDF payslips, and real-time shift monitoring — adaptable for full-time or freelance teams.</p>
       </div>
