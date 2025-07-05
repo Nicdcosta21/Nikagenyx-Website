@@ -4,25 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact - Nikagenyx</title>
+
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     html, body {
       height: 100%;
       margin: 0;
       font-family: 'Questrial', sans-serif;
     }
+
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: #0B0A1D;
     }
+
     .fade-in {
       animation: fadeIn 1.2s ease-in-out;
     }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-3d {
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
@@ -49,7 +64,7 @@
 
 <!-- Contact Form -->
 <section class="flex-grow flex items-center justify-center px-4 py-20 bg-gray-900 text-white fade-in">
-  <div class="bg-gray-800 p-10 rounded-xl shadow-2xl w-full max-w-lg">
+  <div class="bg-gray-800 p-10 rounded-xl card-3d w-full max-w-lg">
     <h2 class="text-3xl font-bold text-center mb-8">Contact Us</h2>
     <form class="space-y-6">
       <div>
@@ -76,7 +91,7 @@
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
-<!-- Mobile Menu Script -->
+<!-- Navbar Toggle Script -->
 <script>
   const toggleBtn = document.getElementById('nav-toggle');
   const menu = document.getElementById('nav-menu');
