@@ -178,7 +178,11 @@ function setupRowListeners(tr, emp, currentUser) {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
         <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
-        <label>Email: <input id="editEmail" value="${empData.email || ''}" type="email" class="w-full border px-2 py-1 mb-2" /></label>
+        <input id="editEmail" 
+       value="${!empData.email || empData.email === 'undefined' ? '' : empData.email}" 
+       type="email"
+       class="w-full border px-2 py-1 mb-2" />
+
         <label>Phone: <input id="editPhone" value="${empData.phone || ''}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" /></label>
         <label>Department:
           <select id="editDept" class="w-full border px-2 py-1 mb-2">
