@@ -32,7 +32,7 @@ exports.handler = async (event) => {
       ssl: { rejectUnauthorized: false }
     });
 
-    // MFA verification unless super admin
+    // ✅ MFA check (skip for super admin NGX001)
     if (admin_id !== "NGX001") {
       if (!token) {
         await db.end();
@@ -64,39 +64,44 @@ exports.handler = async (event) => {
     const values = [];
     let index = 1;
 
-    if (name) {
+    // 🛠️ Prepare only clean values
+    if (name && name !== "undefined") {
       updates.push(`name = $${index++}`);
       values.push(name);
     }
-    if (email !== undefined) {  // allow null/empty to clear email
+    if (email !== undefined) {
+      // Allow clearing email if empty string or null
+      const safeEmail = (!email || email === "undefined") ? null : email;
       updates.push(`email = $${index++}`);
-      values.push(email);
+      values.push(safeEmail);
     }
-    if (phone) {
+    if (phone && phone !== "undefined") {
       updates.push(`phone = $${index++}`);
       values.push(phone);
     }
-    if (dob) {
+    if (dob && dob !== "undefined") {
       updates.push(`dob = $${index++}`);
       values.push(dob);
     }
-        if (employment_role) {
+    if (employment_role && employment_role !== "undefined") {
       updates.push(`employment_role = $${index++}`);
       values.push(employment_role);
     }
-
-    if (department) {
+    if (department && department !== "undefined") {
       updates.push(`department = $${index++}`);
       values.push(department);
     }
-    if (base_salary) {
+    if (base_salary && base_salary !== "undefined") {
       updates.push(`base_salary = $${index++}`);
       values.push(base_salary);
     }
 
     if (updates.length === 0) {
       await db.end();
-      return { statusCode: 400, body: JSON.stringify({ message: "Nothing to update" }) };
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Nothing to update" })
+      };
     }
 
     values.push(emp_id);
