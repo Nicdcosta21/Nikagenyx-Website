@@ -4,25 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>About - Nikagenyx</title>
+
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
+
+  <!-- Fonts & Tailwind -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Styles -->
   <style>
     html, body {
       height: 100%;
       margin: 0;
       font-family: 'Questrial', sans-serif;
     }
+
     .glass-nav {
       backdrop-filter: blur(10px);
       background-color: #0B0A1D;
     }
+
     .fade-in {
       animation: fadeIn 1.2s ease-in-out;
     }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .custom-3d-shadow {
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45), 0 0 2px rgba(255, 255, 255, 0.1);
     }
   </style>
 </head>
@@ -69,8 +82,7 @@
     <!-- Image -->
     <div class="md:w-1/2">
       <img src="assets/about-illustration.png" alt="Nikagenyx 3D Illustration"
-     class="w-full max-w-md mx-auto rounded-xl shadow-2xl transform transition-transform duration-500 hover:scale-105 hover:rotate-[0.5deg]" />
-
+           class="w-full max-w-md mx-auto rounded-xl custom-3d-shadow transform transition-transform duration-500 hover:scale-105 hover:-translate-y-1" />
     </div>
   </section>
 </main>
