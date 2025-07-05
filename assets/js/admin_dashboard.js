@@ -348,14 +348,14 @@ window.showEmployeeDetails = async function(empId) {
   const data = await res.json();
   document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
   document.getElementById('modalDetails').innerHTML = `
-    <p><strong>Name:</strong> ${data.name}</p>
-    <p><strong>Email:</strong> ${data.email}</p>
-    <p><strong>Phone:</strong> ${data.phone}</p>
-    <p><strong>DOB:</strong> ${data.dob}</p>
-    <p><strong>Department:</strong> ${data.department}</p>
-    <p><strong>Role:</strong> ${data.role}</p>
-    <p><strong>Total Pay:</strong> ₹${data.total_pay}</p>
-    <p><strong>Total Hours:</strong> ${data.total_hours} hrs</p>
+    <p><strong>Name:</strong> ${data.name || '-'}</p>
+    <p><strong>Email:</strong> ${data.email || '-'}</p>
+    <p><strong>Phone:</strong> ${data.phone || '-'}</p>
+    <p><strong>DOB:</strong> ${data.dob ? formatDate(data.dob) : '-'}</p>
+    <p><strong>Department:</strong> ${data.department || '-'}</p>
+    <p><strong>Role:</strong> ${data.role || '-'}</p>
+    <p><strong>Total Pay:</strong> ${data.total_pay ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
+    <p><strong>Total Hours:</strong> ${data.total_hours || '0'} hrs</p>
   `;
   const docList = document.getElementById("docLinks");
   docList.innerHTML = '';
