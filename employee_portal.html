@@ -98,7 +98,7 @@
   const res = await fetch("/.netlify/functions/verify-mfa", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ empId: cachedUserData.emp_id, code: mfaCode }),
+    body: JSON.stringify({ emp_id: cachedUserData.emp_id, token: mfaCode }),
   });
 
   if (res.status === 200) {
