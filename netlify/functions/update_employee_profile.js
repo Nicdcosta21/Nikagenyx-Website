@@ -13,7 +13,7 @@ exports.handler = async (event) => {
       email,
       phone,
       dob,
-      role,
+      employment_role,
       department,
       base_salary,
       token,
@@ -80,10 +80,11 @@ exports.handler = async (event) => {
       updates.push(`dob = $${index++}`);
       values.push(dob);
     }
-    if (role) {
-      updates.push(`role = $${index++}`);
-      values.push(role);
+        if (employment_role) {
+      updates.push(`employment_role = $${index++}`);
+      values.push(employment_role);
     }
+
     if (department) {
       updates.push(`department = $${index++}`);
       values.push(department);
