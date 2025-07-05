@@ -170,60 +170,80 @@ function setupRowListeners(tr, emp, currentUser) {
   }
 
   tr.querySelector(".edit").onclick = async () => {
-    const modal = document.createElement("div");
-    modal.innerHTML = `
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
-          <h2 class="text-lg font-semibold mb-4">Edit - ${emp.name}</h2>
-          <label>Email: <input id="editEmail" value="${emp.email}" type="email" class="w-full border px-2 py-1 mb-2" /></label>
-          <label>Phone: <input id="editPhone" value="${emp.phone}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" /></label>
-          <label>Department:
-            <select id="editDept" class="w-full border px-2 py-1 mb-2">
-              <option value="">-- Select --</option>
-              <option value="Tech Team" ${emp.department === "Tech Team" ? "selected" : ""}>Tech Team</option>
-              <option value="Admin Team" ${emp.department === "Admin Team" ? "selected" : ""}>Admin Team</option>
-            </select>
-          </label>
-          <label>Role:
-            <select id="editRole" class="w-full border px-2 py-1 mb-2">
-              <option value="">-- Select Role --</option>
-            </select>
-          </label>
-          <label>Salary (INR): <input id="editSalary" value="${emp.base_salary}" type="number" class="w-full border px-2 py-1 mb-4" /></label>
-          <div class="flex justify-between">
-            <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-            <button class="bg-blue-700 text-white px-4 py-1 rounded" onclick="submitEdit('${emp.emp_id}', this)">Save</button>
-          </div>
+  const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`);
+  const empData = await res.json();
+
+  const modal = document.createElement("div");
+  modal.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
+        <label>Email: <input id="editEmail" value="${empData.email || ''}" type="email" class="w-full border px-2 py-1 mb-2" /></label>
+        <label>Phone: <input id="editPhone" value="${empData.phone || ''}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" /></label>
+        <label>Department:
+          <select id="editDept" class="w-full border px-2 py-1 mb-2">
+            <option value="">-- Select --</option>
+            <option value="Tech Team" ${empData.department === "Tech Team" ? "selected" : ""}>Tech Team</option>
+            <option value="Admin Team" ${empData.department === "Admin Team" ? "selected" : ""}>Admin Team</option>
+          </select>
+        </label>
+        <label>Role:
+          <select id="editRole" class="w-full border px-2 py-1 mb-2">
+            <option value="">-- Select Role --</option>
+          </select>
+        </label>
+        <label>Salary (INR): <input id="editSalary" value="${empData.base_salary || ''}" type="number" class="w-full border px-2 py-1 mb-4" /></label>
+        <div class="flex justify-between">
+          <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+          <button class="bg-blue-700 text-white px-4 py-1 rounded" onclick="submitEdit('${emp.emp_id}', this)">Save</button>
         </div>
-      </div>`;
-    document.body.appendChild(modal);
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
 
-    const dept = modal.querySelector("#editDept");
-    const role = modal.querySelector("#editRole");
+  const dept = modal.querySelector("#editDept");
+  const role = modal.querySelector("#editRole");
 
-    const roles = {
-  "Tech Team": [
-    "Frontend Developer (Jr. Developer)",
-    "Backend Developer (Jr. Developer)",
-    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
-    "QA Engineer (Sr. Developer)",
-    "White labelling (UI/UX Designer)",
-    "DevOps Engineer (Infrastructure Engineer)",
-    "Data Analyst",
-    "Cybersecurity & Risk Analyst",
-    "IT Systems Administrator",
-    "IT Support Specialist"
-  ],
-  "Admin Team": [
-    "Human Resources Manager",
-    "Chief Executive Officer", 
-    "Finance & Accounts Officer",
-    "Managing Director (MD)",
-    "Regulatory Compliance Officer",
-    "Client Relations Consultant",
-    "Administrative Coordinator",
-    "Customer Success Executive"
-  ]
+  const roles = {
+    "Tech Team": [
+      "Frontend Developer (Jr. Developer)",
+      "Backend Developer (Jr. Developer)",
+      "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+      "QA Engineer (Sr. Developer)",
+      "White labelling (UI/UX Designer)",
+      "DevOps Engineer (Infrastructure Engineer)",
+      "Data Analyst",
+      "Cybersecurity & Risk Analyst",
+      "IT Systems Administrator",
+      "IT Support Specialist"
+    ],
+    "Admin Team": [
+      "Human Resources Manager",
+      "Chief Executive Officer",
+      "Finance & Accounts Officer",
+      "Managing Director (MD)",
+      "Regulatory Compliance Officer",
+      "Client Relations Consultant",
+      "Administrative Coordinator",
+      "Customer Success Executive"
+    ]
+  };
+
+  function updateRoleOptions(deptVal, currentRole) {
+    role.innerHTML = '<option value="">-- Select Role --</option>';
+    if (roles[deptVal]) {
+      roles[deptVal].forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r;
+        if (r === currentRole) opt.selected = true;
+        role.appendChild(opt);
+      });
+    }
+  }
+
+  dept.addEventListener("change", () => updateRoleOptions(dept.value));
+  updateRoleOptions(empData.department, empData.role);
 };
 
 function updateRoleOptions(deptVal, empRole = "") {
