@@ -93,10 +93,11 @@ if (role && role !== "undefined") {
       updates.push(`department = $${index++}`);
       values.push(department);
     }
-    if (base_salary && base_salary !== "undefined") {
-      updates.push(`base_salary = $${index++}`);
-      values.push(base_salary);
-    }
+    if (base_salary !== undefined && base_salary !== "undefined") {
+  updates.push(`base_salary = $${index++}`);
+  values.push(Number(base_salary));
+}
+
 
     if (updates.length === 0) {
       await db.end();
