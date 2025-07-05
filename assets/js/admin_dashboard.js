@@ -319,7 +319,7 @@ async function submitEdit(empId, btn, row)
   const base_salary = parent.querySelector("#editSalary")?.value;
 
   // Validate optional fields
-  if (email && email.trim() !== "" && !/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
+  if (email && email !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast("❌ Invalid email format");
   if (phone && phone.trim() !== "" && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
 
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
