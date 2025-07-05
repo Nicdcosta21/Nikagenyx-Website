@@ -91,27 +91,23 @@ async function fetchEmployees(currentUser) {
     tr.innerHTML = `
       <td class="border p-2 cursor-pointer text-blue-400 hover:underline" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
       <td class="border p-2">${emp.name}</td>
-      <td class="border p-2">${emp.phone || '-'}</td>
+      <td class="border p-2" data-field="phone">${emp.phone || '-'}</td>
       <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-      <td class="border p-2 flex items-center gap-2 justify-center">
-        <select class="bg-gray-700 border border-gray-600 px-2 py-1 rounded role-select text-sm text-white">
-          <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>User</option>
-          <option value="admin" ${emp.role === 'admin' ? 'selected' : ''}>Admin</option>
-        </select>
-        <button class="confirm-role bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-      </td>
-      <td class="border p-2">${emp.department || '-'}</td>
+      <td class="border p-2" data-field="role">${emp.role || '-'}</td>
+      <td class="border p-2" data-field="department">${emp.department || '-'}</td>
+      <td class="border p-2" data-field="email">${emp.email || '-'}</td>
       <td class="border p-2 space-x-1">
         <button class="reset-pin bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
         <button class="reset-mfa bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
         <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
         <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Delete</button>
-      </td>`;
-    
+      </td>
+    `;
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
   });
 }
+
 
 function setupRowListeners(tr, emp, currentUser) {
   tr.querySelector(".confirm-role").onclick = () => {
@@ -337,9 +333,18 @@ async function submitEdit(empId, btn) {
 
   const result = await res.json();
   if (res.ok) {
-    showToast(result.message || "✅ Profile updated");
-    parent.remove();
-    setTimeout(() => location.reload(), 800);
+  showToast(result.message || "✅ Profile updated");
+  
+  // Update visible table row (if exists)
+  tr.querySelector('[data-field="email"]').textContent = email || "-";
+  tr.querySelector('[data-field="phone"]').textContent = phone || "-";
+  tr.querySelector('[data-field="department"]').textContent = department || "-";
+  tr.querySelector('[data-field="role"]').textContent = role || "-";
+
+  parent.remove();
+  setTimeout(() => location.reload(), 800); // optional reload
+
+
   } else {
     showToast(result.message || "❌ Update failed");
     console.error(result);
