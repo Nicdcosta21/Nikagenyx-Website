@@ -10,6 +10,7 @@ exports.handler = async (event) => {
     const {
       emp_id,
       name,
+      email,
       phone,
       dob,
       role,
@@ -31,6 +32,7 @@ exports.handler = async (event) => {
       ssl: { rejectUnauthorized: false }
     });
 
+    // MFA verification unless super admin
     if (admin_id !== "NGX001") {
       if (!token) {
         await db.end();
@@ -65,6 +67,10 @@ exports.handler = async (event) => {
     if (name) {
       updates.push(`name = $${index++}`);
       values.push(name);
+    }
+    if (email !== undefined) {  // allow null/empty to clear email
+      updates.push(`email = $${index++}`);
+      values.push(email);
     }
     if (phone) {
       updates.push(`phone = $${index++}`);
