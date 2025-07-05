@@ -135,26 +135,41 @@ function setupRowListeners(tr, emp, currentUser) {
   if (emp.failed_mfa_attempts >= 3) {
     resetMfaBtn.disabled = false;
     resetMfaBtn.onclick = async () => {
-      const res = await fetch("/.netlify/functions/reset_mfa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emp_id: emp.emp_id })
-      });
-      const data = await res.json();
-      showToast("MFA reset by admin. Please refresh and scan QR.");
+      try {
+        const res = await fetch("/.netlify/functions/reset_mfa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Reset failed: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        showToast("MFA reset successfully. Employee can now scan QR code.");
 
-      const modal = document.createElement("div");
-      modal.innerHTML = `
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white text-black p-6 rounded shadow-lg max-w-sm">
-            <h2 class="text-lg font-bold mb-2">Scan MFA QR Code</h2>
-            <img src="${data.qr_code_url}" class="w-40 h-40 mx-auto mb-2" />
-            <p class="text-sm break-all mb-2"><strong>Key:</strong> ${data.secret_key}</p>
-            <button onclick="navigator.clipboard.writeText('${data.secret_key}')" class="bg-blue-600 text-white px-3 py-1 rounded">Copy Key</button>
-            <button onclick="this.closest('.fixed').remove()" class="mt-3 bg-red-600 text-white px-4 py-1 rounded block w-full">Close</button>
-          </div>
-        </div>`;
-      document.body.appendChild(modal);
+        const modal = document.createElement("div");
+        modal.innerHTML = `
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white text-black p-6 rounded shadow-lg max-w-md">
+              <h2 class="text-lg font-bold mb-2">MFA Reset Complete for ${emp.emp_id}</h2>
+              <p class="text-sm mb-4">Share this QR code with the employee to scan in their authenticator app:</p>
+              <div class="text-center mb-4">
+                <img src="${data.qr_code_url}" class="w-48 h-48 mx-auto mb-2 border" />
+                <p class="text-xs break-all mb-2"><strong>Manual Key:</strong> ${data.secret_key}</p>
+                <button onclick="navigator.clipboard.writeText('${data.secret_key}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">Copy Key</button>
+                <button onclick="window.open('${data.qr_code_url}')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">Open QR</button>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">The employee should scan this QR code and then test with a 6-digit token before closing this window.</p>
+              <button onclick="this.closest('.fixed').remove(); location.reload();" class="bg-red-600 text-white px-4 py-2 rounded w-full">Close & Refresh</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      } catch (error) {
+        console.error("MFA reset error:", error);
+        showToast("Failed to reset MFA. Please try again.");
+      }
     };
   }
 
