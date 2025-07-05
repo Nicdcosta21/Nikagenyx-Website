@@ -206,44 +206,48 @@ function setupRowListeners(tr, emp, currentUser) {
     const role = modal.querySelector("#editRole");
 
     const roles = {
-      "Tech Team": [
-        "Frontend Developer (Jr. Developer)",
-        "Backend Developer (Jr. Developer)",
-        "Full Stack Developer / Mobile App Developer (Sr. Developer)",
-        "QA Engineer (Sr. Developer)",
-        "White labelling (UI/UX Designer)",
-        "DevOps Engineer (Infrastructure Engineer)",
-        "Data Analyst",
-        "Cybersecurity & Risk Analyst",
-        "IT Systems Administrator",
-        "IT Support Specialist"
-      ],
-      "Admin Team": [
-        "Human Resources Manager",
-        "Finance & Accounts Officer",
-        "Managing Director (MD)",
-        "Regulatory Compliance Officer",
-        "Client Relations Consultant",
-        "Administrative Coordinator",
-        "Customer Success Executive"
-      ]
-    };
+  "Tech Team": [
+    "Frontend Developer (Jr. Developer)",
+    "Backend Developer (Jr. Developer)",
+    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+    "QA Engineer (Sr. Developer)",
+    "White labelling (UI/UX Designer)",
+    "DevOps Engineer (Infrastructure Engineer)",
+    "Data Analyst",
+    "Cybersecurity & Risk Analyst",
+    "IT Systems Administrator",
+    "IT Support Specialist"
+  ],
+  "Admin Team": [
+    "Human Resources Manager",
+    "Chief Executive Officer", 
+    "Finance & Accounts Officer",
+    "Managing Director (MD)",
+    "Regulatory Compliance Officer",
+    "Client Relations Consultant",
+    "Administrative Coordinator",
+    "Customer Success Executive"
+  ]
+};
 
-    function updateRoleOptions(deptVal) {
-      role.innerHTML = '<option value="">-- Select Role --</option>';
-      if (roles[deptVal]) {
-        roles[deptVal].forEach(r => {
-          const opt = document.createElement("option");
-          opt.value = r;
-          opt.textContent = r;
-          if (r === emp.role) opt.selected = true;
-          role.appendChild(opt);
-        });
-      }
-    }
+function updateRoleOptions(deptVal, empRole = "") {
+  const roleSelect = document.querySelector("#editRole");
+  roleSelect.innerHTML = '<option value="">-- Select Role --</option>';
+  if (roles[deptVal]) {
+    roles[deptVal].forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      if (r === empRole) opt.selected = true;
+      roleSelect.appendChild(opt);
+    });
+  }
+}
 
-    dept.addEventListener("change", () => updateRoleOptions(dept.value));
-    updateRoleOptions(emp.department);
+// In showEditModal, after setting dept value
+dept.value = emp.department || "";
+updateRoleOptions(emp.department, emp.role); 
+
   };
 
   tr.querySelector(".delete").onclick = async () => {
