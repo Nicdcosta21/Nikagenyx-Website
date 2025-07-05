@@ -12,18 +12,17 @@
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
     
     /* Improved disabled state styling */
-  button.reset-pin[disabled],
-  button.reset-mfa[disabled] {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: #6b7280 !important; /* gray-500 */
-    transform: none !important;
+  button[disabled] {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    background-color: #4b5563 !important; /* gray-600 */
+    color: #9ca3af !important; /* gray-400 */
+    pointer-events: none !important;
   }
   
-  /* Remove blur effect */
-  button.reset-pin[disabled]::after,
-  button.reset-mfa[disabled]::after {
-    content: none;
+  button[disabled]:hover {
+    background-color: #4b5563 !important;
+    transform: none !important;
   }
 </style>
 </head>
@@ -117,3 +116,4 @@
 <script src="/assets/js/admin_dashboard.js" defer></script>
 </body>
 </html>
+
