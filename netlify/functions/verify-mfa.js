@@ -1,134 +1,120 @@
-const { Pool } = require('pg');
-const speakeasy = require('speakeasy');
-
-const pool = new Pool({
-  connectionString: process.env.NETLIFY_DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const { Pool } = require("pg");
+const speakeasy = require("speakeasy");
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: 'Method Not Allowed' })
-    };
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
     const { emp_id, token, secret, is_reset_flow } = JSON.parse(event.body || '{}');
 
-    // Handle MFA reset flow (when secret is provided)
-    if (is_reset_flow && secret) {
-      const isValid = speakeasy.totp.verify({
-        secret: secret,
-        encoding: 'base32',
-        token
+    if (!emp_id || !token) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Missing emp_id or token" })
+      };
+    }
+
+    const db = new Pool({
+      connectionString: process.env.NETLIFY_DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+
+    // Get employee's MFA secret
+    const result = await db.query(
+      "SELECT mfa_secret, failed_mfa_attempts FROM employees WHERE emp_id = $1",
+      [emp_id]
+    );
+
+    if (!result.rows.length) {
+      await db.end();
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: "Employee not found" })
+      };
+    }
+
+    const employee = result.rows[0];
+
+    // Check if MFA is locked
+    if (employee.failed_mfa_attempts >= 3) {
+      await db.end();
+      return {
+        statusCode: 423,
+        body: JSON.stringify({ message: "MFA locked. Contact admin." })
+      };
+    }
+
+    // Use provided secret for reset flow, otherwise use stored secret
+    const mfaSecret = is_reset_flow ? secret : employee.mfa_secret;
+
+    if (!mfaSecret) {
+      await db.end();
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "MFA not set up" })
+      };
+    }
+
+    // Clean the token (remove any whitespace)
+    const cleanToken = token.toString().trim();
+
+    // Verify the token with multiple attempts for better compatibility
+    let verified = false;
+
+    // Try with different window sizes and token formats
+    for (let window = 1; window <= 3; window++) {
+      verified = speakeasy.totp.verify({
+        secret: mfaSecret,
+        encoding: "base32",
+        token: cleanToken,
+        window: window
       });
 
-      if (!isValid) {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({ 
-            message: 'Invalid MFA token',
-            verified: false
-          })
-        };
-      }
+      if (verified) break;
+    }
 
-      // Update the employee's MFA secret and reset attempts
-      await pool.query(
-        'UPDATE employees SET mfa_secret = $1, failed_mfa_attempts = 0 WHERE emp_id = $2',
-        [secret, emp_id]
+    if (verified) {
+      // Reset failed attempts on successful verification
+      await db.query(
+        "UPDATE employees SET failed_mfa_attempts = 0 WHERE emp_id = $1",
+        [emp_id]
       );
 
+      await db.end();
       return {
         statusCode: 200,
         body: JSON.stringify({ 
-          message: '✅ MFA reset and verified successfully',
-          verified: true
+          message: "MFA verified successfully",
+          verified: true 
+        })
+      };
+    } else {
+      // Increment failed attempts
+      await db.query(
+        "UPDATE employees SET failed_mfa_attempts = failed_mfa_attempts + 1 WHERE emp_id = $1",
+        [emp_id]
+      );
+
+      const newAttempts = employee.failed_mfa_attempts + 1;
+
+      await db.end();
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ 
+          message: newAttempts >= 3 ? "Invalid MFA token. Account locked." : "Invalid MFA token",
+          verified: false,
+          attempts_remaining: Math.max(0, 3 - newAttempts)
         })
       };
     }
 
-    // Normal MFA verification flow
-    if (!emp_id || !token) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Missing emp_id or token' })
-      };
-    }
-
-    // Fetch the admin's MFA secret and failed attempts
-    const result = await pool.query(
-      'SELECT mfa_secret, failed_mfa_attempts FROM employees WHERE emp_id = $1',
-      [emp_id]
-    );
-
-    if (result.rowCount === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: 'Admin not found' })
-      };
-    }
-
-    const { mfa_secret, failed_mfa_attempts } = result.rows[0];
-
-    if (!mfa_secret) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({ message: 'MFA not setup for this admin' })
-      };
-    }
-
-    // Optional: Lockout logic
-    if (failed_mfa_attempts >= 3) {
-      return {
-        statusCode: 423,
-        body: JSON.stringify({ message: 'Account temporarily locked due to too many failed MFA attempts' })
-      };
-    }
-
-    const isValid = speakeasy.totp.verify({
-      secret: mfa_secret,
-      encoding: 'base32',
-      token
-    });
-
-    if (!isValid) {
-      await pool.query(
-        'UPDATE employees SET failed_mfa_attempts = failed_mfa_attempts + 1 WHERE emp_id = $1',
-        [emp_id]
-      );
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: 'Invalid MFA token' })
-      };
-    }
-
-    // Reset failed attempts on success
-    await pool.query(
-      'UPDATE employees SET failed_mfa_attempts = 0 WHERE emp_id = $1',
-      [emp_id]
-    );
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ 
-        message: '✅ MFA verified successfully',
-        verified: true
-      })
-    };
-
-  } catch (err) {
-    console.error("MFA verification error:", err);
+  } catch (error) {
+    console.error("MFA verification error:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        message: 'Server error during MFA verification',
-        verified: false
-      })
+      body: JSON.stringify({ message: "Internal server error" })
     };
-  } finally {
-    await pool.end();
   }
 };
