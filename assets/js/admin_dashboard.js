@@ -99,12 +99,15 @@ async function fetchEmployees(currentUser) {
       <td class="border p-2" data-field="role">${emp.role || '-'}</td>
       <td class="border p-2" data-field="department">${emp.department || '-'}</td>
       <td class="border p-2" data-field="email">${emp.email || '-'}</td>
-      <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
-        <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Delete</button>
-      </td>
+      <td class="border p-2">
+  <div class="flex flex-wrap gap-1 justify-center">
+    <button class="reset-pin bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs">Reset PIN</button>
+    <button class="reset-mfa bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs">Reset MFA</button>
+    <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
+    <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Delete</button>
+  </div>
+</td>
+
     `;
     table.appendChild(tr);
     setupRowListeners(tr, emp, currentUser);
