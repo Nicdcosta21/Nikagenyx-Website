@@ -199,7 +199,8 @@ function setupRowListeners(tr, emp, currentUser) {
         <label>Salary (INR): <input id="editSalary" value="${empData.base_salary || ''}" type="number" class="w-full border px-2 py-1 mb-4" /></label>
         <div class="flex justify-between">
           <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
-          <button class="bg-blue-700 text-white px-4 py-1 rounded" onclick="submitEdit('${emp.emp_id}', this)">Save</button>
+          <button class="bg-blue-700 text-white px-4 py-1 rounded" onclick="submitEdit('${emp.emp_id}', this, this.closest('tr'))">Save</button>
+
         </div>
       </div>
     </div>`;
@@ -307,7 +308,8 @@ function triggerReset(type, empId, message) {
     .catch(err => console.error(`${type} failed:`, err));
 }
 
-async function submitEdit(empId, btn) {
+async function submitEdit(empId, btn, row)
+ {
   const parent = btn.closest(".fixed");
 
   const email = parent.querySelector("#editEmail")?.value.trim();
@@ -330,7 +332,7 @@ async function submitEdit(empId, btn) {
   if (email !== undefined && email !== null) updateData.email = email.trim();
   if (phone && phone.trim() !== "") updateData.phone = phone.trim();
   if (department && department.trim() !== "") updateData.department = department;
-  if (role && role.trim() !== "") updateData.role = role;
+  if (role && role.trim() !== "") updateData.employment_role = role;
   if (base_salary && base_salary.trim() !== "") updateData.base_salary = base_salary;
 
   // ✅ MFA if not NGX001
@@ -360,10 +362,11 @@ async function submitEdit(empId, btn) {
   showToast(result.message || "✅ Profile updated");
   
   // Update visible table row (if exists)
-  tr.querySelector('[data-field="email"]').textContent = email || "-";
-  tr.querySelector('[data-field="phone"]').textContent = phone || "-";
-  tr.querySelector('[data-field="department"]').textContent = department || "-";
-  tr.querySelector('[data-field="role"]').textContent = role || "-";
+  row.querySelector('[data-field="email"]').textContent = email || "-";
+row.querySelector('[data-field="phone"]').textContent = phone || "-";
+row.querySelector('[data-field="department"]').textContent = department || "-";
+row.querySelector('[data-field="role"]').textContent = role || "-";
+
 
   parent.remove();
   setTimeout(() => location.reload(), 800); // optional reload
