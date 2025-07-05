@@ -10,18 +10,21 @@
   <style>
     body { font-family: 'Questrial', sans-serif; }
     .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
-    button[disabled] {
-      opacity: 0.4 !important;
-      cursor: not-allowed !important;
-      background-color: #4b5563 !important;
-      color: #9ca3af !important;
-      pointer-events: none !important;
-    }
-    button[disabled]:hover {
-      background-color: #4b5563 !important;
-      transform: none !important;
-    }
-  </style>
+    
+    /* Improved disabled state styling */
+  button[disabled] {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    background-color: #4b5563 !important; /* gray-600 */
+    color: #9ca3af !important; /* gray-400 */
+    pointer-events: none !important;
+  }
+  
+  button[disabled]:hover {
+    background-color: #4b5563 !important;
+    transform: none !important;
+  }
+</style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -46,18 +49,19 @@
   <div class="overflow-x-auto mb-10">
     <table class="min-w-full table-auto bg-gray-800 border border-gray-700">
       <thead class="bg-gray-700">
-  <tr>
-    <th class="p-2 border">ID</th>
-    <th class="p-2 border">Name</th>
-    <th class="p-2 border">Phone</th>
-    <th class="p-2 border">DOB</th>
-    <th class="p-2 border">Role</th>
-    <th class="p-2 border">Department</th>
-    <th class="p-2 border">Email</th> <!-- ✅ Add this -->
-    <th class="p-2 border">Actions</th>
-  </tr>
-</thead>
+        <tr>
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Name</th>
+          <th class="p-2 border">Email</th>
 
+          <th class="p-2 border">Phone</th>
+          <th class="p-2 border">DOB</th>
+          <th class="p-2 border">Role</th>
+          <th class="p-2 border">Department</th>
+          <th class="p-2 border">Email</th>
+          <th class="p-2 border">Actions</th>
+        </tr>
+      </thead>
       <tbody id="employeeTable" class="text-center text-sm"></tbody>
     </table>
   </div>
@@ -94,15 +98,25 @@
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
-<!-- Placeholder Modal -->
-<div id="employeeModal" class="hidden"></div>
+<!-- Employee Detail Modal -->
+<div id="employeeModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-70 flex items-center justify-center">
+  <div class="bg-white text-black w-11/12 md:w-2/3 lg:w-1/2 rounded-xl p-6 relative shadow-xl max-h-[90vh] overflow-y-auto">
+    <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black">&times;</button>
+    <h2 class="text-xl font-bold mb-4" id="modalEmpId"></h2>
+    <div id="modalDetails" class="space-y-2"></div>
+    <div id="modalDocs" class="mt-4">
+      <h3 class="text-lg font-semibold mb-2">Uploaded Documents:</h3>
+      <ul id="docLinks" class="list-disc pl-5 space-y-1"></ul>
+    </div>
+    <div class="mt-6 flex justify-between items-center gap-4">
+      <button onclick="printModalContent()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded text-sm">🖨️ Print</button>
+      <button onclick="exportModalToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">📄 Export to PDF</button>
+      <button onclick="closeModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm ml-auto">Close</button>
+    </div>
+  </div>
+</div>
 
 <script src="/assets/js/admin_dashboard.js" defer></script>
-<script>
-  window.logout = function () {
-    localStorage.removeItem("emp_session");
-    window.location.href = "employee_portal.html";
-  };
-</script>
 </body>
 </html>
+
