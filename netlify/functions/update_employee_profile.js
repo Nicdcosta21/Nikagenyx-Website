@@ -83,9 +83,11 @@ exports.handler = async (event) => {
       updates.push(`dob = $${index++}`);
       values.push(dob);
     }
-    if (employment_role && employment_role !== "undefined") {
-      updates.push(`employment_role = $${index++}`);
-      values.push(employment_role);
+    const role = employment_role;
+if (role && role !== "undefined") {
+  updates.push(`employment_role = $${index++}`);
+  values.push(role);
+}
     }
     if (department && department !== "undefined") {
       updates.push(`department = $${index++}`);
