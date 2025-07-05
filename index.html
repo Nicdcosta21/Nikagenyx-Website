@@ -14,9 +14,25 @@
       font-family: 'Questrial', sans-serif;
       scroll-behavior: smooth;
     }
+
     .glass-nav {
       backdrop-filter: blur(10px);
-      background-color: rgba(17, 24, 39, 0.8);
+      background-color: #0B0A1D;
+    }
+
+    .fade-in {
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -26,7 +42,7 @@
 <nav class="w-full glass-nav shadow-lg px-6 py-4 flex items-center justify-between relative z-50">
   <a href="index.html" class="flex items-center gap-3">
     <img src="assets/Nikagenyx Vision Tech.png" alt="Nikagenyx Logo" class="h-10 w-auto max-w-[48px] object-contain" />
-    <span class="text-2xl font-bold text-white">Nikagenyx</span>
+    <span class="text-xl sm:text-2xl font-bold text-white tracking-wide">NIKAGENYX VISION TECH</span>
   </a>
   <button id="nav-toggle" class="text-white md:hidden z-50">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,14 +57,14 @@
   </ul>
 </nav>
 
-<!-- Hero Section -->
-<main class="flex-grow">
+<!-- Content Section -->
+<main class="flex-grow fade-in">
   <section class="relative flex items-center justify-center text-center px-4 min-h-[calc(100vh-128px)] overflow-hidden">
     <img src="https://res.cloudinary.com/dhgo8wahk/image/upload/v1751140689/steve-johnson-5g-eLjXHuck-unsplash_flcm7i.jpg" 
          alt="Background Visual" 
          class="absolute inset-0 w-full h-full object-cover blur-sm opacity-60 z-0" />
     <div class="relative z-10 bg-black bg-opacity-60 p-10 rounded-lg max-w-2xl mx-auto">
-      <h1 class="text-3xl sm:text-4xl md:text-6xl font-bold gradient-text mb-6 leading-snug"
+      <h1 class="text-4xl md:text-6xl font-bold gradient-text mb-6 leading-snug"
           style="background: linear-gradient(to right, #00d4ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
         Built for the Moment.<br>Designed for Momentum.
       </h1>
@@ -67,6 +83,7 @@
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
 </footer>
 
+<!-- Navbar Toggle Script -->
 <script>
   const toggleBtn = document.getElementById('nav-toggle');
   const menu = document.getElementById('nav-menu');
