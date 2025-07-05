@@ -85,32 +85,57 @@
   });
 
   async function verifyMFA() {
-  const mfaCode = document.getElementById("mfaCode").value.trim();
-  const mfaError = document.getElementById("mfaError");
-  mfaError.classList.add("hidden");
+    const mfaCode = document.getElementById("mfaCode").value.trim();
+    const mfaError = document.getElementById("mfaError");
+    mfaError.classList.add("hidden");
 
-  if (!cachedUserData || !cachedUserData.emp_id) {
-    mfaError.textContent = "Session expired or invalid state. Please log in again.";
-    mfaError.classList.remove("hidden");
-    return;  // stop further execution
+    if (!cachedUserData || !cachedUserData.emp_id) {
+      mfaError.textContent = "Session expired or invalid state. Please log in again.";
+      mfaError.classList.remove("hidden");
+      return;
+    }
+
+    // Validate MFA code format
+    if (!mfaCode || !/^\d{6}$/.test(mfaCode)) {
+      mfaError.textContent = "Please enter a valid 6-digit MFA code.";
+      mfaError.classList.remove("hidden");
+      return;
+    }
+
+    try {
+      console.log("Verifying MFA for:", cachedUserData.emp_id, "with token:", mfaCode);
+      
+      const res = await fetch("/.netlify/functions/verify-mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          emp_id: cachedUserData.emp_id, 
+          token: mfaCode 
+        }),
+      });
+
+      const result = await res.json();
+      console.log("MFA verification response:", res.status, result);
+
+      if (res.status === 200 && result.verified) {
+        localStorage.setItem("mfa_verified", "true");
+        window.location.href = cachedUserData.role === "admin"
+          ? "admin_dashboard.html"
+          : "employee_dashboard.html";
+      } else {
+        // Show specific error message from server
+        mfaError.textContent = result.message || "Invalid MFA code. Please try again.";
+        mfaError.classList.remove("hidden");
+        
+        // Clear the input for retry
+        document.getElementById("mfaCode").value = "";
+      }
+    } catch (error) {
+      console.error("MFA verification error:", error);
+      mfaError.textContent = "Network error. Please try again.";
+      mfaError.classList.remove("hidden");
+    }
   }
-
-  const res = await fetch("/.netlify/functions/verify-mfa", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: cachedUserData.emp_id, token: mfaCode }),
-  });
-
-  if (res.status === 200) {
-    localStorage.setItem("mfa_verified", "true");
-    window.location.href = cachedUserData.role === "admin"
-      ? "admin_dashboard.html"
-      : "employee_dashboard.html";
-  } else {
-    mfaError.textContent = "Invalid MFA code. Try again.";
-    mfaError.classList.remove("hidden");
-  }
-}
 
 
   function handleForgotPIN() {
