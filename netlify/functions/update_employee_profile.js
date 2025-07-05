@@ -88,7 +88,7 @@ if (role && role !== "undefined") {
   updates.push(`employment_role = $${index++}`);
   values.push(role);
 }
-    }
+  
     if (department && department !== "undefined") {
       updates.push(`department = $${index++}`);
       values.push(department);
