@@ -70,7 +70,6 @@ exports.handler = async (event) => {
       values.push(name);
     }
     if (email !== undefined) {
-      // Allow clearing email if empty string or null
       const safeEmail = (!email || email === "undefined") ? null : email;
       updates.push(`email = $${index++}`);
       values.push(safeEmail);
@@ -83,21 +82,22 @@ exports.handler = async (event) => {
       updates.push(`dob = $${index++}`);
       values.push(dob);
     }
+
     const role = employment_role;
-if (role && role !== "undefined") {
-  updates.push(`employment_role = $${index++}`);
-  values.push(role);
-}
-  
+    if (role && role !== "undefined") {
+      updates.push(`employment_role = $${index++}`);
+      values.push(role);
+    }
+
     if (department && department !== "undefined") {
       updates.push(`department = $${index++}`);
       values.push(department);
     }
-    if (base_salary !== undefined && base_salary !== "undefined") {
-  updates.push(`base_salary = $${index++}`);
-  values.push(Number(base_salary));
-}
 
+    if (base_salary !== undefined && base_salary !== "undefined") {
+      updates.push(`base_salary = $${index++}`);
+      values.push(Number(base_salary));
+    }
 
     if (updates.length === 0) {
       await db.end();
