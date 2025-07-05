@@ -5,10 +5,17 @@
     "build": "echo 'No build step required'"
   },
   "dependencies": {
-    "pg": "^8.11.0",
-    "speakeasy": "^2.0.0",
-    "qrcode": "^1.5.1",
+    "cookie": "^1.0.2",
+    "date-fns": "^4.1.0",
+    "exceljs": "^4.3.0",
     "formidable": "^3.5.0",
-    "exceljs": "^4.3.0"
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.11.0",
+    "qrcode": "^1.5.1",
+    "speakeasy": "^2.0.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^22.2.1"
   }
 }
