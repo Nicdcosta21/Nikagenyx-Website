@@ -307,7 +307,7 @@ function showMfaResetModal(empId) {
         }
 
         try {
-          const verifyRes = await fetch("/.netlify/functions/verify_mfa", {
+          const verifyRes = await fetch("/.netlify/functions/verify-mfa", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
