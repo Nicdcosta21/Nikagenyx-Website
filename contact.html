@@ -17,8 +17,11 @@
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
 <!-- Navbar -->
-<nav class="w-full glass-nav shadow-lg px-6 py-4 flex items-center justify-between relative">
-  <a href="index.html" class="text-2xl font-bold text-white">Nikagenyx</a>
+<nav class="w-full glass-nav shadow-lg px-6 py-4 flex items-center justify-between relative z-50">
+  <a href="index.html" class="flex items-center gap-3">
+    <img src="assets/logo_original.png" alt="Nikagenyx Logo" class="h-10 w-10 rounded-full" />
+    <span class="text-2xl font-bold text-white">Nikagenyx</span>
+  </a>
   <button id="nav-toggle" class="text-white md:hidden">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -28,7 +31,7 @@
     <li><a href="index.html" class="hover:text-purple-400 block py-2 md:py-0">Home</a></li>
     <li><a href="about.html" class="hover:text-purple-400 block py-2 md:py-0">About</a></li>
     <li><a href="services.html" class="hover:text-purple-400 block py-2 md:py-0">Services</a></li>
-    <li><a href="contact.html" class="hover:text-purple-400 block py-2 md:py-0">Contact</a></li>
+    <li><a href="contact.html" class="text-purple-400 font-semibold block py-2 md:py-0">Contact</a></li>
   </ul>
 </nav>
 
@@ -55,7 +58,6 @@
     </form>
   </div>
 </section>
-
 
 <!-- Footer -->
 <footer class="mt-auto bg-gray-800 text-gray-500 text-center py-6 text-sm">
