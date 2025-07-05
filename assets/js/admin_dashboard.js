@@ -7,6 +7,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
   await fetchEmployees(currentUser);
+  
+  // Setup search functionality
+  const searchInput = document.getElementById("search");
+  if (searchInput) {
+    searchInput.addEventListener("input", filterEmployeeTable);
+  }
 });
 
 function logout() {
@@ -24,6 +30,25 @@ function showToast(msg) {
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+function filterEmployeeTable() {
+  const searchInput = document.getElementById("search");
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const table = document.getElementById("employeeTable");
+  const rows = table.getElementsByTagName("tr");
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const empId = row.cells[0]?.textContent.toLowerCase() || "";
+    const empName = row.cells[1]?.textContent.toLowerCase() || "";
+    
+    if (empId.includes(searchTerm) || empName.includes(searchTerm)) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  }
 }
 
 async function loadPayrollMode() {
@@ -62,9 +87,6 @@ async function fetchEmployees(currentUser) {
   const table = document.getElementById("employeeTable");
 
   employees.forEach(emp => {
-    const pinDisabled = emp.failed_pin_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
-    const mfaDisabled = emp.failed_mfa_attempts < 3 ? 'opacity-50 cursor-not-allowed' : '';
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="border p-2 cursor-pointer text-blue-400 hover:underline" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
@@ -80,10 +102,10 @@ async function fetchEmployees(currentUser) {
       </td>
       <td class="border p-2">${emp.department || '-'}</td>
       <td class="border p-2 space-x-1">
-        <button class="reset-pin bg-blue-500 px-2 py-1 rounded text-xs ${pinDisabled}" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 px-2 py-1 rounded text-xs ${mfaDisabled}" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
-        <button class="edit bg-purple-500 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 px-2 py-1 rounded text-xs">Delete</button>
+        <button class="reset-pin bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" ${emp.failed_pin_attempts < 3 ? 'disabled' : ''}>Reset PIN</button>
+        <button class="reset-mfa bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" ${emp.failed_mfa_attempts < 3 ? 'disabled' : ''}>Reset MFA</button>
+        <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
+        <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Delete</button>
       </td>`;
     
     table.appendChild(tr);
@@ -337,4 +359,81 @@ window.showEmployeeDetails = async function(empId) {
 
 window.closeModal = function () {
   document.getElementById("employeeModal").classList.add("hidden");
+};
+
+window.printModalContent = function() {
+  const modalContent = document.getElementById("modalDetails").innerHTML;
+  const empId = document.getElementById("modalEmpId").textContent;
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+      <head><title>Employee Details - ${empId}</title></head>
+      <body>
+        <h2>${empId}</h2>
+        ${modalContent}
+        <script>window.print(); window.close();</script>
+      </body>
+    </html>
+  `);
+};
+
+window.exportModalToPDF = function() {
+  // Simple PDF export using browser's print dialog
+  const modalContent = document.getElementById("modalDetails").innerHTML;
+  const empId = document.getElementById("modalEmpId").textContent;
+  const pdfWindow = window.open('', '_blank');
+  pdfWindow.document.write(`
+    <html>
+      <head>
+        <title>Employee Details - ${empId}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h2 { color: #333; }
+          p { margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <h2>${empId}</h2>
+        ${modalContent}
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+};
+
+window.exportCSV = async function() {
+  try {
+    const res = await fetch("/.netlify/functions/get_employees");
+    const { employees } = await res.json();
+
+    const csvContent = [
+      ['ID', 'Name', 'Email', 'Phone', 'DOB', 'Role', 'Department', 'Base Salary'].join(','),
+      ...employees.map(emp => [
+        emp.emp_id,
+        emp.name,
+        emp.email || '',
+        emp.phone || '',
+        emp.dob ? formatDate(emp.dob) : '',
+        emp.role || '',
+        emp.department || '',
+        emp.base_salary || ''
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('✅ CSV exported successfully');
+  } catch (error) {
+    console.error('Export failed:', error);
+    showToast('❌ Export failed');
+  }
 };
