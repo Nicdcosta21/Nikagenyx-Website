@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const verify = require('./verifySession'); // 🔐 JWT from cookies
+const verify = require('./verifySession'); // 🔐 JWT-based session verification
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -15,8 +15,9 @@ exports.handler = async (event) => {
   }
 
   try {
-    const user = verify(event);
+    const user = verify(event); // 🔐 Parse session token
 
+    // 🚫 Only allow admins
     if (!user || user.role !== 'admin') {
       return {
         statusCode: 403,
@@ -24,15 +25,16 @@ exports.handler = async (event) => {
       };
     }
 
+    // ✅ Query all employees, mapping employment_role as 'role'
     const result = await pool.query(`
       SELECT 
         emp_id, 
         name, 
-        email,         -- ✅ FIXED: Include email
+        email,              -- included properly
         phone, 
         dob, 
         department, 
-        employment_role AS role,  -- ✅ FIXED: map employment_role as 'role'
+        employment_role AS role, 
         base_salary
       FROM employees
       ORDER BY name ASC
@@ -47,7 +49,10 @@ exports.handler = async (event) => {
     console.error("❌ Error in get_employees.js:", err.message);
     return {
       statusCode: 401,
-      body: JSON.stringify({ message: "Unauthorized or session invalid", error: err.message })
+      body: JSON.stringify({
+        message: "Unauthorized or session invalid",
+        error: err.message
+      })
     };
   }
 };
