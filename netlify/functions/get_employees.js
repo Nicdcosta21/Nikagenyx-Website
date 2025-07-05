@@ -25,7 +25,15 @@ exports.handler = async (event) => {
     }
 
     const result = await pool.query(`
-      SELECT emp_id, name, role, department, phone, dob, base_salary
+      SELECT 
+        emp_id, 
+        name, 
+        email,         -- ✅ FIXED: Include email
+        phone, 
+        dob, 
+        department, 
+        employment_role AS role,  -- ✅ FIXED: map employment_role as 'role'
+        base_salary
       FROM employees
       ORDER BY name ASC
     `);
