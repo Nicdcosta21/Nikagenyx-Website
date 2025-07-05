@@ -293,8 +293,8 @@ async function submitEdit(empId, btn) {
   const base_salary = parent.querySelector("#editSalary")?.value;
 
   // Validate optional fields
-  if (email && !/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
-  if (phone && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
+  if (email && email.trim() !== "" && !/^\S+@\S+\.\S+$/.test(email)) return showToast("❌ Invalid email format");
+  if (phone && phone.trim() !== "" && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
 
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
   const updateData = {
@@ -302,11 +302,12 @@ async function submitEdit(empId, btn) {
     admin_id: currentUser.emp_id  // ✅ always include admin_id
   };
 
-  if (email) updateData.email = email;
-  if (phone) updateData.phone = phone;
-  if (department) updateData.department = department;
-  if (role) updateData.role = role;
-  if (base_salary) updateData.base_salary = base_salary;
+  // Include email even if empty to allow clearing it
+  if (email !== undefined && email !== null) updateData.email = email.trim();
+  if (phone && phone.trim() !== "") updateData.phone = phone.trim();
+  if (department && department.trim() !== "") updateData.department = department;
+  if (role && role.trim() !== "") updateData.role = role;
+  if (base_salary && base_salary.trim() !== "") updateData.base_salary = base_salary;
 
   // ✅ MFA if not NGX001
   if (currentUser.emp_id !== "NGX001") {
@@ -344,32 +345,66 @@ async function submitEdit(empId, btn) {
 
 
 window.showEmployeeDetails = async function(empId) {
-  const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
-  const data = await res.json();
-  document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
-  document.getElementById('modalDetails').innerHTML = `
-    <p><strong>Name:</strong> ${data.name || '-'}</p>
-    <p><strong>Email:</strong> ${data.email || '-'}</p>
-    <p><strong>Phone:</strong> ${data.phone || '-'}</p>
-    <p><strong>DOB:</strong> ${data.dob ? formatDate(data.dob) : '-'}</p>
-    <p><strong>Department:</strong> ${data.department || '-'}</p>
-    <p><strong>Role:</strong> ${data.role || '-'}</p>
-    <p><strong>Total Pay:</strong> ${data.total_pay ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
-    <p><strong>Total Hours:</strong> ${data.total_hours || '0'} hrs</p>
-  `;
-  const docList = document.getElementById("docLinks");
-  docList.innerHTML = '';
-  if (data.documents?.length > 0) {
-    data.documents.forEach(doc => {
+  try {
+    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch employee details: ${res.status}`);
+    }
+    const data = await res.json();
+    
+    // Format DOB properly
+    let formattedDOB = '-';
+    if (data.dob) {
+      try {
+        const dobDate = new Date(data.dob);
+        formattedDOB = dobDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit', 
+          year: 'numeric'
+        });
+      } catch (e) {
+        formattedDOB = data.dob.split('T')[0]; // fallback to ISO date part
+      }
+    }
+
+    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+    document.getElementById('modalDetails').innerHTML = `
+      <p><strong>Name:</strong> ${data.name || '-'}</p>
+      <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
+      <p><strong>Phone:</strong> ${data.phone || '-'}</p>
+      <p><strong>DOB:</strong> ${formattedDOB}</p>
+      <p><strong>Department:</strong> ${data.department || '-'}</p>
+      <p><strong>Role:</strong> ${data.role || '-'}</p>
+      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
+      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? `${data.total_hours} hrs` : '0 hrs'}</p>
+    `;
+    
+    const docList = document.getElementById("docLinks");
+    docList.innerHTML = '';
+    
+    // Handle documents properly
+    if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
+      data.documents.forEach(doc => {
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+        docList.appendChild(li);
+      });
+    } else if (data.profile_photo_url) {
+      // Check if profile photo exists from registration
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
-                      <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+      li.innerHTML = `<a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
+                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>`;
       docList.appendChild(li);
-    });
-  } else {
-    docList.innerHTML = '<li>No documents uploaded</li>';
+    } else {
+      docList.innerHTML = '<li>No documents uploaded</li>';
+    }
+    
+    document.getElementById("employeeModal").classList.remove("hidden");
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+    showToast('Failed to load employee details');
   }
-  document.getElementById("employeeModal").classList.remove("hidden");
 };
 
 window.closeModal = function () {
