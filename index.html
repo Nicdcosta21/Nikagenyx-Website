@@ -25,14 +25,18 @@
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-3d {
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 2px 5px rgba(255, 255, 255, 0.05);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .hero-3d:hover {
+      transform: translateY(-4px) scale(1.015);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(255, 255, 255, 0.08);
     }
   </style>
 </head>
@@ -57,13 +61,13 @@
   </ul>
 </nav>
 
-<!-- Content Section -->
+<!-- Hero Section -->
 <main class="flex-grow fade-in">
   <section class="relative flex items-center justify-center text-center px-4 min-h-[calc(100vh-128px)] overflow-hidden">
     <img src="https://res.cloudinary.com/dhgo8wahk/image/upload/v1751140689/steve-johnson-5g-eLjXHuck-unsplash_flcm7i.jpg" 
          alt="Background Visual" 
          class="absolute inset-0 w-full h-full object-cover blur-sm opacity-60 z-0" />
-    <div class="relative z-10 bg-black bg-opacity-60 p-10 rounded-lg max-w-2xl mx-auto">
+    <div class="relative z-10 bg-black bg-opacity-60 p-10 rounded-xl max-w-2xl mx-auto hero-3d">
       <h1 class="text-4xl md:text-6xl font-bold gradient-text mb-6 leading-snug"
           style="background: linear-gradient(to right, #00d4ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
         Built for the Moment.<br>Designed for Momentum.
