@@ -171,7 +171,8 @@
 
       let summary = { P: 0, A: 0 };
       const blockWrap = document.createElement("div");
-      blockWrap.className = "block-wrap";
+      blockWrap.className = "grid grid-cols-48 gap-[1px]";
+
 
       emp.blockStates.forEach((state, i) => {
         const finalState = ["P", "L", "A", "H"].includes(state) ? state : "A";
