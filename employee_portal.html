@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Employee Login - Nikagenyx</title>
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
+  <!-- ⚠ Tailwind CDN: use CLI/PostCSS in production -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
@@ -16,18 +17,18 @@
   <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
     <form id="loginForm" class="space-y-4">
-      <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-      <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      <input type="text" id="empId" name="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      <input type="password" id="pin" name="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
 
       <div class="text-sm flex justify-between items-center">
         <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
         <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
       </div>
-      <div id="resetPinFields" class="hidden space-y-2">
-  <input type="password" id="newPin" placeholder="New PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-  <input type="password" id="confirmPin" placeholder="Confirm PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-</div>
 
+      <div id="resetPinFields" class="hidden space-y-2">
+        <input type="password" id="newPin" placeholder="New PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+        <input type="password" id="confirmPin" placeholder="Confirm PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      </div>
 
       <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
       <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
@@ -64,12 +65,17 @@
       const res = await fetch(`/.netlify/functions/check-reset-pin?emp_id=${empId}`);
       const data = await res.json();
 
+      const pinField = document.getElementById("pin");
+      const resetFields = document.getElementById("resetPinFields");
+
       if (data.reset_pin_ready === true) {
-        document.getElementById("pin").classList.add("hidden");
-        document.getElementById("resetPinFields").classList.remove("hidden");
+        pinField.classList.add("hidden");
+        pinField.disabled = true;
+        resetFields.classList.remove("hidden");
       } else {
-        document.getElementById("pin").classList.remove("hidden");
-        document.getElementById("resetPinFields").classList.add("hidden");
+        pinField.classList.remove("hidden");
+        pinField.disabled = false;
+        resetFields.classList.add("hidden");
       }
     } catch (err) {
       console.error("Failed to check reset pin status", err);
@@ -117,7 +123,7 @@
       return;
     }
 
-    // 🔐 Normal login flow
+    // Normal login
     const pin = document.getElementById("pin").value.trim();
 
     const res = await fetch("/.netlify/functions/login", {
@@ -184,7 +190,7 @@
           ? "admin_dashboard.html"
           : "employee_dashboard.html";
       } else {
-        mfaError.textContent = result.message || "Invalid MFA code. Please try again.";
+        mfaError.textContent = result.message || "Invalid MFA code.";
         mfaError.classList.remove("hidden");
         document.getElementById("mfaCode").value = "";
       }
@@ -207,7 +213,7 @@
     })
     .then(res => {
       if (res.status === 200) {
-        alert("Your request has been sent. Please stand by while the admin reviews and initiates the PIN reset. You will be notified once it's ready to proceed.");
+        alert("Your request has been sent. Please stand by while the admin reviews and initiates the PIN reset. You will be notified once it's ready.");
       } else {
         alert("Unable to process your request. Please contact support.");
       }
@@ -224,7 +230,5 @@
     }, 4000);
   }
 </script>
-
-
 </body>
 </html>
