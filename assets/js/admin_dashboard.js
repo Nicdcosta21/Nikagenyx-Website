@@ -2,24 +2,35 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
-  if (!session) return (window.location.href = "/employee_portal.html");
+  if (!session) {
+    window.location.href = "/employee_portal.html";
+    return;
+  }
 
-  const currentUser = JSON.parse(session);
+  let currentUser;
+  try {
+    currentUser = JSON.parse(session);
+  } catch (e) {
+    console.error("Invalid session format:", e);
+    return (window.location.href = "/employee_portal.html");
+  }
+
   await loadPayrollMode();
   await fetchEmployees(currentUser);
-  // ✅ Fill Admin Profile Section
-document.getElementById("p_name").textContent = currentUser.name || "-";
-document.getElementById("p_phone").textContent = currentUser.phone || "-";
-document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-document.getElementById("p_dept").textContent = currentUser.department || "-";
-document.getElementById("p_role").textContent = currentUser.role || "-";
 
+  // ✅ Fill Admin Profile Section
+  document.getElementById("p_name").textContent = currentUser.name || "-";
+  document.getElementById("p_phone").textContent = currentUser.phone || "-";
+  document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+  document.getElementById("p_dept").textContent = currentUser.department || "-";
+  document.getElementById("p_role").textContent = currentUser.role || "-";
 
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", filterEmployeeTable);
   }
 });
+
 
 function logout() {
   localStorage.removeItem("emp_session");
@@ -37,12 +48,15 @@ function formatDate(dob) {
 
 
 function showToast(msg) {
+  const old = document.querySelector(".toast");
+  if (old) old.remove(); // clear last
   const toast = document.createElement("div");
-  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
+  toast.className = "toast fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }
+
 
 function filterEmployeeTable() {
   const searchInput = document.getElementById("search");
@@ -571,6 +585,7 @@ document.addEventListener('change', (e) => {
 
 window.openEmailModal = function () {
   const selectedCheckboxes = Array.from(document.querySelectorAll('.employeeCheckbox:checked'));
+
   if (selectedCheckboxes.length === 0) {
     showToast("Please select at least one employee.");
     return;
@@ -580,13 +595,25 @@ window.openEmailModal = function () {
   localStorage.setItem("selected_emp_ids", JSON.stringify(selectedIds));
 
   const session = localStorage.getItem("emp_session");
-  if (session) {
-    const { email } = JSON.parse(session);
-    document.getElementById("emailFrom").value = email || "n.dcosta@nikagenyx.com";
+  const fromInput = document.getElementById("emailFrom");
+
+  if (session && fromInput) {
+    try {
+      const { email } = JSON.parse(session);
+      fromInput.value = email || "n.dcosta@nikagenyx.com";
+    } catch {
+      fromInput.value = "n.dcosta@nikagenyx.com";
+    }
   }
 
-  document.getElementById("emailModal").classList.remove("hidden");
+  const modal = document.getElementById("emailModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  } else {
+    showToast("❌ Email modal not found.");
+  }
 };
+
 
 window.closeEmailModal = function () {
   document.getElementById("emailModal").classList.add("hidden");
@@ -615,11 +642,16 @@ document.getElementById("emailForm").addEventListener("submit", async (e) => {
   });
 
   const result = await res.json();
-  if (res.ok) {
-    showToast(result.message || "✅ Emails sent successfully.");
-    document.getElementById("emailModal").classList.add("hidden");
-  } else {
-    showToast(result.message || "❌ Email sending failed.");
-    console.error(result);
-  }
-});
+if (res.ok) {
+  showToast(result.message || "✅ Emails sent successfully.");
+  document.getElementById("emailModal").classList.add("hidden");
+
+  // ✅ Add this here to clear selections
+  document.querySelectorAll('.employeeCheckbox').forEach(cb => cb.checked = false);
+  document.getElementById('selectAllCheckbox').checked = false;
+  
+} else {
+  showToast(result.message || "❌ Email sending failed.");
+  console.error(result);
+}
+
