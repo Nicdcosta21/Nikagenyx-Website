@@ -2,7 +2,9 @@
   "name": "nikagenyx-site",
   "version": "1.0.0",
   "scripts": {
-    "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify"
+    "prebuild": "mkdir -p assets/css",
+    "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify",
+    "postinstall": "npx update-browserslist-db@latest"
   },
   "dependencies": {
     "cookie": "^1.0.2",
