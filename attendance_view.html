@@ -162,7 +162,7 @@
         box.title = formatAMPM(i);
 
         box.onclick = () => toggleBlock(box, emp.emp_id);
-        box.onmouseover = () => dragBlock(box, emp.emp_id);
+        box.onmouseover = () => dragToggleBlock(box, emp.emp_id);
         blockWrap.appendChild(box);
       });
 
@@ -200,14 +200,16 @@
     if (emp) emp.blockStates[index] = next;
   }
 
-  function dragBlock(box, empId) {
+  function dragToggleBlock(box, empId) {
     if (!mouseDown) return;
+    const current = box.dataset.state;
+    const newState = current === dragStatus ? "A" : dragStatus;
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
     if (!emp) return;
-    box.dataset.state = dragStatus;
-    box.className = `half-hour-box ${dragStatus}`;
-    emp.blockStates[index] = dragStatus;
+    box.dataset.state = newState;
+    box.className = `half-hour-box ${newState}`;
+    emp.blockStates[index] = newState;
   }
 
   async function submit(empId) {
