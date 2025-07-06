@@ -37,11 +37,14 @@
       background-color: #6366f1;
       color: white;
     }
+
     .half-hour-box {
-      width: 100%;
+      width: 12px;
       height: 24px;
       border-radius: 3px;
+      display: inline-block;
     }
+
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
     .L { background-color: #facc15; }
@@ -52,15 +55,17 @@
     .row-red { background-color: #ef444433; }
 
     .time-labels {
+      display: grid;
+      grid-template-columns: repeat(48, 12px);
+      gap: 2px;
+      font-size: 0.7rem;
+      color: white;
+      text-align: center;
       position: sticky;
       top: 0;
       z-index: 50;
       background: #1e293b;
-    }
-
-    .time-labels div {
-      font-size: 0.7rem;
-      padding: 2px 0;
+      padding-bottom: 0.5rem;
     }
   </style>
 </head>
@@ -78,8 +83,8 @@
     </select>
   </div>
 
-  <div class="time-labels grid grid-cols-48 gap-[1px] text-center text-white mb-2" id="timeLabels"></div>
-
+  <!-- ✅ Only one timeLabels container -->
+  <div id="timeLabels" class="time-labels"></div>
   <div id="attendanceGrid"></div>
 
 <script>
@@ -146,6 +151,7 @@
     const { data } = await res.json();
     employees = data;
     grid.innerHTML = "";
+    renderTimeLabels(); // <- Important
 
     data.forEach(emp => {
       const row = document.createElement("div");
@@ -248,7 +254,6 @@
     loadAttendance();
   }
 
-  renderTimeLabels();
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
