@@ -72,6 +72,39 @@
     <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
   </div>
 
+  <!-- Add this HTML block right below the Export CSV button -->
+<button onclick="openEmailModal()" class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700">Send Email</button>
+
+<!-- Email Modal -->
+<div id="emailModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-70 flex items-center justify-center">
+  <div class="bg-white text-black w-11/12 md:w-2/3 lg:w-1/2 rounded-xl p-6 relative shadow-xl max-h-[90vh] overflow-y-auto">
+    <button onclick="closeEmailModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black">&times;</button>
+    <h2 class="text-xl font-bold mb-4">Send Email to Selected Employees</h2>
+    <form id="emailForm" enctype="multipart/form-data">
+      <div class="mb-4">
+        <label for="emailFrom" class="block font-semibold mb-1">From:</label>
+        <input type="email" id="emailFrom" class="w-full border border-gray-300 rounded px-3 py-2" readonly />
+      </div>
+      <div class="mb-4">
+        <label for="emailSubject" class="block font-semibold mb-1">Subject:</label>
+        <input type="text" id="emailSubject" class="w-full border border-gray-300 rounded px-3 py-2" required />
+      </div>
+      <div class="mb-4">
+        <label for="emailBody" class="block font-semibold mb-1">Message Body:</label>
+        <textarea id="emailBody" rows="8" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Dear {{name}},\n\nYour role is {{role}}..." required></textarea>
+      </div>
+      <div class="mb-4">
+        <label for="emailAttachment" class="block font-semibold mb-1">Attach File (optional):</label>
+        <input type="file" id="emailAttachment" class="w-full border border-gray-300 rounded px-3 py-2" />
+      </div>
+      <div class="flex justify-end gap-4">
+        <button type="button" onclick="closeEmailModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Send</button>
+      </div>
+    </form>
+  </div>
+</div>
+
   <div class="overflow-x-auto mb-10">
     <table class="min-w-max table-auto bg-gray-800 border border-gray-700">
 
