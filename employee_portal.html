@@ -139,22 +139,23 @@
 
 
   function handleForgotPIN() {
-    const empId = prompt("Enter your Employee ID to reset your PIN:");
-    if (!empId) return;
+  const empId = prompt("Enter your Employee ID to reset your PIN:");
+  if (!empId) return;
 
-    fetch("/.netlify/functions/forgot-pin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ empId }),
-    })
-    .then(res => {
-      if (res.status === 200) {
-        alert("A reset link or temporary PIN has been sent to your registered email.");
-      } else {
-        alert("Unable to process your request. Please contact support.");
-      }
-    });
-  }
+  fetch("/.netlify/functions/forgot-pin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ empId }),
+  })
+  .then(res => {
+    if (res.status === 200) {
+      alert("A reset link or temporary PIN has been sent to your registered email.");
+    } else {
+      alert("Unable to process your request. Please contact support.");
+    }
+  });
+}
+
 </script>
 
 
