@@ -30,12 +30,13 @@ exports.handler = async (event) => {
       SELECT 
         emp_id, 
         name, 
-        email,              -- included properly
+        email,              
         phone, 
         dob, 
         department, 
         employment_role AS role, 
-        base_salary
+        base_salary,
+        privilege 
       FROM employees
       ORDER BY name ASC
     `);
