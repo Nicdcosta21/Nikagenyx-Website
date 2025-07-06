@@ -118,15 +118,6 @@ async function fetchEmployees(currentUser) {
 });
 
 
-
-    `;
-    table.appendChild(tr);
-    setupRowListeners(tr, emp, currentUser);
-  });
-}
-
-
-
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
   if (resetPinBtn && emp.failed_pin_attempts >= 3) {
