@@ -38,12 +38,12 @@
       color: white;
     }
 
-    .half-hour-box {
-      width: 12px;
-      height: 24px;
-      border-radius: 3px;
-      display: inline-block;
-    }
+   .half-hour-box {
+  width: 12px;
+  height: 24px;
+  display: inline-block;
+  border-radius: 3px;
+}
 
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
@@ -55,18 +55,18 @@
     .row-red { background-color: #ef444433; }
 
     .time-labels {
-      display: grid;
-      grid-template-columns: repeat(48, 12px);
-      gap: 2px;
-      font-size: 0.7rem;
-      color: white;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: #1e293b;
-      padding-bottom: 0.5rem;
-    }
+  display: grid;
+  grid-template-columns: repeat(48, 12px);
+  gap: 2px;
+  font-size: 0.7rem;
+  text-align: center;
+  color: white;
+  background: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding-bottom: 0.5rem;
+}
   </style>
 </head>
 <body>
@@ -85,7 +85,7 @@
 
   <!-- ✅ Only one timeLabels container -->
   <div id="timeLabels" class="time-labels"></div>
-  <div id="attendanceGrid"></div>
+  <div id="attendanceGrid" class="space-y-4"></div>
 
 <script>
   const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
@@ -168,7 +168,8 @@
 
       let summary = { P: 0, A: 0 };
       const blockWrap = document.createElement("div");
-      blockWrap.className = "grid grid-cols-48 gap-[1px]";
+blockWrap.className = "grid grid-cols-48 gap-[2px] mt-1";
+
 
       emp.blockStates.forEach((state, i) => {
         const finalState = ["P", "L", "A", "H"].includes(state) ? state : "A";
