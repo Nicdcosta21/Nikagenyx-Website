@@ -53,28 +53,23 @@
     .row-yellow { background-color: #facc1533; }
     .row-red { background-color: #ef444433; }
 
-    .block-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
-      margin-top: 0.25rem;
-    }
-
     .time-labels {
       position: sticky;
       top: 0;
-      z-index: 20;
-      background: #2d3748;
+      z-index: 50;
+      background: #1e293b;
     }
     .time-labels div {
-      border-bottom: 1px solid #1a202c;
+      font-size: 0.7rem;
+      padding: 2px 0;
     }
   </style>
 </head>
 <body>
-  <h1>🗕️ Employee Attendance - Date View</h1>
+  <h1>📅 Employee Attendance - Date View</h1>
   <div id="monthSelector"></div>
   <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
+
   <div class="text-center mb-4">
     <label class="mr-2">Drag Mode:</label>
     <select id="dragMode" class="bg-gray-800 text-white p-1 rounded">
@@ -84,6 +79,10 @@
     </select>
   </div>
 
+  <!-- ⏰ Floating time labels -->
+  <div class="time-labels grid grid-cols-48 gap-[1px] text-center text-white mb-2" id="timeLabels"></div>
+
+  <!-- 👥 Attendance grid -->
   <div id="attendanceGrid"></div>
 
 <script>
@@ -100,21 +99,18 @@
   document.addEventListener("mouseup", () => mouseDown = false);
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
- function renderTimeLabels(grid) {
-  const labelRow = document.createElement("div");
-  labelRow.className = "time-labels grid grid-cols-48 gap-[1px] text-xs text-center text-white mb-2";
-
-  for (let i = 0; i < 48; i++) {
-    const hour = String(Math.floor(i / 2)).padStart(2, '0');
-    const min = i % 2 === 0 ? '00' : '30';
-    const div = document.createElement("div");
-    div.textContent = `${hour}:${min}`;
-    div.className = "py-1";
-    labelRow.appendChild(div);
-  }
-
-  grid.appendChild(labelRow);
-}
+  // ✅ Render top fixed time labels
+  (function renderTimeLabels() {
+    const container = document.getElementById("timeLabels");
+    container.innerHTML = "";
+    for (let i = 0; i < 48; i++) {
+      const hour = String(Math.floor(i / 2)).padStart(2, '0');
+      const min = i % 2 === 0 ? '00' : '30';
+      const div = document.createElement("div");
+      div.textContent = `${hour}:${min}`;
+      container.appendChild(div);
+    }
+  })();
 
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
@@ -154,7 +150,6 @@
     const { data } = await res.json();
     employees = data;
     grid.innerHTML = "";
-    renderTimeLabels(grid);
 
     data.forEach(emp => {
       const row = document.createElement("div");
@@ -173,7 +168,6 @@
       const blockWrap = document.createElement("div");
       blockWrap.className = "grid grid-cols-48 gap-[1px]";
 
-
       emp.blockStates.forEach((state, i) => {
         const finalState = ["P", "L", "A", "H"].includes(state) ? state : "A";
         summary[finalState] = (summary[finalState] || 0) + 1;
@@ -189,8 +183,8 @@
 
       row.appendChild(blockWrap);
 
-      const info = document.createElement("div");
       const totalHours = summary.P * 0.5;
+      const info = document.createElement("div");
       info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
@@ -260,7 +254,6 @@
 
   renderMonthSelector();
   renderDateSelector();
- 
   loadAttendance();
 </script>
 </body>
