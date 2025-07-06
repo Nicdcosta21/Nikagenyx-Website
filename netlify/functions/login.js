@@ -24,9 +24,10 @@ exports.handler = async (event) => {
       };
     }
 
-    // 🔍 Fetch full employee including failed_pin_attempts
+    // ✅ Fetch full employee data required for dashboard
     const result = await pool.query(
-      'SELECT emp_id, role, pin, failed_pin_attempts FROM employees WHERE emp_id = $1',
+      `SELECT emp_id, name, email, phone, dob, department, role, privilege, pin, failed_pin_attempts
+       FROM employees WHERE emp_id = $1`,
       [empId]
     );
 
@@ -39,7 +40,7 @@ exports.handler = async (event) => {
 
     const user = result.rows[0];
 
-    // 🧠 Validate PIN match (use plain equality for now, but you can hash later)
+    // 🔐 Validate PIN
     if (user.pin !== pin) {
       await pool.query(
         'UPDATE employees SET failed_pin_attempts = failed_pin_attempts + 1 WHERE emp_id = $1',
@@ -50,25 +51,25 @@ exports.handler = async (event) => {
         statusCode: 401,
         body: JSON.stringify({
           message: 'Invalid ID or PIN',
-          failed_pin_attempts: user.failed_pin_attempts + 1, // to reflect post-increment state
+          failed_pin_attempts: user.failed_pin_attempts + 1,
         }),
       };
     }
 
-    // ✅ Correct PIN: reset failed attempts
+    // ✅ Reset failed attempts
     await pool.query(
       'UPDATE employees SET failed_pin_attempts = 0 WHERE emp_id = $1',
       [user.emp_id]
     );
 
-    // ✅ Generate session token
+    // ✅ Generate JWT token
     const token = jwt.sign(
       { emp_id: user.emp_id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
 
-    // ✅ Log session
+    // ✅ Log session in DB
     await pool.query(
       `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
@@ -96,8 +97,14 @@ exports.handler = async (event) => {
         ok: true,
         user: {
           emp_id: user.emp_id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          dob: user.dob,
+          department: user.department,
           role: user.role,
-          failed_pin_attempts: 0, // reset
+          privilege: user.privilege,
+          failed_pin_attempts: 0,
         },
       }),
     };
