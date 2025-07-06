@@ -32,19 +32,22 @@ exports.handler = async (event) => {
       [empId]
     );
 
-    // ✅ Email notification
+    // ✅ Email notification using GoDaddy SMTP
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.ADMIN_EMAIL_USER,
-        pass: process.env.ADMIN_EMAIL_PASS,
+        user: process.env.ADMIN_EMAIL_USER, // e.g. support@nikagenyx.com
+        pass: process.env.ADMIN_EMAIL_PASS, // real password (not app password)
       },
     });
 
+    // ✅ Send the email FROM the actual address (not no-reply)
     await transporter.sendMail({
-      from: '"Nikagenyx System" <no-reply@nikagenyx.com>',
+      from: `"Nikagenyx System" <${process.env.ADMIN_EMAIL_USER}>`,
       to: "n.dcosta@nikagenyx.com",
-      subject: "PIN Reset Request",
+      subject: "🔐 PIN Reset Request",
       text: `Employee ${name} (ID: ${empId}) has requested a PIN reset.`,
     });
 
@@ -53,7 +56,7 @@ exports.handler = async (event) => {
     await client.messages.create({
       from: "whatsapp:+14155238886",
       to: "whatsapp:+919284917644",
-      body: `Employee ${name} (ID: ${empId}) has requested a PIN reset.`,
+      body: `📢 Employee ${name} (ID: ${empId}) has requested a PIN reset.`,
     });
 
     return {
