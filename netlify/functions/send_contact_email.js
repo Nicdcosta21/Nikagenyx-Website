@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const fetch = require("node-fetch"); 
+const fetch = require("node-fetch");
 const { v4: uuidv4 } = require("uuid");
 
 exports.handler = async (event) => {
@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   const { name, email, message, token } = JSON.parse(event.body);
   const RECAPTCHA_SECRET = "6Lev5nkrAAAAAKenvXZzIuidjO-MVk7Yjf74a1vM";
 
-  // Verify reCAPTCHA
+  // 1. Verify reCAPTCHA
   const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -25,26 +25,29 @@ exports.handler = async (event) => {
     };
   }
 
+  // 2. Generate ticket ID
   const ticketId = `NGX-${uuidv4().split("-")[0].toUpperCase()}`;
 
+  // 3. Define recipients
   const teamRecipients = [
     "n.dcosta@nikagenyx.com",
     "k.fernandes@nikagenyx.com",
     "consultant@nikagenyx.com"
   ];
 
+  // 4. Setup GoDaddy SMTP transport
   const transporter = nodemailer.createTransport({
-  host: "smtpout.secureserver.net",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+    host: "smtpout.secureserver.net",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER, // consultant@nikagenyx.com
+      pass: process.env.EMAIL_PASS  // NGXConsultant@001
+    }
+  });
 
   try {
-    // Send internal team email
+    // 5. Internal admin notification
     await transporter.sendMail({
       from: `"Nikagenyx Website" <${process.env.EMAIL_USER}>`,
       to: teamRecipients.join(","),
@@ -52,7 +55,7 @@ exports.handler = async (event) => {
       text: `Ticket ID: ${ticketId}\nName: ${name}\nEmail: ${email}\nMessage:\n${message}`
     });
 
-    // Send confirmation email to client
+    // 6. Client acknowledgment email
     await transporter.sendMail({
       from: `"Nikagenyx Vision Tech" <${process.env.EMAIL_USER}>`,
       to: email,
