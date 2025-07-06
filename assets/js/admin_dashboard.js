@@ -109,7 +109,8 @@ async function fetchEmployees(currentUser) {
         <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
         <td class="p-2 border wrap">${emp.name}</td>
         <td class="p-2 border">${emp.phone}</td>
-        <td class="p-2 border">${emp.dob}</td>
+        <td class="p-2 border">${formatDate(emp.dob)}</td>
+
         <td class="p-2 border">
           <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
           <div class="mt-1 flex items-center gap-1">
