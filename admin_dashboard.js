@@ -28,6 +28,12 @@ function showToast(msg, isError = false) {
   setTimeout(() => toast.remove(), 3000);
 }
 
+// select all checkboxes
+function toggleAllCheckboxes(masterCheckbox) {
+  const checkboxes = document.querySelectorAll(".employee-checkbox");
+  checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+}
+
 //--- DATA FETCHING & INITIALIZATION ---//
 
 async function loadPayrollMode() {
@@ -73,7 +79,10 @@ async function fetchEmployees(currentUser) {
       const tr = document.createElement("tr");
       tr.id = `row-${emp.emp_id}`;
       tr.innerHTML = `
-        <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
+        <td class="border p-2">
+          <input type="checkbox" class="employee-checkbox" value="${emp.emp_id}">
+        </td>
+        <td class="border p-2 cursor-pointer text-blue-400 hover:underline" title="View full profile" onclick="showEmployeeDetails('${emp.emp_id}')>${emp.emp_id}</td>
         <td class="border p-2" data-field="name">${emp.name}</td>
         <td class="border p-2" data-field="phone">${emp.phone || '-'}</td>
         <td class="border p-2" data-field="dob">${formatDate(emp.dob)}</td>
@@ -509,3 +518,15 @@ window.showEmployeeDetails = async function(empId) {
 window.closeModal = function () {
   document.getElementById('employeeModal').classList.add('hidden');
 };
+
+// send bulk email
+function sendBulkEmail() {
+  const selected = [...document.querySelectorAll('.employee-checkbox:checked')];
+  if (selected.length === 0) {
+    return alert("Please select at least one employee to send an email.");
+  }
+  const ids = selected.map(cb => cb.value);
+  const queryString = ids.map(id => `id=${encodeURIComponent(id)}`).join('&');
+  window.location.href = `compose_email.html?${queryString}`;
+}
+
