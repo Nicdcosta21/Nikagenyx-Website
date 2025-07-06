@@ -100,7 +100,16 @@ async function fetchEmployees(currentUser) {
         <td class="p-2 border wrap">${emp.name}</td>
         <td class="p-2 border">${emp.phone}</td>
         <td class="p-2 border">${emp.dob}</td>
-        <td class="p-2 border"></td>
+        <td class="p-2 border">
+          <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
+          <div class="mt-1 flex items-center gap-1">
+            <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
+              <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
+              <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
+            </select>
+            <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+          </div>
+        </td>
         <td class="p-2 border">${emp.department || "-"}</td>
         <td class="p-2 border">
           <div class="flex items-center justify-center gap-1">
@@ -112,26 +121,6 @@ async function fetchEmployees(currentUser) {
         </td>
       `;
 
-      // 👉 Insert privilege dropdown + confirm button
-      const privilegeCell = tr.children[4];
-      const privilegeSelect = document.createElement("select");
-      privilegeSelect.className = "privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm";
-
-      ["user", "admin"].forEach(level => {
-        const option = document.createElement("option");
-        option.value = level;
-        option.textContent = level.charAt(0).toUpperCase() + level.slice(1);
-        if (emp.privilege === level) option.selected = true;
-        privilegeSelect.appendChild(option);
-      });
-
-      const confirmBtn = document.createElement("button");
-      confirmBtn.textContent = "Confirm";
-      confirmBtn.className = "confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs ml-2";
-
-      privilegeCell.appendChild(privilegeSelect);
-      privilegeCell.appendChild(confirmBtn);
-
       tbody.appendChild(tr);
       setupRowListeners(tr, emp, currentUser);
     });
@@ -140,7 +129,6 @@ async function fetchEmployees(currentUser) {
     showToast("Failed to load employee data.");
   }
 }
-
 
 
 function setupRowListeners(tr, emp, currentUser) {
