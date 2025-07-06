@@ -569,3 +569,57 @@ document.addEventListener('change', (e) => {
   }
 });
 
+window.openEmailModal = function () {
+  const selectedCheckboxes = Array.from(document.querySelectorAll('.employeeCheckbox:checked'));
+  if (selectedCheckboxes.length === 0) {
+    showToast("Please select at least one employee.");
+    return;
+  }
+
+  const selectedIds = selectedCheckboxes.map(cb => cb.value);
+  localStorage.setItem("selected_emp_ids", JSON.stringify(selectedIds));
+
+  const session = localStorage.getItem("emp_session");
+  if (session) {
+    const { email } = JSON.parse(session);
+    document.getElementById("emailFrom").value = email || "n.dcosta@nikagenyx.com";
+  }
+
+  document.getElementById("emailModal").classList.remove("hidden");
+};
+
+window.closeEmailModal = function () {
+  document.getElementById("emailModal").classList.add("hidden");
+};
+
+document.getElementById("emailForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+  if (selectedIds.length === 0) return showToast("No employees selected");
+
+  const from = document.getElementById("emailFrom").value;
+  const subject = document.getElementById("emailSubject").value;
+  const body = document.getElementById("emailBody").value;
+  const attachment = document.getElementById("emailAttachment").files[0];
+
+  const formData = new FormData();
+  formData.append("from", from);
+  formData.append("subject", subject);
+  formData.append("body", body);
+  formData.append("recipients", JSON.stringify(selectedIds));
+  if (attachment) formData.append("attachment", attachment);
+
+  const res = await fetch("/.netlify/functions/send_bulk_email", {
+    method: "POST",
+    body: formData,
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    showToast(result.message || "✅ Emails sent successfully.");
+    document.getElementById("emailModal").classList.add("hidden");
+  } else {
+    showToast(result.message || "❌ Email sending failed.");
+    console.error(result);
+  }
+});
