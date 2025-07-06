@@ -23,6 +23,11 @@
         <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
         <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
       </div>
+      <div id="resetPinFields" class="hidden space-y-2">
+  <input type="password" id="newPin" placeholder="New PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+  <input type="password" id="confirmPin" placeholder="Confirm PIN" class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+</div>
+
 
       <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
       <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
@@ -51,12 +56,69 @@
 <script>
   let cachedUserData = null;
 
+  document.getElementById("empId").addEventListener("blur", async () => {
+    const empId = document.getElementById("empId").value.trim();
+    if (!empId) return;
+
+    try {
+      const res = await fetch(`/.netlify/functions/check-reset-pin?emp_id=${empId}`);
+      const data = await res.json();
+
+      if (data.reset_pin_ready === true) {
+        document.getElementById("pin").classList.add("hidden");
+        document.getElementById("resetPinFields").classList.remove("hidden");
+      } else {
+        document.getElementById("pin").classList.remove("hidden");
+        document.getElementById("resetPinFields").classList.add("hidden");
+      }
+    } catch (err) {
+      console.error("Failed to check reset pin status", err);
+    }
+  });
+
   document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     const empId = document.getElementById("empId").value.trim();
-    const pin = document.getElementById("pin").value.trim();
     const error = document.getElementById("error");
     error.classList.add("hidden");
+
+    const pinFieldHidden = document.getElementById("pin").classList.contains("hidden");
+
+    if (pinFieldHidden) {
+      const newPin = document.getElementById("newPin").value.trim();
+      const confirmPin = document.getElementById("confirmPin").value.trim();
+
+      if (!newPin || !confirmPin) {
+        error.textContent = "Please enter and confirm your new PIN.";
+        error.classList.remove("hidden");
+        return;
+      }
+
+      if (newPin !== confirmPin) {
+        error.textContent = "New PINs do not match.";
+        error.classList.remove("hidden");
+        return;
+      }
+
+      const res = await fetch("/.netlify/functions/confirm-pin-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empId, newPin }),
+      });
+
+      if (res.status === 200) {
+        showToast("PIN updated successfully. Please log in.");
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        error.textContent = "Unable to reset PIN. Please contact admin.";
+        error.classList.remove("hidden");
+      }
+
+      return;
+    }
+
+    // 🔐 Normal login flow
+    const pin = document.getElementById("pin").value.trim();
 
     const res = await fetch("/.netlify/functions/login", {
       method: "POST",
@@ -70,7 +132,6 @@
       const user = result.user;
       localStorage.setItem("emp_session", JSON.stringify(user));
 
-      // ✅ Skip MFA for NGX001
       if (user.emp_id === "NGX001") {
         window.location.href = user.role === "admin"
           ? "admin_dashboard.html"
@@ -112,10 +173,7 @@
       const res = await fetch("/.netlify/functions/verify-mfa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emp_id: cachedUserData.emp_id,
-          token: mfaCode
-        }),
+        body: JSON.stringify({ emp_id: cachedUserData.emp_id, token: mfaCode }),
       });
 
       const result = await res.json();
@@ -149,7 +207,7 @@
     })
     .then(res => {
       if (res.status === 200) {
-        alert("A reset link or temporary PIN has been sent to your registered email.");
+        alert("Your request has been sent. Please stand by while the admin reviews and initiates the PIN reset. You will be notified once it's ready to proceed.");
       } else {
         alert("Unable to process your request. Please contact support.");
       }
@@ -166,6 +224,7 @@
     }, 4000);
   }
 </script>
+
 
 </body>
 </html>
