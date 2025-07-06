@@ -3,22 +3,20 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify"
-
   },
   "dependencies": {
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "exceljs": "^4.3.0",
-    "formidable": "^3.5.0",
     "jsonwebtoken": "^9.0.2",
+    "multiparty": "^4.2.2",
+    "node-fetch": "^2.6.7",
+    "nodemailer": "^6.9.8",
     "pg": "^8.11.0",
     "qrcode": "^1.5.1",
     "speakeasy": "^2.0.0",
-    "nodemailer": "^6.9.8",
-    "twilio": "^4.20.0",
     "tailwindcss": "^3.4.1",
-    "node-fetch": "^2.6.7"
-
+    "twilio": "^4.20.0"
   },
   "devDependencies": {
     "netlify-cli": "^22.2.1"
