@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=6Lev5nkrAAAAACVBHVYtWF32xGnCaC6SiZcv4x49"></script>
 
   <style>
     html, body {
@@ -80,7 +80,6 @@
         <label class="block text-sm mb-1" for="message">Message</label>
         <textarea id="message" rows="5" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-purple-600"></textarea>
       </div>
-      <div class="g-recaptcha" data-sitekey="6Lev5nkrAAAAACVBHVYtWF32xGnCaC6SiZcv4x49"></div>
       <button type="submit" class="w-full py-3 bg-purple-700 hover:bg-purple-800 rounded-lg text-white font-semibold transition duration-200">
         Send Message
       </button>
@@ -103,42 +102,36 @@
   });
 </script>
 
-<!-- Form Submission Script -->
+<!-- Form Submission with reCAPTCHA v3 -->
 <script>
-  document.getElementById("contactForm").addEventListener("submit", async function (e) {
+  document.getElementById("contactForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-    const message = document.getElementById("message").value;
-    const token = grecaptcha.getResponse();
+    grecaptcha.ready(function () {
+      grecaptcha.execute("6Lev5nkrAAAAACVBHVYtWF32xGnCaC6SiZcv4x49", { action: "submit" }).then(function (token) {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const message = document.getElementById("message").value;
 
-    const status = document.getElementById("formStatus");
-    if (!token) {
-      status.textContent = "❌ Please complete the reCAPTCHA.";
-      return;
-    }
-
-    status.textContent = "Sending...";
-
-    try {
-      const res = await fetch("/.netlify/functions/send_contact_email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message, token })
+        fetch("/.netlify/functions/send_contact_email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, message, token })
+        })
+        .then(res => res.json())
+        .then(data => {
+          const status = document.getElementById("formStatus");
+          if (data.success) {
+            status.innerHTML = `✅ Message sent! Ticket ID: <strong>${data.ticket_id}</strong>`;
+            document.getElementById("contactForm").reset();
+          } else {
+            status.textContent = "❌ Failed to send message. Try again later.";
+          }
+        })
+        .catch(() => {
+          document.getElementById("formStatus").textContent = "❌ Network error. Try again later.";
+        });
       });
-
-      const result = await res.json();
-      if (res.ok) {
-        status.innerHTML = `✅ Message sent! Ticket ID: <strong>${result.ticket_id}</strong>`;
-        document.getElementById("contactForm").reset();
-        grecaptcha.reset();
-      } else {
-        status.textContent = "❌ Failed to send message. Try again later.";
-      }
-    } catch (err) {
-      console.error("Submission error:", err);
-      status.textContent = "❌ Network error. Try again later.";
-    }
+    });
   });
 </script>
 
