@@ -69,14 +69,19 @@
 
   <div class="mb-4 flex flex-col md:flex-row gap-4">
     <input id="search" type="text" placeholder="Search by name or ID" class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3">
-    <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+    <div class="flex gap-2">
+      <button onclick="exportCSV()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">Export CSV</button>
+      <button onclick="sendBulkEmail()" class="bg-indigo-600 px-4 py-2 rounded hover:bg-indigo-700">Send Email</button>
+    </div>
   </div>
 
   <div class="overflow-x-auto mb-10">
     <table class="min-w-max table-auto bg-gray-800 border border-gray-700">
-
       <thead class="bg-gray-700">
         <tr>
+          <th class="p-2 border">
+            <input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes(this)">
+          </th>
           <th class="p-2 border">ID</th>
           <th class="p-2 border">Name</th>         
           <th class="p-2 border">Phone</th>
