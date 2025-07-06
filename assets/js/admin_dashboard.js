@@ -82,41 +82,66 @@ async function loadPayrollMode() {
 }
 
 async function fetchEmployees(currentUser) {
-  const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-  if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
+  try {
+    const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
+    if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
 
-  const { employees } = await res.json();
-  const table = document.getElementById("employeeTable");
-  if (!table) return;
+    const data = await res.json();
+    const employees = data.employees;
+    const tbody = document.getElementById("employeeTable");
+    tbody.innerHTML = "";
 
-  employees.forEach(emp => {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td class="border p-2 cursor-pointer text-blue-400 hover:underline" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
-    <td class="border p-2 wrap">${emp.name}</td> <!-- ✅ wrap applied -->
-    <td class="border p-2" data-field="phone">${emp.phone || '-'}</td>
-    <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-    <td class="border p-2 wrap" data-field="role">${emp.role || '-'}</td> <!-- ✅ wrap applied -->
-    <td class="border p-2" data-field="department">${emp.department || '-'}</td>
-    <td class="border p-2" data-field="email">${emp.email || '-'}</td>
-    <td class="border p-2">
-      <div class="flex flex-wrap gap-1 justify-center items-center">
-        <button class="reset-pin bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs">Reset PIN</button>
-        <button class="reset-mfa bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs">Reset MFA</button>
-        <button class="edit bg-purple-500 hover:bg-purple-600 px-2 py-1 rounded text-xs">Edit</button>
-        <button class="delete bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs">Delete</button>
-        <select class="privilege-select text-xs bg-gray-700 text-white border px-2 py-1 rounded">
-          <option value="user" ${emp.privilege === 'user' ? 'selected' : ''}>User</option>
-          <option value="admin" ${emp.privilege === 'admin' ? 'selected' : ''}>Admin</option>
-        </select>
-        <button class="confirm-privilege bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs">Confirm</button>
-      </div>
-    </td>
-  `;
-  table.appendChild(tr);
-  setupRowListeners(tr, emp, currentUser);
-});
+    employees.forEach(emp => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-gray-700";
+
+      tr.innerHTML = `
+        <td class="p-2 border">${emp.emp_id}</td>
+        <td class="p-2 border wrap">${emp.name}</td>
+        <td class="p-2 border">${emp.phone}</td>
+        <td class="p-2 border">${emp.dob}</td>
+        <td class="p-2 border"></td>
+        <td class="p-2 border">${emp.department || "-"}</td>
+        <td class="p-2 border">
+          <div class="flex items-center justify-center gap-1">
+            <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
+            <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
+            <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
+            <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
+          </div>
+        </td>
+      `;
+
+      // 👉 Insert privilege dropdown + confirm button
+      const privilegeCell = tr.children[4];
+      const privilegeSelect = document.createElement("select");
+      privilegeSelect.className = "privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm";
+
+      ["user", "admin"].forEach(level => {
+        const option = document.createElement("option");
+        option.value = level;
+        option.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+        if (emp.privilege === level) option.selected = true;
+        privilegeSelect.appendChild(option);
+      });
+
+      const confirmBtn = document.createElement("button");
+      confirmBtn.textContent = "Confirm";
+      confirmBtn.className = "confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs ml-2";
+
+      privilegeCell.appendChild(privilegeSelect);
+      privilegeCell.appendChild(confirmBtn);
+
+      tbody.appendChild(tr);
+      setupRowListeners(tr, emp, currentUser);
+    });
+  } catch (err) {
+    console.error("Error loading employees:", err);
+    showToast("Failed to load employee data.");
+  }
 }
+
+
 
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
@@ -179,24 +204,24 @@ function setupRowListeners(tr, emp, currentUser) {
     };
   }
 
-  // ✅ FIXED: Privilege logic now scoped correctly
+  // ✅ Correct privilege dropdown logic
   const privilegeSelect = tr.querySelector(".privilege-select");
   const confirmBtn = tr.querySelector(".confirm-privilege");
 
   if (privilegeSelect && confirmBtn) {
     confirmBtn.onclick = async () => {
       const newPrivilege = privilegeSelect.value;
-      const res = await fetch("/.netlify/functions/update_privilege", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emp_id: emp.emp_id,
-          privilege: newPrivilege,
-          admin_id: currentUser.emp_id
-        })
-      });
-      const data = await res.json();
-      showToast(data.message || "Privilege updated");
+      try {
+        const res = await fetch("/.netlify/functions/update_privilege", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege })
+        });
+        if (!res.ok) throw new Error();
+        showToast("Privileges updated successfully.");
+      } catch {
+        showToast("Failed to update privileges.");
+      }
     };
   }
 }
