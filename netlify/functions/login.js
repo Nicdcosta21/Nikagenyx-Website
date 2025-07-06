@@ -17,7 +17,6 @@ exports.handler = async (event) => {
 
   try {
     const { empId, pin } = JSON.parse(event.body || '{}');
-
     if (!empId || !pin) {
       return {
         statusCode: 400,
@@ -25,9 +24,10 @@ exports.handler = async (event) => {
       };
     }
 
+    // 🔍 Fetch full employee including failed_pin_attempts
     const result = await pool.query(
-      'SELECT emp_id, role FROM employees WHERE emp_id = $1 AND pin = $2',
-      [empId, pin]
+      'SELECT emp_id, role, pin, failed_pin_attempts FROM employees WHERE emp_id = $1',
+      [empId]
     );
 
     if (result.rows.length === 0) {
@@ -39,12 +39,36 @@ exports.handler = async (event) => {
 
     const user = result.rows[0];
 
+    // 🧠 Validate PIN match (use plain equality for now, but you can hash later)
+    if (user.pin !== pin) {
+      await pool.query(
+        'UPDATE employees SET failed_pin_attempts = failed_pin_attempts + 1 WHERE emp_id = $1',
+        [empId]
+      );
+
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: 'Invalid ID or PIN',
+          failed_pin_attempts: user.failed_pin_attempts + 1, // to reflect post-increment state
+        }),
+      };
+    }
+
+    // ✅ Correct PIN: reset failed attempts
+    await pool.query(
+      'UPDATE employees SET failed_pin_attempts = 0 WHERE emp_id = $1',
+      [user.emp_id]
+    );
+
+    // ✅ Generate session token
     const token = jwt.sign(
       { emp_id: user.emp_id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
 
+    // ✅ Log session
     await pool.query(
       `INSERT INTO sessions (emp_id, token, user_agent, ip_address, created_at, expires_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '2 hours')`,
@@ -52,7 +76,7 @@ exports.handler = async (event) => {
         user.emp_id,
         token,
         event.headers['user-agent'] || 'unknown',
-        event.headers['x-forwarded-for'] || '127.0.0.1'
+        event.headers['x-forwarded-for'] || '127.0.0.1',
       ]
     );
 
@@ -72,8 +96,9 @@ exports.handler = async (event) => {
         ok: true,
         user: {
           emp_id: user.emp_id,
-          role: user.role
-        }
+          role: user.role,
+          failed_pin_attempts: 0, // reset
+        },
       }),
     };
 
