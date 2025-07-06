@@ -38,12 +38,12 @@
       color: white;
     }
 
-   .half-hour-box {
-  width: 12px;
-  height: 24px;
-  display: inline-block;
-  border-radius: 3px;
-}
+    .half-hour-box {
+      width: 12px;
+      height: 24px;
+      border-radius: 3px;
+      display: inline-block;
+    }
 
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
@@ -55,22 +55,22 @@
     .row-red { background-color: #ef444433; }
 
     .time-labels {
-  display: grid;
-  grid-template-columns: repeat(48, 12px);
-  gap: 2px;
-  font-size: 0.7rem;
-  text-align: center;
-  color: white;
-  background: #1e293b;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  padding-bottom: 0.5rem;
-}
+      display: grid;
+      grid-template-columns: repeat(48, 12px);
+      gap: 2px;
+      font-size: 0.6rem;
+      color: white;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #1e293b;
+      padding-bottom: 0.5rem;
+    }
   </style>
 </head>
 <body>
-  <h1>🗕️ Employee Attendance - Date View</h1>
+  <h1>📅 Employee Attendance - Date View</h1>
   <div id="monthSelector"></div>
   <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
 
@@ -83,9 +83,8 @@
     </select>
   </div>
 
-  <!-- ✅ Only one timeLabels container -->
   <div id="timeLabels" class="time-labels"></div>
-  <div id="attendanceGrid" class="space-y-4"></div>
+  <div id="attendanceGrid"></div>
 
 <script>
   const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
@@ -151,7 +150,7 @@
     const { data } = await res.json();
     employees = data;
     grid.innerHTML = "";
-    renderTimeLabels(); // <- Important
+    renderTimeLabels();
 
     data.forEach(emp => {
       const row = document.createElement("div");
@@ -166,10 +165,9 @@
       const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
       emp.blockStates = [...blocks];
 
-      let summary = { P: 0, A: 0 };
+      let summary = { P: 0, A: 0, L: 0, H: 0 };
       const blockWrap = document.createElement("div");
-blockWrap.className = "grid grid-cols-48 gap-[2px] mt-1";
-
+      blockWrap.className = "grid grid-cols-48 gap-[1px]";
 
       emp.blockStates.forEach((state, i) => {
         const finalState = ["P", "L", "A", "H"].includes(state) ? state : "A";
@@ -188,7 +186,7 @@ blockWrap.className = "grid grid-cols-48 gap-[2px] mt-1";
 
       const totalHours = summary.P * 0.5;
       const info = document.createElement("div");
-      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      info.textContent = `P: ${summary.P} | L: ${summary.L} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
 
@@ -208,14 +206,11 @@ blockWrap.className = "grid grid-cols-48 gap-[2px] mt-1";
   }
 
   function toggleBlock(box, empId) {
-    const states = ["A", "P"];
-    let current = box.dataset.state;
-    let next = states[(states.indexOf(current) + 1) % states.length];
-    box.dataset.state = next;
-    box.className = `half-hour-box ${next}`;
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
-    if (emp) emp.blockStates[index] = next;
+    if (emp) emp.blockStates[index] = dragStatus;
   }
 
   function dragBlock(box, empId) {
@@ -223,17 +218,9 @@ blockWrap.className = "grid grid-cols-48 gap-[2px] mt-1";
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
     if (!emp) return;
-    const current = box.dataset.state;
-    if (current === dragStatus) {
-      const newStatus = dragStatus === "P" || dragStatus === "L" ? "A" : "P";
-      box.dataset.state = newStatus;
-      box.className = `half-hour-box ${newStatus}`;
-      emp.blockStates[index] = newStatus;
-    } else {
-      box.dataset.state = dragStatus;
-      box.className = `half-hour-box ${dragStatus}`;
-      emp.blockStates[index] = dragStatus;
-    }
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
+    emp.blockStates[index] = dragStatus;
   }
 
   async function submit(empId) {
