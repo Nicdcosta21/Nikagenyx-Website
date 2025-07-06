@@ -16,18 +16,17 @@
   <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center">Employee Login</h2>
     <form id="loginForm" class="space-y-4">
-  <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-  <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
-  
-  <div class="text-sm flex justify-between items-center">
-    <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
-    <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
-  </div>
+      <input type="text" id="empId" placeholder="Employee ID" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
+      <input type="password" id="pin" placeholder="PIN" required class="w-full px-4 py-2 rounded bg-gray-700 text-white" />
 
-  <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
-  <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
-</form>
+      <div class="text-sm flex justify-between items-center">
+        <a href="https://nikagenyx.com/register_employee.html" class="text-purple-300 hover:underline">Register New Employee</a>
+        <a href="#" onclick="handleForgotPIN()" class="text-blue-400 hover:underline">Forgot PIN?</a>
+      </div>
 
+      <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded">Login</button>
+      <p id="error" class="text-red-400 text-sm mt-2 hidden"></p>
+    </form>
   </div>
 </main>
 
@@ -41,6 +40,9 @@
     <p id="mfaError" class="text-red-400 text-sm mt-2 hidden"></p>
   </div>
 </div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg hidden z-50"></div>
 
 <footer class="bg-gray-800 text-gray-500 text-center py-6 text-sm mt-auto">
   &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
@@ -62,8 +64,9 @@
       body: JSON.stringify({ empId, pin }),
     });
 
+    const result = await res.json();
+
     if (res.status === 200) {
-      const result = await res.json();
       const user = result.user;
       localStorage.setItem("emp_session", JSON.stringify(user));
 
@@ -75,12 +78,16 @@
         return;
       }
 
-      // Otherwise, show MFA modal
       cachedUserData = user;
       document.getElementById("mfaModal").classList.remove("hidden");
+
     } else {
-      error.textContent = "Invalid credentials. Please try again.";
+      error.textContent = result.message || "Invalid credentials.";
       error.classList.remove("hidden");
+
+      if (result.failed_pin_attempts >= 3) {
+        showToast("Too many failed attempts. Ask admin to reset your PIN.");
+      }
     }
   });
 
@@ -95,7 +102,6 @@
       return;
     }
 
-    // Validate MFA code format
     if (!mfaCode || !/^\d{6}$/.test(mfaCode)) {
       mfaError.textContent = "Please enter a valid 6-digit MFA code.";
       mfaError.classList.remove("hidden");
@@ -103,19 +109,16 @@
     }
 
     try {
-      console.log("Verifying MFA for:", cachedUserData.emp_id, "with token:", mfaCode);
-      
       const res = await fetch("/.netlify/functions/verify-mfa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          emp_id: cachedUserData.emp_id, 
-          token: mfaCode 
+        body: JSON.stringify({
+          emp_id: cachedUserData.emp_id,
+          token: mfaCode
         }),
       });
 
       const result = await res.json();
-      console.log("MFA verification response:", res.status, result);
 
       if (res.status === 200 && result.verified) {
         localStorage.setItem("mfa_verified", "true");
@@ -123,13 +126,11 @@
           ? "admin_dashboard.html"
           : "employee_dashboard.html";
       } else {
-        // Show specific error message from server
         mfaError.textContent = result.message || "Invalid MFA code. Please try again.";
         mfaError.classList.remove("hidden");
-        
-        // Clear the input for retry
         document.getElementById("mfaCode").value = "";
       }
+
     } catch (error) {
       console.error("MFA verification error:", error);
       mfaError.textContent = "Network error. Please try again.";
@@ -137,27 +138,34 @@
     }
   }
 
-
   function handleForgotPIN() {
-  const empId = prompt("Enter your Employee ID to reset your PIN:");
-  if (!empId) return;
+    const empId = prompt("Enter your Employee ID to reset your PIN:");
+    if (!empId) return;
 
-  fetch("/.netlify/functions/forgot-pin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ empId }),
-  })
-  .then(res => {
-    if (res.status === 200) {
-      alert("A reset link or temporary PIN has been sent to your registered email.");
-    } else {
-      alert("Unable to process your request. Please contact support.");
-    }
-  });
-}
+    fetch("/.netlify/functions/forgot-pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empId }),
+    })
+    .then(res => {
+      if (res.status === 200) {
+        alert("A reset link or temporary PIN has been sent to your registered email.");
+      } else {
+        alert("Unable to process your request. Please contact support.");
+      }
+    });
+  }
 
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    setTimeout(() => {
+      toast.classList.add("hidden");
+      toast.textContent = "";
+    }, 4000);
+  }
 </script>
-
 
 </body>
 </html>
