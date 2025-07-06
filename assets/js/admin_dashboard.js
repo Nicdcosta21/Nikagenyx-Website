@@ -92,13 +92,11 @@ async function fetchEmployees(currentUser) {
   employees.forEach(emp => {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td class="border p-2 cursor-pointer text-blue-400 hover:underline" onclick="showEmployeeDetails('${emp.emp_id}')">
-      ${emp.emp_id}
-    </td>
-    <td class="border p-2 wrap">${emp.name}</td>
+    <td class="border p-2 cursor-pointer text-blue-400 hover:underline" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
+    <td class="border p-2 wrap">${emp.name}</td> <!-- ✅ wrap applied -->
     <td class="border p-2" data-field="phone">${emp.phone || '-'}</td>
     <td class="border p-2">${emp.dob ? formatDate(emp.dob) : '-'}</td>
-    <td class="border p-2 wrap" data-field="role">${emp.role || '-'}</td>
+    <td class="border p-2 wrap" data-field="role">${emp.role || '-'}</td> <!-- ✅ wrap applied -->
     <td class="border p-2" data-field="department">${emp.department || '-'}</td>
     <td class="border p-2" data-field="email">${emp.email || '-'}</td>
     <td class="border p-2">
@@ -118,6 +116,7 @@ async function fetchEmployees(currentUser) {
   table.appendChild(tr);
   setupRowListeners(tr, emp, currentUser);
 });
+
 
 
     `;
