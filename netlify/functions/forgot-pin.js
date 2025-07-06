@@ -54,10 +54,15 @@ exports.handler = async (event) => {
     // ✅ WhatsApp via Twilio
     const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
     await client.messages.create({
-      from: "whatsapp:+14155238886",
-      to: "whatsapp:+919284917644",
-      body: `📢 Employee ${name} (ID: ${empId}) has requested a PIN reset.`,
-    });
+  from: "whatsapp:+14155238886",
+  to: "whatsapp:+919284917644",
+  contentSid: "HXb5b62575e6e4ff6129ad7c8efe1f983e", // your actual approved template SID
+  contentVariables: JSON.stringify({
+    "1": name,
+    "2": empId
+  }),
+});
+
 
     return {
       statusCode: 200,
