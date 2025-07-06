@@ -96,7 +96,7 @@ async function fetchEmployees(currentUser) {
       tr.className = "border-b border-gray-700";
 
       tr.innerHTML = `
-        <td class="p-2 border">${emp.emp_id}</td>
+        <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
         <td class="p-2 border wrap">${emp.name}</td>
         <td class="p-2 border">${emp.phone}</td>
         <td class="p-2 border">${emp.dob}</td>
