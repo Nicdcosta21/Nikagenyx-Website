@@ -121,24 +121,6 @@ async function fetchEmployees(currentUser) {
 }
 
 
-const privilegeSelect = tr.querySelector(".privilege-select");
-const confirmBtn = tr.querySelector(".confirm-privilege");
-
-confirmBtn.onclick = async () => {
-  const newPrivilege = privilegeSelect.value;
-  const res = await fetch("/.netlify/functions/update_privilege", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      emp_id: emp.emp_id,
-      privilege: newPrivilege,
-      admin_id: currentUser.emp_id
-    })
-  });
-  const data = await res.json();
-  showToast(data.message || "Privilege updated");
-};
-
 
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
@@ -200,7 +182,29 @@ function setupRowListeners(tr, emp, currentUser) {
       showToast(data.message || "Deleted");
     };
   }
+
+  // ✅ FIXED: Privilege logic now scoped correctly
+  const privilegeSelect = tr.querySelector(".privilege-select");
+  const confirmBtn = tr.querySelector(".confirm-privilege");
+
+  if (privilegeSelect && confirmBtn) {
+    confirmBtn.onclick = async () => {
+      const newPrivilege = privilegeSelect.value;
+      const res = await fetch("/.netlify/functions/update_privilege", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emp_id: emp.emp_id,
+          privilege: newPrivilege,
+          admin_id: currentUser.emp_id
+        })
+      });
+      const data = await res.json();
+      showToast(data.message || "Privilege updated");
+    };
+  }
 }
+
 
 function showMfaModal(data, empId) {
   const modal = document.createElement("div");
