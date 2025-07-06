@@ -553,3 +553,19 @@ window.exportCSV = async function() {
     showToast('❌ Export failed');
   }
 };
+
+// --- Bulk Selection Checkbox Logic ---
+function toggleSelectAll(masterCheckbox) {
+  const checkboxes = document.querySelectorAll('.employeeCheckbox');
+  checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+}
+
+// Keep master checkbox in sync when individual checkboxes change
+document.addEventListener('change', (e) => {
+  if (e.target.classList.contains('employeeCheckbox')) {
+    const all = document.querySelectorAll('.employeeCheckbox');
+    const checked = document.querySelectorAll('.employeeCheckbox:checked');
+    document.getElementById('selectAllCheckbox').checked = all.length === checked.length;
+  }
+});
+
