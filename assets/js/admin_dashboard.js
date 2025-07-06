@@ -109,7 +109,9 @@ async function fetchEmployees(currentUser) {
   try {
     console.log("Fetching employees for:", currentUser);
 
-    const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
+    const res = await fetch("/.netlify/functions/get_employees", {
+      credentials: "include" 
+    });
     console.log("Status from get_employees:", res.status);
 
     if (!res.ok) {
