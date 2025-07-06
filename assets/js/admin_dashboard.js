@@ -134,18 +134,24 @@ async function fetchEmployees(currentUser) {
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
 if (resetPinBtn) {
-  if (emp.failed_pin_attempts >= 3) {
-    resetPinBtn.disabled = false;
-    resetPinBtn.classList.remove("btn-gray");
-    resetPinBtn.classList.add("btn-yellow");
-    resetPinBtn.onclick = () => triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
+  const canReset = emp.failed_pin_attempts >= 3 || emp.reset_pin_ready === true;
+
+  resetPinBtn.disabled = !canReset;
+  resetPinBtn.classList.remove("btn-gray", "btn-yellow");
+  resetPinBtn.classList.add(canReset ? "btn-yellow" : "btn-gray");
+
+  resetPinBtn.title = canReset
+    ? "Click to reset this employee's PIN"
+    : "Reset PIN is only available after 3 failed attempts or a request from employee.";
+
+  if (canReset) {
+    resetPinBtn.onclick = () =>
+      triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
   } else {
-    resetPinBtn.disabled = true;
-    resetPinBtn.classList.remove("btn-yellow");
-    resetPinBtn.classList.add("btn-gray");
     resetPinBtn.onclick = null;
   }
 }
+
 
 
   const resetMfaBtn = tr.querySelector(".reset-mfa");
