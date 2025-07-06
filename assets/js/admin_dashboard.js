@@ -2,35 +2,24 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
-  if (!session) {
-    window.location.href = "/employee_portal.html";
-    return;
-  }
+  if (!session) return (window.location.href = "/employee_portal.html");
 
-  let currentUser;
-  try {
-    currentUser = JSON.parse(session);
-  } catch (e) {
-    console.error("Invalid session format:", e);
-    return (window.location.href = "/employee_portal.html");
-  }
-
+  const currentUser = JSON.parse(session);
   await loadPayrollMode();
   await fetchEmployees(currentUser);
-
   // ✅ Fill Admin Profile Section
-  document.getElementById("p_name").textContent = currentUser.name || "-";
-  document.getElementById("p_phone").textContent = currentUser.phone || "-";
-  document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-  document.getElementById("p_dept").textContent = currentUser.department || "-";
-  document.getElementById("p_role").textContent = currentUser.role || "-";
+document.getElementById("p_name").textContent = currentUser.name || "-";
+document.getElementById("p_phone").textContent = currentUser.phone || "-";
+document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+document.getElementById("p_dept").textContent = currentUser.department || "-";
+document.getElementById("p_role").textContent = currentUser.role || "-";
+
 
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", filterEmployeeTable);
   }
 });
-
 
 function logout() {
   localStorage.removeItem("emp_session");
@@ -48,15 +37,12 @@ function formatDate(dob) {
 
 
 function showToast(msg) {
-  const old = document.querySelector(".toast");
-  if (old) old.remove(); // clear last
   const toast = document.createElement("div");
-  toast.className = "toast fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
+  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }
-
 
 function filterEmployeeTable() {
   const searchInput = document.getElementById("search");
@@ -65,18 +51,12 @@ function filterEmployeeTable() {
   const table = document.getElementById("employeeTable");
   if (!table) return;
   const rows = table.getElementsByTagName("tr");
-
   for (let row of rows) {
-    const cells = row.getElementsByTagName("td");
-    if (!cells || cells.length < 3) continue; // make sure enough cells exist
-
-    const empId = cells[1]?.textContent.toLowerCase() || ""; // ID is in cell 1
-    const empName = cells[2]?.textContent.toLowerCase() || ""; // Name is in cell 2
-
+    const empId = row.cells[0]?.textContent.toLowerCase() || "";
+    const empName = row.cells[1]?.textContent.toLowerCase() || "";
     row.style.display = empId.includes(searchTerm) || empName.includes(searchTerm) ? "" : "none";
   }
 }
-
 
 async function loadPayrollMode() {
   const res = await fetch("/.netlify/functions/get_payroll_mode");
@@ -113,73 +93,56 @@ async function loadPayrollMode() {
 
 async function fetchEmployees(currentUser) {
   try {
-    console.log("Fetching employees for:", currentUser);
-
-    const res = await fetch("/.netlify/functions/get_employees", {
-      credentials: "include" 
-    });
-    console.log("Status from get_employees:", res.status);
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.warn("❌ get_employees failed:", res.status, errText);
-      return;
-    }
+    const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
+    if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
 
     const data = await res.json();
-    console.log("👥 Employees data:", data);
-
     const employees = data.employees;
-    if (!Array.isArray(employees)) {
-      console.error("❌ No employees returned or invalid format");
-      return;
-    }
-
     const tbody = document.getElementById("employeeTable");
     tbody.innerHTML = "";
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
       tr.className = "border-b border-gray-700";
+
       tr.innerHTML = `
-        <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
-        <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
-        <td class="p-2 border wrap">${emp.name}</td>
-        <td class="p-2 border">${emp.phone}</td>
-        <td class="p-2 border">${formatDate(emp.dob)}</td>
-        <td class="p-2 border">
-          <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
-          <div class="mt-1 flex items-center gap-1">
-            <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
-              <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
-              <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
-            </select>
-            <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-          </div>
-        </td>
-        <td class="p-2 border">${emp.department || "-"}</td>
-        <td class="p-2 border">
-          <div class="flex items-center justify-center gap-1">
-            <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
-            <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
-            <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
-            <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
-          </div>
-        </td>
-      `;
+  <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
+  <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
+  <td class="p-2 border wrap">${emp.name}</td>
+  <td class="p-2 border">${emp.phone}</td>
+  <td class="p-2 border">${formatDate(emp.dob)}</td>
+
+  <td class="p-2 border">
+    <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
+    <div class="mt-1 flex items-center gap-1">
+      <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
+        <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
+        <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
+      </select>
+      <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+    </div>
+  </td>
+  <td class="p-2 border">${emp.department || "-"}</td>
+  <td class="p-2 border">
+    <div class="flex items-center justify-center gap-1">
+      <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
+      <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
+      <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
+      <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
+    </div>
+  </td>
+`;
+
+
       tbody.appendChild(tr);
       setupRowListeners(tr, emp, currentUser);
     });
-
-    if (employees.length === 0) {
-      showToast("No employees found.");
-    }
-
   } catch (err) {
-    console.error("❌ Error loading employees:", err);
+    console.error("Error loading employees:", err);
     showToast("Failed to load employee data.");
   }
 }
+
 
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
@@ -608,7 +571,6 @@ document.addEventListener('change', (e) => {
 
 window.openEmailModal = function () {
   const selectedCheckboxes = Array.from(document.querySelectorAll('.employeeCheckbox:checked'));
-
   if (selectedCheckboxes.length === 0) {
     showToast("Please select at least one employee.");
     return;
@@ -618,25 +580,13 @@ window.openEmailModal = function () {
   localStorage.setItem("selected_emp_ids", JSON.stringify(selectedIds));
 
   const session = localStorage.getItem("emp_session");
-  const fromInput = document.getElementById("emailFrom");
-
-  if (session && fromInput) {
-    try {
-      const { email } = JSON.parse(session);
-      fromInput.value = email || "n.dcosta@nikagenyx.com";
-    } catch {
-      fromInput.value = "n.dcosta@nikagenyx.com";
-    }
+  if (session) {
+    const { email } = JSON.parse(session);
+    document.getElementById("emailFrom").value = email || "n.dcosta@nikagenyx.com";
   }
 
-  const modal = document.getElementById("emailModal");
-  if (modal) {
-    modal.classList.remove("hidden");
-  } else {
-    showToast("❌ Email modal not found.");
-  }
+  document.getElementById("emailModal").classList.remove("hidden");
 };
-
 
 window.closeEmailModal = function () {
   document.getElementById("emailModal").classList.add("hidden");
@@ -665,16 +615,11 @@ document.getElementById("emailForm").addEventListener("submit", async (e) => {
   });
 
   const result = await res.json();
-if (res.ok) {
-  showToast(result.message || "✅ Emails sent successfully.");
-  document.getElementById("emailModal").classList.add("hidden");
-
-  // ✅ Add this here to clear selections
-  document.querySelectorAll('.employeeCheckbox').forEach(cb => cb.checked = false);
-  document.getElementById('selectAllCheckbox').checked = false;
-  
-} else {
-  showToast(result.message || "❌ Email sending failed.");
-  console.error(result);
-}
-
+  if (res.ok) {
+    showToast(result.message || "✅ Emails sent successfully.");
+    document.getElementById("emailModal").classList.add("hidden");
+  } else {
+    showToast(result.message || "❌ Email sending failed.");
+    console.error(result);
+  }
+});
