@@ -37,13 +37,12 @@
       background-color: #6366f1;
       color: white;
     }
+
     .half-hour-box {
-      width: 12px;
       height: 24px;
-      margin: 1px;
       border-radius: 3px;
-      display: inline-block;
     }
+
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
     .L { background-color: #facc15; }
@@ -59,6 +58,7 @@
       z-index: 50;
       background: #1e293b;
     }
+
     .time-labels div {
       font-size: 0.7rem;
       padding: 2px 0;
@@ -79,10 +79,8 @@
     </select>
   </div>
 
-  <!-- ⏰ Floating time labels -->
   <div class="time-labels grid grid-cols-48 gap-[1px] text-center text-white mb-2" id="timeLabels"></div>
 
-  <!-- 👥 Attendance grid -->
   <div id="attendanceGrid"></div>
 
 <script>
@@ -99,8 +97,7 @@
   document.addEventListener("mouseup", () => mouseDown = false);
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
-  // ✅ Render top fixed time labels
-  (function renderTimeLabels() {
+  function renderTimeLabels() {
     const container = document.getElementById("timeLabels");
     container.innerHTML = "";
     for (let i = 0; i < 48; i++) {
@@ -110,7 +107,7 @@
       div.textContent = `${hour}:${min}`;
       container.appendChild(div);
     }
-  })();
+  }
 
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
@@ -252,9 +249,11 @@
     loadAttendance();
   }
 
+  renderTimeLabels();
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
 </script>
 </body>
 </html>
+
