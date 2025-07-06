@@ -83,7 +83,7 @@
       <option value="A">Absent</option>
     </select>
   </div>
-  <div id="timeLabels" class="time-labels grid grid-cols-48 gap-[1px] text-xs text-center text-white mb-2"></div>
+
   <div id="attendanceGrid"></div>
 
 <script>
@@ -100,18 +100,21 @@
   document.addEventListener("mouseup", () => mouseDown = false);
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
-  function renderTimeLabels() {
-    const container = document.getElementById("timeLabels");
-    container.innerHTML = "";
-    for (let i = 0; i < 48; i++) {
-      const hour = String(Math.floor(i / 2)).padStart(2, '0');
-      const min = i % 2 === 0 ? '00' : '30';
-      const div = document.createElement("div");
-      div.textContent = `${hour}:${min}`;
-      div.className = "py-1";
-      container.appendChild(div);
-    }
+ function renderTimeLabels(grid) {
+  const labelRow = document.createElement("div");
+  labelRow.className = "time-labels grid grid-cols-48 gap-[1px] text-xs text-center text-white mb-2";
+
+  for (let i = 0; i < 48; i++) {
+    const hour = String(Math.floor(i / 2)).padStart(2, '0');
+    const min = i % 2 === 0 ? '00' : '30';
+    const div = document.createElement("div");
+    div.textContent = `${hour}:${min}`;
+    div.className = "py-1";
+    labelRow.appendChild(div);
   }
+
+  grid.appendChild(labelRow);
+}
 
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
@@ -151,6 +154,7 @@
     const { data } = await res.json();
     employees = data;
     grid.innerHTML = "";
+    renderTimeLabels(grid);
 
     data.forEach(emp => {
       const row = document.createElement("div");
@@ -255,7 +259,7 @@
 
   renderMonthSelector();
   renderDateSelector();
-  renderTimeLabels();
+ 
   loadAttendance();
 </script>
 </body>
