@@ -80,7 +80,7 @@
         <label class="block text-sm mb-1" for="message">Message</label>
         <textarea id="message" rows="5" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-purple-600"></textarea>
       </div>
-      <div class="g-recaptcha" data-sitekey="YOUR_RECAPTCHA_SITE_KEY_HERE"></div>
+      <div class="g-recaptcha" data-sitekey="6Lev5nkrAAAAACVBHVYtWF32xGnCaC6SiZcv4x49"></div>
       <button type="submit" class="w-full py-3 bg-purple-700 hover:bg-purple-800 rounded-lg text-white font-semibold transition duration-200">
         Send Message
       </button>
@@ -113,12 +113,12 @@
     const token = grecaptcha.getResponse();
 
     const status = document.getElementById("formStatus");
-    status.textContent = "Sending...";
-
     if (!token) {
-      status.textContent = "❌ Please verify the reCAPTCHA.";
+      status.textContent = "❌ Please complete the reCAPTCHA.";
       return;
     }
+
+    status.textContent = "Sending...";
 
     try {
       const res = await fetch("/.netlify/functions/send_contact_email", {
@@ -129,7 +129,7 @@
 
       const result = await res.json();
       if (res.ok) {
-        status.textContent = `✅ Message sent successfully. Ticket ID: ${result.ticket_id}`;
+        status.innerHTML = `✅ Message sent! Ticket ID: <strong>${result.ticket_id}</strong>`;
         document.getElementById("contactForm").reset();
         grecaptcha.reset();
       } else {
