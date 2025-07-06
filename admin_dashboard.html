@@ -8,10 +8,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body { font-family: 'Questrial', sans-serif; }
-    .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
-    
-    /* Improved disabled state styling */
+  body { font-family: 'Questrial', sans-serif; }
+  .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
+
+  /* Improved disabled state styling */
   button[disabled] {
     opacity: 0.4 !important;
     cursor: not-allowed !important;
@@ -19,12 +19,31 @@
     color: #9ca3af !important; /* gray-400 */
     pointer-events: none !important;
   }
-  
+
   button[disabled]:hover {
     background-color: #4b5563 !important;
     transform: none !important;
   }
+
+  /* ✅ Ensure table fits content without wrapping */
+  table {
+    table-layout: auto !important;
+    white-space: nowrap;
+  }
+
+  th, td {
+    white-space: nowrap;
+    padding: 0.5rem 0.75rem;
+  }
+
+  td .flex {
+    flex-wrap: nowrap !important;
+    flex-direction: row;
+    gap: 0.25rem;
+    justify-content: center;
+  }
 </style>
+
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
