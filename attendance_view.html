@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,23 +46,33 @@
     }
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
-    
+    .L { background-color: #facc15; }
+    .H { background-color: #3b82f6; }
+
     .row-green { background-color: #15803d33; }
     .row-yellow { background-color: #facc1533; }
     .row-red { background-color: #ef444433; }
 
     .block-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  margin-top: 0.25rem;
-}
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      margin-top: 0.25rem;
+    }
 
-    
+    .time-labels {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #2d3748;
+    }
+    .time-labels div {
+      border-bottom: 1px solid #1a202c;
+    }
   </style>
 </head>
 <body>
-  <h1>📅 Employee Attendance - Date View</h1>
+  <h1>🗕️ Employee Attendance - Date View</h1>
   <div id="monthSelector"></div>
   <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
   <div class="text-center mb-4">
@@ -74,7 +83,9 @@
       <option value="A">Absent</option>
     </select>
   </div>
+  <div id="timeLabels" class="time-labels grid grid-cols-48 gap-[1px] text-xs text-center text-white mb-2"></div>
   <div id="attendanceGrid"></div>
+
 <script>
   const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
   const today = new Date();
@@ -84,9 +95,23 @@
   let mouseDown = false;
   let employees = [];
   let dragStatus = "P";
+
   document.addEventListener("mousedown", () => mouseDown = true);
   document.addEventListener("mouseup", () => mouseDown = false);
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
+
+  function renderTimeLabels() {
+    const container = document.getElementById("timeLabels");
+    container.innerHTML = "";
+    for (let i = 0; i < 48; i++) {
+      const hour = String(Math.floor(i / 2)).padStart(2, '0');
+      const min = i % 2 === 0 ? '00' : '30';
+      const div = document.createElement("div");
+      div.textContent = `${hour}:${min}`;
+      div.className = "py-1";
+      container.appendChild(div);
+    }
+  }
 
   function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
@@ -137,27 +162,25 @@
       title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
       row.appendChild(title);
 
-const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
-emp.blockStates = [...blocks]; // store editable copy
+      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+      emp.blockStates = [...blocks];
 
-let summary = { P: 0, A: 0 };
-const blockWrap = document.createElement("div");
-blockWrap.className = "block-wrap";
+      let summary = { P: 0, A: 0 };
+      const blockWrap = document.createElement("div");
+      blockWrap.className = "block-wrap";
 
-emp.blockStates.forEach((state, i) => {
-  const finalState = state === "P" ? "P" : "A"; // Only allow P or A display
-  summary[finalState] = (summary[finalState] || 0) + 1;
+      emp.blockStates.forEach((state, i) => {
+        const finalState = ["P", "L", "A", "H"].includes(state) ? state : "A";
+        summary[finalState] = (summary[finalState] || 0) + 1;
 
-  const box = document.createElement("div");
-  box.className = `half-hour-box ${finalState}`;
-  box.dataset.index = i;
-  box.dataset.state = finalState;
-  box.onclick = () => toggleBlock(box, emp.emp_id);
-  box.onmouseover = () => dragBlock(box, emp.emp_id);
-  blockWrap.appendChild(box);
-});
-
-
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${finalState}`;
+        box.dataset.index = i;
+        box.dataset.state = finalState;
+        box.onclick = () => toggleBlock(box, emp.emp_id);
+        box.onmouseover = () => dragBlock(box, emp.emp_id);
+        blockWrap.appendChild(box);
+      });
 
       row.appendChild(blockWrap);
 
@@ -167,16 +190,10 @@ emp.blockStates.forEach((state, i) => {
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
 
-row.classList.remove("row-red", "row-yellow", "row-green");
-
-if (totalHours < 5) {
-  row.classList.add("row-red");
-} else if (totalHours >= 5 && totalHours < 7) {
-  row.classList.add("row-yellow");
-} else {
-  row.classList.add("row-green");
-}
-
+      row.classList.remove("row-red", "row-yellow", "row-green");
+      if (totalHours < 5) row.classList.add("row-red");
+      else if (totalHours < 7) row.classList.add("row-yellow");
+      else row.classList.add("row-green");
 
       const btn = document.createElement("button");
       btn.textContent = "Confirm Changes";
@@ -192,32 +209,34 @@ if (totalHours < 5) {
     const states = ["A", "P"];
     let current = box.dataset.state;
     let next = states[(states.indexOf(current) + 1) % states.length];
-
     box.dataset.state = next;
     box.className = `half-hour-box ${next}`;
-
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
     if (emp) emp.blockStates[index] = next;
   }
 
-
   function dragBlock(box, empId) {
     if (!mouseDown) return;
-    box.dataset.state = dragStatus;
-    box.className = `half-hour-box ${dragStatus}`;
-
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
-    if (emp) emp.blockStates[index] = dragStatus;
+    if (!emp) return;
+    const current = box.dataset.state;
+    if (current === dragStatus) {
+      const newStatus = dragStatus === "P" || dragStatus === "L" ? "A" : "P";
+      box.dataset.state = newStatus;
+      box.className = `half-hour-box ${newStatus}`;
+      emp.blockStates[index] = newStatus;
+    } else {
+      box.dataset.state = dragStatus;
+      box.className = `half-hour-box ${dragStatus}`;
+      emp.blockStates[index] = dragStatus;
+    }
   }
 
   async function submit(empId) {
     const emp = employees.find(e => e.emp_id === empId);
-    const slots = emp.blockStates.map((state, i) => ({
-      slot: i,
-      status: state
-    }));
+    const slots = emp.blockStates.map((state, i) => ({ slot: i, status: state }));
     const res = await fetch("/.netlify/functions/update_attendance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -236,6 +255,7 @@ if (totalHours < 5) {
 
   renderMonthSelector();
   renderDateSelector();
+  renderTimeLabels();
   loadAttendance();
 </script>
 </body>
