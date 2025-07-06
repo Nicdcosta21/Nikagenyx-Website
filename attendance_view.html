@@ -1,70 +1,237 @@
-<!-- Updated attendance_view.html with drag-to-remove and AM/PM tooltip -->
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Date View - Nikagenyx</title>
+  <script src="/assets/js/auth-gate.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .half-hour-box {
-      width: 20px;
-      height: 20px;
-      display: inline-block;
-      margin: 1px;
-      border: 1px solid #ccc;
+    body {
+      font-family: 'Questrial', sans-serif;
+      background-color: #0f172a;
+      color: #e0e7ff;
+      margin: 0;
+      padding: 2rem;
+      min-height: 100vh;
     }
-    .half-hour-box.P { background-color: green; }
-    .half-hour-box.A { background-color: red; }
-    .half-hour-box.L { background-color: yellow; }
+    h1 {
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: #c7d2fe;
+      text-shadow: 0 0 6px rgba(79, 70, 229, 0.7);
+    }
+    .month-btn, .date-btn {
+      background-color: #1e293b;
+      color: #e0e7ff;
+      padding: 0.4rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .month-btn.active, .date-btn.active {
+      background-color: #6366f1;
+      color: white;
+    }
+    .half-hour-box {
+      width: 12px;
+      height: 24px;
+      margin: 1px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .P { background-color: #22c55e; }
+    .A { background-color: #ef4444; }
+    .L { background-color: #facc15; }
+
+    .row-green { background-color: #15803d33; }
+    .row-yellow { background-color: #facc1533; }
+    .row-red { background-color: #ef444433; }
+
+    .block-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      margin-top: 0.25rem;
+    }
   </style>
 </head>
 <body>
-  <div id="grid"></div>
+  <h1>📅 Employee Attendance - Date View</h1>
+  <div id="monthSelector"></div>
+  <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
+  <div class="text-center mb-4">
+    <label class="mr-2">Drag Mode:</label>
+    <select id="dragMode" class="bg-gray-800 text-white p-1 rounded">
+      <option value="P">Present</option>
+      <option value="L">Leave</option>
+      <option value="A">Absent</option>
+    </select>
+  </div>
+  <div id="attendanceGrid"></div>
+<script>
+  const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+  const today = new Date();
+  let currentMonth = today.getMonth();
+  let currentYear = today.getFullYear();
+  let selectedDate = today.getDate();
+  let mouseDown = false;
+  let employees = [];
+  let dragStatus = "P";
 
-  <script>
-    const states = ['P', 'A', 'L'];
-    let dragStatus = 'P';
-    let mouseDown = false;
+  document.addEventListener("mousedown", () => mouseDown = true);
+  document.addEventListener("mouseup", () => mouseDown = false);
+  document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
-    document.body.onmousedown = () => mouseDown = true;
-    document.body.onmouseup = () => mouseDown = false;
+  function formatAMPM(index) {
+    const hour = Math.floor(index / 2);
+    const minute = index % 2 === 0 ? '00' : '30';
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${formattedHour}:${minute} ${ampm}`;
+  }
 
-    function formatAMPM(index) {
-      const hour = Math.floor(index / 2);
-      const minute = index % 2 === 0 ? '00' : '30';
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-      return `${formattedHour}:${minute} ${ampm}`;
+  function daysInMonth(month, year) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  function renderMonthSelector() {
+    const container = document.getElementById("monthSelector");
+    container.innerHTML = "";
+    months.forEach((m, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = `${m} ${currentYear}`;
+      btn.className = `month-btn ${i === currentMonth ? "active" : ""}`;
+      btn.onclick = () => {
+        currentMonth = i; selectedDate = 1;
+        renderMonthSelector(); renderDateSelector(); loadAttendance();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function renderDateSelector() {
+    const container = document.getElementById("dateSelector");
+    container.innerHTML = "";
+    for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
+      const btn = document.createElement("button");
+      btn.textContent = d;
+      btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
+      btn.onclick = () => { selectedDate = d; renderDateSelector(); loadAttendance(); };
+      container.appendChild(btn);
     }
+  }
 
-    function toggleBlock(box) {
-      const current = box.dataset.state;
-      const next = current === dragStatus ? 'A' : dragStatus;
-      box.dataset.state = next;
-      box.className = `half-hour-box ${next}`;
-    }
+  async function loadAttendance() {
+    const grid = document.getElementById("attendanceGrid");
+    grid.innerHTML = "Loading...";
+    const res = await fetch(`/.netlify/functions/get_attendance_calendar?month=${currentMonth + 1}&year=${currentYear}`);
+    const { data } = await res.json();
+    employees = data;
+    grid.innerHTML = "";
 
-    function dragBlock(box) {
-      if (!mouseDown) return;
-      const newState = dragStatus;
-      box.dataset.state = newState;
-      box.className = `half-hour-box ${newState}`;
-    }
+    data.forEach(emp => {
+      const row = document.createElement("div");
+      row.className = "employee-row p-4 mb-4 rounded shadow";
+      row.id = `row-${emp.emp_id}`;
 
-    function createGrid() {
-      const grid = document.getElementById('grid');
-      for (let i = 0; i < 48; i++) {
-        const box = document.createElement('div');
-        box.className = 'half-hour-box A';
+      const title = document.createElement("div");
+      title.className = "font-bold mb-2";
+      title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
+      row.appendChild(title);
+
+      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+      emp.blockStates = [...blocks];
+
+      let summary = { P: 0, A: 0 };
+      const blockWrap = document.createElement("div");
+      blockWrap.className = "block-wrap";
+
+      emp.blockStates.forEach((state, i) => {
+        const finalState = ["P", "L", "A"].includes(state) ? state : "A";
+        summary[finalState] = (summary[finalState] || 0) + 1;
+
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${finalState}`;
         box.dataset.index = i;
-        box.dataset.state = 'A';
-        box.title = formatAMPM(i); // Tooltip with time
+        box.dataset.state = finalState;
+        box.title = formatAMPM(i);
 
-        box.onclick = () => toggleBlock(box);
-        box.onmouseover = () => dragBlock(box);
+        box.onclick = () => toggleBlock(box, emp.emp_id);
+        box.onmouseover = () => dragBlock(box, emp.emp_id);
+        blockWrap.appendChild(box);
+      });
 
-        grid.appendChild(box);
-      }
-    }
+      row.appendChild(blockWrap);
 
-    createGrid();
-  </script>
+      const info = document.createElement("div");
+      const totalHours = summary.P * 0.5;
+      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      info.className = "text-sm mt-2 text-gray-300";
+      row.appendChild(info);
+
+      row.classList.remove("row-red", "row-yellow", "row-green");
+      if (totalHours < 5) row.classList.add("row-red");
+      else if (totalHours < 7) row.classList.add("row-yellow");
+      else row.classList.add("row-green");
+
+      const btn = document.createElement("button");
+      btn.textContent = "Confirm Changes";
+      btn.className = "confirm-btn mt-2";
+      btn.onclick = () => submit(emp.emp_id);
+      row.appendChild(btn);
+
+      grid.appendChild(row);
+    });
+  }
+
+  function toggleBlock(box, empId) {
+    const current = box.dataset.state;
+    const next = current === dragStatus ? "A" : dragStatus;
+    box.dataset.state = next;
+    box.className = `half-hour-box ${next}`;
+
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = next;
+  }
+
+  function dragBlock(box, empId) {
+    if (!mouseDown) return;
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (!emp) return;
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
+    emp.blockStates[index] = dragStatus;
+  }
+
+  async function submit(empId) {
+    const emp = employees.find(e => e.emp_id === empId);
+    const slots = emp.blockStates.map((state, i) => ({ slot: i, status: state }));
+    const res = await fetch("/.netlify/functions/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emp_id: empId,
+        year: currentYear,
+        month: currentMonth + 1,
+        day: selectedDate,
+        slots
+      })
+    });
+    const result = await res.json();
+    alert(result.message || result.error);
+    loadAttendance();
+  }
+
+  renderMonthSelector();
+  renderDateSelector();
+  loadAttendance();
+</script>
 </body>
 </html>
-
