@@ -7,6 +7,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
   await fetchEmployees(currentUser);
+  // ✅ Fill Admin Profile Section
+document.getElementById("p_name").textContent = currentUser.name || "-";
+document.getElementById("p_phone").textContent = currentUser.phone || "-";
+document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+document.getElementById("p_dept").textContent = currentUser.department || "-";
+document.getElementById("p_role").textContent = currentUser.role || "-";
+
 
   const searchInput = document.getElementById("search");
   if (searchInput) {
