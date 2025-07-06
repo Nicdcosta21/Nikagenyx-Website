@@ -65,12 +65,18 @@ function filterEmployeeTable() {
   const table = document.getElementById("employeeTable");
   if (!table) return;
   const rows = table.getElementsByTagName("tr");
+
   for (let row of rows) {
-    const empId = row.cells[0]?.textContent.toLowerCase() || "";
-    const empName = row.cells[1]?.textContent.toLowerCase() || "";
+    const cells = row.getElementsByTagName("td");
+    if (!cells || cells.length < 3) continue; // make sure enough cells exist
+
+    const empId = cells[1]?.textContent.toLowerCase() || ""; // ID is in cell 1
+    const empName = cells[2]?.textContent.toLowerCase() || ""; // Name is in cell 2
+
     row.style.display = empId.includes(searchTerm) || empName.includes(searchTerm) ? "" : "none";
   }
 }
+
 
 async function loadPayrollMode() {
   const res = await fetch("/.netlify/functions/get_payroll_mode");
