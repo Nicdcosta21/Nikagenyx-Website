@@ -1,20 +1,21 @@
 const multiparty = require("multiparty");
 const nodemailer = require("nodemailer");
 const { Pool } = require("pg");
+const fs = require("fs");
 
 // --- Setup DB ---
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 // --- Setup Transporter ---
 const transporter = nodemailer.createTransport({
-  service: "gmail", // or use your SMTP
+  service: "gmail", // or your SMTP provider
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
-  }
+    user: process.env.EMAIL_USER || process.env.MAIL_USER,
+    pass: process.env.EMAIL_PASS || process.env.MAIL_PASS,
+  },
 });
 
 // --- Helper to fetch emails from DB ---
@@ -31,10 +32,13 @@ async function getEmployeeEmails(empIds) {
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return {
+      statusCode: 405,
+      body: "Method Not Allowed",
+    };
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const form = new multiparty.Form();
 
     form.parse(event, async (err, fields, files) => {
@@ -53,7 +57,7 @@ exports.handler = async (event) => {
         if (!from || !subject || !body || empIds.length === 0) {
           return resolve({
             statusCode: 400,
-            body: JSON.stringify({ message: "Missing required fields" })
+            body: JSON.stringify({ message: "Missing required fields" }),
           });
         }
 
@@ -72,20 +76,22 @@ exports.handler = async (event) => {
             subject,
             html: `
               <div style="font-family: Arial, sans-serif;">
-                <img src="https://yourdomain.com/assets/HEADER.png" style="width:100%;max-width:600px;" />
+                <img src="https://nikagenyx.netlify.app/assets/HEADER.png" style="width:100%;max-width:600px;" />
                 <p>Dear ${emp.name},</p>
                 <div style="margin: 10px 0;">${body.replace(/\n/g, "<br/>")}</div>
                 <p>Best regards,<br/>Nikagenyx HR</p>
-                <img src="https://yourdomain.com/assets/FOOTER.png" style="width:100%;max-width:600px;" />
+                <img src="https://nikagenyx.netlify.app/assets/FOOTER.png" style="width:100%;max-width:600px;" />
               </div>
-            `
+            `,
           };
 
           if (attachmentFile) {
-            mailOptions.attachments = [{
-              filename: attachmentFile.originalFilename,
-              content: require("fs").createReadStream(attachmentFile.path)
-            }];
+            mailOptions.attachments = [
+              {
+                filename: attachmentFile.originalFilename,
+                content: fs.createReadStream(attachmentFile.path),
+              },
+            ];
           }
 
           try {
@@ -101,14 +107,14 @@ exports.handler = async (event) => {
           statusCode: 200,
           body: JSON.stringify({
             message: `✅ Emails sent: ${successCount}, Failed: ${failed.length}`,
-            failed
-          })
+            failed,
+          }),
         });
       } catch (error) {
         console.error("❌ Error in send_bulk_email:", error);
         return resolve({
           statusCode: 500,
-          body: JSON.stringify({ message: "Internal error" })
+          body: JSON.stringify({ message: "Internal error" }),
         });
       }
     });
