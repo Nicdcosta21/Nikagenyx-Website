@@ -11,31 +11,37 @@
   body { font-family: 'Questrial', sans-serif; }
   .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
 
-  /* Improved disabled state styling */
+  /* Disabled state for buttons */
   button[disabled] {
     opacity: 0.4 !important;
     cursor: not-allowed !important;
-    background-color: #4b5563 !important; /* gray-600 */
-    color: #9ca3af !important; /* gray-400 */
+    background-color: #4b5563 !important;
+    color: #9ca3af !important;
     pointer-events: none !important;
   }
-
   button[disabled]:hover {
     background-color: #4b5563 !important;
     transform: none !important;
   }
 
-  /* ✅ Ensure table fits content without wrapping */
+  /* Force nowrap globally, but override for Name & Role */
   table {
-    table-layout: auto !important;
+    table-layout: auto;
     white-space: nowrap;
   }
 
   th, td {
-    white-space: nowrap;
     padding: 0.5rem 0.75rem;
   }
 
+  /* ✅ Allow wrapping for Name and Role cells */
+  td.wrap, th.wrap {
+    white-space: normal !important;
+    word-break: break-word;
+    max-width: 200px;
+  }
+
+  /* Ensure actions stay tight */
   td .flex {
     flex-wrap: nowrap !important;
     flex-direction: row;
@@ -43,6 +49,7 @@
     justify-content: center;
   }
 </style>
+
 
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
