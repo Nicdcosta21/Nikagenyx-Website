@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "scripts": {
     "prebuild": "mkdir -p assets/css",
-    "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify"
+    "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify",
+    "postinstall": "npx update-browserslist-db@latest || exit 0"
   },
   "dependencies": {
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "exceljs": "^4.3.0",
+    "formidable": "^3.5.0",
     "jsonwebtoken": "^9.0.2",
     "multiparty": "^4.2.2",
     "node-fetch": "^2.6.7",
