@@ -106,31 +106,33 @@ async function fetchEmployees(currentUser) {
       tr.className = "border-b border-gray-700";
 
       tr.innerHTML = `
-        <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
-        <td class="p-2 border wrap">${emp.name}</td>
-        <td class="p-2 border">${emp.phone}</td>
-        <td class="p-2 border">${formatDate(emp.dob)}</td>
+  <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
+  <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
+  <td class="p-2 border wrap">${emp.name}</td>
+  <td class="p-2 border">${emp.phone}</td>
+  <td class="p-2 border">${formatDate(emp.dob)}</td>
 
-        <td class="p-2 border">
-          <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
-          <div class="mt-1 flex items-center gap-1">
-            <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
-              <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
-              <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
-            </select>
-            <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-          </div>
-        </td>
-        <td class="p-2 border">${emp.department || "-"}</td>
-        <td class="p-2 border">
-          <div class="flex items-center justify-center gap-1">
-            <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
-            <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
-            <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
-            <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
-          </div>
-        </td>
-      `;
+  <td class="p-2 border">
+    <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
+    <div class="mt-1 flex items-center gap-1">
+      <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
+        <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
+        <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
+      </select>
+      <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+    </div>
+  </td>
+  <td class="p-2 border">${emp.department || "-"}</td>
+  <td class="p-2 border">
+    <div class="flex items-center justify-center gap-1">
+      <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
+      <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
+      <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
+      <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
+    </div>
+  </td>
+`;
+
 
       tbody.appendChild(tr);
       setupRowListeners(tr, emp, currentUser);
