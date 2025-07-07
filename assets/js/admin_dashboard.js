@@ -666,13 +666,4 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
- function () {
-  const preview = document.getElementById("filePreview");
-  preview.innerHTML = "";
-  for (const file of this.files) {
-    const li = document.createElement("li");
-    li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-    preview.appendChild(li);
-  }
-});
 
