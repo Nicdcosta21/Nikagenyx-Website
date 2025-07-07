@@ -1,4 +1,5 @@
 const multiparty = require("multiparty");
+const { Readable } = require("stream");
 const nodemailer = require("nodemailer");
 const { Pool } = require("pg");
 const fs = require("fs");
@@ -21,26 +22,32 @@ async function getEmployeeEmails(empIds) {
   }
 }
 
-exports.handler = async (event, context) => {
+// ✅ SINGLE handler
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   return new Promise((resolve) => {
     const form = new multiparty.Form();
-
-    // 👇 Correct: parse `event.body` as a buffer
     const buffer = Buffer.from(event.body, "base64");
-    const fakeReq = require("stream").Readable.from(buffer);
-    const fakeRes = {};
+
+    const fakeReq = new Readable({
+      read() {
+        this.push(buffer);
+        this.push(null);
+      },
+    });
+
+    // ✅ Manually set content-type
+    fakeReq.headers = {
+      'content-type': event.headers['content-type'] || event.headers['Content-Type'],
+    };
 
     form.parse(fakeReq, async (err, fields, files) => {
       if (err) {
-        console.error("❌ Form parsing error:", err);
-        return resolve({
-          statusCode: 500,
-          body: JSON.stringify({ message: "Form parse error" }),
-        });
+        console.error("❌ Form parse error:", err);
+        return resolve({ statusCode: 500, body: JSON.stringify({ message: "Form parse error" }) });
       }
 
       try {
