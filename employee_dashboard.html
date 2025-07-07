@@ -27,64 +27,54 @@
   </nav>
 
   <!-- Main Content -->
-  <main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
-    <h1 class="text-2xl font-semibold mb-4">
-      Welcome, <span id="empName">Employee</span>
-    </h1>
+  <main class="flex-grow px-4 py-6 max-w-6xl mx-auto space-y-8">
 
-    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center">
-      <h2 class="text-lg font-bold mb-4">Clock In / Clock Out</h2>
+  <!-- Welcome -->
+  <h1 class="text-2xl font-semibold text-center">
+    Welcome, <span id="empName">Employee</span>
+  </h1>
 
-      <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 mb-3 rounded disabled:opacity-50">
-        Clock In
-      </button>
-      <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded disabled:opacity-50">
-        Clock Out
-      </button>
-
-      <p id="statusMessage" class="text-sm text-gray-400 mt-3">
-        Already clocked out or not clocked in yet.
-      </p>
-    </div>
-
-    <!-- NEW: Today's Summary Card -->
-  <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full max-w-md">
-    <h2 class="text-lg font-semibold mb-3">Today's Summary</h2>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="bg-blue-600 p-3 rounded-lg text-center">
-        <p class="text-sm">Clock In</p>
-        <p id="todayClockIn" class="font-bold">--:--</p>
-      </div>
-      <div class="bg-purple-600 p-3 rounded-lg text-center">
-        <p class="text-sm">Clock Out</p>
-        <p id="todayClockOut" class="font-bold">--:--</p>
-      </div>
-      <div class="bg-green-600 p-3 rounded-lg text-center">
-        <p class="text-sm">Hours Worked</p>
-        <p id="todayHours" class="font-bold">0h 0m</p>
-      </div>
-      <div class="bg-yellow-500 p-3 rounded-lg text-center">
-        <p class="text-sm">Status</p>
-        <p id="todayStatus" class="font-bold">-</p>
-      </div>
-    </div>
+  <!-- Clock In / Out -->
+  <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-auto">
+    <h2 class="text-lg font-bold mb-4 text-center">Clock In / Clock Out</h2>
+    <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 mb-3 rounded disabled:opacity-50">
+      Clock In
+    </button>
+    <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded disabled:opacity-50">
+      Clock Out
+    </button>
+    <p id="statusMessage" class="text-sm text-gray-400 mt-3 text-center">
+      Already clocked out or not clocked in yet.
+    </p>
   </div>
 
-  <!-- NEW: Quick Actions + Performance Metrics Row -->
-  <div class="flex flex-col md:flex-row gap-6 w-full max-w-2xl">
-    <!-- Quick Links Panel -->
-    <div class="bg-gray-800 p-6 rounded-xl shadow-md flex-grow">
-      <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-2 gap-3">
-        <a href="update_profile.html" class="bg-indigo-600 hover:bg-indigo-700 p-3 rounded-lg text-center transition transform hover:-translate-y-1">Update Profile</a>
-        <a href="payroll_portal.html" class="bg-green-600 hover:bg-green-700 p-3 rounded-lg text-center transition transform hover:-translate-y-1">Payroll</a>
-        <a href="view_attendance.html" class="bg-blue-600 hover:bg-blue-700 p-3 rounded-lg text-center transition transform hover:-translate-y-1">Attendance</a>
-        <button onclick="showLeaveModal()" class="bg-yellow-600 hover:bg-yellow-700 p-3 rounded-lg transition transform hover:-translate-y-1">Apply Leave</button>
+  <!-- Summary & Metrics -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Today's Summary -->
+    <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full">
+      <h2 class="text-lg font-semibold mb-3">Today's Summary</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-blue-600 p-3 rounded-lg text-center">
+          <p class="text-sm">Clock In</p>
+          <p id="todayClockIn" class="font-bold">--:--</p>
+        </div>
+        <div class="bg-purple-600 p-3 rounded-lg text-center">
+          <p class="text-sm">Clock Out</p>
+          <p id="todayClockOut" class="font-bold">--:--</p>
+        </div>
+        <div class="bg-green-600 p-3 rounded-lg text-center">
+          <p class="text-sm">Hours Worked</p>
+          <p id="todayHours" class="font-bold">0h 0m</p>
+        </div>
+        <div class="bg-yellow-500 p-3 rounded-lg text-center">
+          <p class="text-sm">Status</p>
+          <p id="todayStatus" class="font-bold">-</p>
+        </div>
       </div>
     </div>
 
     <!-- Performance Metrics -->
-    <div class="bg-gray-800 p-6 rounded-xl shadow-md flex-grow">
+    <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full">
       <h2 class="text-lg font-semibold mb-3">This Month</h2>
       <div class="space-y-4">
         <div>
@@ -109,15 +99,26 @@
     </div>
   </div>
 
-  <!-- NEW: Recent Activity Feed -->
-  <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full max-w-2xl">
+  <!-- Quick Actions -->
+  <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full">
+    <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <a href="update_profile.html" class="bg-indigo-600 hover:bg-indigo-700 p-3 rounded-lg text-center">Update Profile</a>
+      <a href="payroll_portal.html" class="bg-green-600 hover:bg-green-700 p-3 rounded-lg text-center">Payroll</a>
+      <a href="view_attendance.html" class="bg-blue-600 hover:bg-blue-700 p-3 rounded-lg text-center">Attendance</a>
+      <button onclick="showLeaveModal()" class="bg-yellow-600 hover:bg-yellow-700 p-3 rounded-lg">Apply Leave</button>
+    </div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="bg-gray-800 p-6 rounded-xl shadow-md w-full">
     <h2 class="text-lg font-semibold mb-3">Recent Activity</h2>
     <ul id="activityFeed" class="space-y-3">
-      <!-- Will be populated by JavaScript -->
       <li class="text-center text-gray-400 py-4">Loading activities...</li>
     </ul>
   </div>
 </main>
+
 
   <!-- Footer -->
   <footer class="bg-gray-800 text-gray-500 text-center py-4 text-xs">
