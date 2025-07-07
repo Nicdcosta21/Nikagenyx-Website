@@ -22,6 +22,11 @@ async function getEmployeeEmails(empIds) {
   }
 }
 
+// Embed header and footer images as base64
+const header_base64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABigAAAEgCAYAAAAub/v3AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjw...";
+const footer_base64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABjIAAALICAYAAADVHGmkAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjw...";
+
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -106,7 +111,7 @@ exports.handler = async (event) => {
       </div>
     </div>
   `,
-  attachments: attachments.map(file => ({
+  attachments: (attachments || []).map(file => ({
     filename: file.originalFilename,
     content: fs.createReadStream(file.path),
   })),
