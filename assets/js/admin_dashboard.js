@@ -662,41 +662,55 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
 
   // ✅ Step 3: Send email
   const res = await fetch("/.netlify/functions/send_bulk_email", {
-    method: "POST",
-    body: formData,
-  });
-
-  try {
-    const contentType = (res.headers.get("content-type") || "").toLowerCase();
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("❌ Email failed:", errorText);
-      showToast("❌ Email sending failed.");
-      return;
-    }
-
-    if (!contentType.includes("application/json")) {
-      const errorText = await res.text();
-      console.error("❌ Unexpected non-JSON response:", errorText);
-      showToast("❌ Unexpected server error.");
-      return;
-    }
-
-    const result = await res.json();
-    if (result.failed?.length) {
-      showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
-    } else {
-      showToast(result.message || "✅ Emails sent successfully.");
-    }
-
-    document.getElementById("bulkEmailModal").classList.add("hidden");
-
-  } catch (err) {
-    console.error("❌ Exception during email send:", err);
-    showToast("❌ Unexpected error occurred.");
-  }
+  method: "POST",
+  body: formData,
 });
+
+try {
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+  // Handle error responses first
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("❌ Email failed:", errorText);
+
+    // Try to parse message if it's actually JSON
+    try {
+      const errorJson = JSON.parse(errorText);
+      showToast(errorJson.message || "❌ Email sending failed.");
+    } catch {
+      showToast("❌ Email sending failed.");
+    }
+    return;
+  }
+
+  // If content-type is NOT JSON, still try to parse it manually
+  if (!contentType.includes("application/json")) {
+    const fallbackText = await res.text();
+    console.warn("⚠️ Non-JSON response:", fallbackText);
+    try {
+      const parsed = JSON.parse(fallbackText);
+      showToast(parsed.message || "✅ Emails sent (fallback parsed).");
+    } catch {
+      showToast("✅ Emails sent, but unexpected response format.");
+    }
+    return;
+  }
+
+  // ✅ Success case: valid JSON response
+  const result = await res.json();
+  if (result.failed?.length) {
+    showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
+  } else {
+    showToast(result.message || "✅ Emails sent successfully.");
+  }
+
+  document.getElementById("bulkEmailModal").classList.add("hidden");
+
+} catch (err) {
+  console.error("❌ Exception during email send:", err);
+  showToast("❌ Unexpected error occurred.");
+}
 
 
 // Step 2 — Modal Control & File Preview
