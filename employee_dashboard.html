@@ -244,25 +244,29 @@
       );
     }
 
-    function updatePerformanceMetrics(metrics) {
-      if (!metrics) return;
-      
-      // Attendance
-      const attendancePercent = Math.min(
-        100,
-        Math.round((metrics.attendance_days / metrics.working_days) * 100) || 0
-      );
-      
-      document.getElementById('attendanceRatio').textContent = 
-        `${metrics.attendance_days}/${metrics.working_days} days`;
-      document.getElementById('attendanceBar').style.width = `${attendancePercent}%`;
-      
-      // Productivity
-      const productivity = Math.min(100, metrics.productivity || 0);
-      document.getElementById('productivityScore').textContent = `${productivity}%`;
-      document.getElementById('productivityBar').style.width = `${productivity}%`;
-    }
-
+    // Update in updatePerformanceMetrics function
+function updatePerformanceMetrics(metrics) {
+  if (!metrics) return;
+  
+  // Attendance - Handle division by zero
+  let attendancePercent = 0;
+  if (metrics.working_days > 0) {
+    attendancePercent = Math.min(
+      100,
+      Math.round((metrics.attendance_days / metrics.working_days) * 100) || 0
+    );
+  }
+  
+  document.getElementById('attendanceRatio').textContent = 
+    `${metrics.attendance_days}/${metrics.working_days} days`;
+  document.getElementById('attendanceBar').style.width = `${attendancePercent}%`;
+  
+  // Productivity
+  const productivity = Math.min(100, metrics.productivity || 0);
+  document.getElementById('productivityScore').textContent = `${productivity}%`;
+  document.getElementById('productivityBar').style.width = `${productivity}%`;
+}
+    
     function updateActivityFeed(activities) {
       const feed = document.getElementById('activityFeed');
       if (!activities?.length) {
@@ -334,6 +338,8 @@
       window.showLeaveModal = () => {
         const modal = document.createElement("div");
         modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+        modal.id = "leaveModal"; // Add ID for easy removal
+        
         modal.innerHTML = `
           <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 class="text-xl font-semibold mb-4">Apply for Leave</h3>
@@ -361,7 +367,7 @@
                 <textarea name="reason" rows="3" class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"></textarea>
               </div>
               <div class="flex justify-end gap-2 mt-4">
-                <button type="button" onclick="this.closest('div').remove()" 
+                <button type="button" onclick="document.getElementById('leaveModal').remove()" 
                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded">Cancel</button>
                 <button type="submit" 
                   class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded">Submit</button>
