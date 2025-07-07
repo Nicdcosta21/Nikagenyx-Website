@@ -93,13 +93,19 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ok: true,
-        user: {
-          emp_id: user.emp_id,
-          role: user.role,
-          failed_pin_attempts: 0, // reset
-        },
-      }),
+  ok: true,
+  user: {
+    emp_id: user.emp_id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    dob: user.dob,
+    department: user.department,
+    base_salary: user.base_salary,
+    role: user.role, // comes from privilege AS role
+    failed_pin_attempts: 0
+  }
+})
     };
 
   } catch (error) {
