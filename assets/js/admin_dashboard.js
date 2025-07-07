@@ -651,7 +651,22 @@ function closeBulkEmailModal() {
 }
 
 // Show selected file names below attachment input
-document.getElementById("emailAttachment")?.addEventListener("change", function () {
+document.addEventListener("DOMContentLoaded", () => {
+  const attachInput = document.getElementById("emailAttachment");
+  const fileList = document.getElementById("filePreview");
+
+  if (attachInput && fileList) {
+    attachInput.addEventListener("change", function () {
+      fileList.innerHTML = "";
+      for (const file of this.files) {
+        const li = document.createElement("li");
+        li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        fileList.appendChild(li);
+      }
+    });
+  }
+});
+ function () {
   const preview = document.getElementById("filePreview");
   preview.innerHTML = "";
   for (const file of this.files) {
