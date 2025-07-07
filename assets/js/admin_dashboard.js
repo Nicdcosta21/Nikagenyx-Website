@@ -609,17 +609,44 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
   if (selectedIds.length === 0) return showToast("No employees selected");
 
-  const from = document.getElementById("emailFrom").value;
+  const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
+  const from = session.email;
+  let smtpPassword = session.smtp_password;
+  const empId = session.emp_id;
+
+  // ✅ Step 1: Check if password exists in DB
+  const res1 = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+  const data1 = await res1.json();
+  if (!data1.smtp_password) {
+    // ✅ Step 2: Prompt and save if not found
+    smtpPassword = prompt("Enter your email password to send:");
+    if (!smtpPassword) return showToast("Cancelled");
+
+    // Save to DB
+    await fetch("/.netlify/functions/save_smtp_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+    });
+
+    // Update localStorage
+    session.smtp_password = smtpPassword;
+    localStorage.setItem("emp_session", JSON.stringify(session));
+  } else {
+    smtpPassword = data1.smtp_password;
+  }
+
   const subject = document.getElementById("emailSubject").value;
   const body = document.getElementById("emailBody").value;
-  const attachment = document.getElementById("emailAttachment").files[0];
+  const attachments = document.getElementById("emailAttachment").files;
 
   const formData = new FormData();
   formData.append("from", from);
+  formData.append("smtp_password", smtpPassword);
   formData.append("subject", subject);
   formData.append("body", body);
   formData.append("recipients", JSON.stringify(selectedIds));
-  if (attachment) formData.append("attachment", attachment);
+  [...attachments].forEach(file => formData.append("attachment", file));
 
   const res = await fetch("/.netlify/functions/send_bulk_email", {
     method: "POST",
@@ -629,12 +656,13 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   const result = await res.json();
   if (res.ok) {
     showToast(result.message || "✅ Emails sent successfully.");
-    document.getElementById("emailModal").classList.add("hidden");
+    document.getElementById("bulkEmailModal").classList.add("hidden");
   } else {
     showToast(result.message || "❌ Email sending failed.");
     console.error(result);
   }
 });
+
 
 // Step 2 — Modal Control & File Preview
 function openEmailModal() {
