@@ -733,19 +733,21 @@ function closeBulkEmailModal() {
 }
 
 
+document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
-
   if (!attachInput || !fileList) return;
 
-  // Store files independently so we can modify them
   let selectedFiles = [];
 
-  attachInput.addEventListener("change", function (e) {
+  attachInput.addEventListener("change", (e) => {
     const newFiles = Array.from(e.target.files);
-    selectedFiles = [...selectedFiles, ...newFiles];
-
+    for (const file of newFiles) {
+      const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+      if (!exists) selectedFiles.push(file);
+    }
     renderFileList();
   });
 
@@ -753,30 +755,26 @@ function setupAttachmentPreview() {
     fileList.innerHTML = "";
     selectedFiles.forEach((file, index) => {
       const li = document.createElement("li");
-      li.className = "relative bg-white border rounded p-2 shadow flex justify-between items-center";
+      li.className = "relative bg-gray-100 text-gray-800 p-2 pl-3 pr-8 rounded shadow text-sm flex items-center justify-between";
 
-      const fileInfo = document.createElement("span");
-      fileInfo.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
-      fileInfo.className = "text-sm text-gray-800";
+      const fileText = document.createElement("span");
+      fileText.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "×";
-      removeBtn.className = "text-red-500 hover:text-red-700 font-bold text-xl";
+      removeBtn.className = "absolute right-2 top-1 text-red-500 hover:text-red-700 font-bold text-lg";
       removeBtn.onclick = () => {
         selectedFiles.splice(index, 1);
         renderFileList();
       };
 
-      li.appendChild(fileInfo);
+      li.appendChild(fileText);
       li.appendChild(removeBtn);
       fileList.appendChild(li);
     });
 
-    // Reconstruct DataTransfer object for the input
     const dt = new DataTransfer();
     selectedFiles.forEach(file => dt.items.add(file));
     attachInput.files = dt.files;
   }
 }
-
-document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
