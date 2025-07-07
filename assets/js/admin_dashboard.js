@@ -102,6 +102,7 @@ async function loadPayrollMode() {
 }
 
 async function fetchEmployees(currentUser) {
+  console.log("🔍 fetchEmployees triggered");
   try {
     const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
     if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
