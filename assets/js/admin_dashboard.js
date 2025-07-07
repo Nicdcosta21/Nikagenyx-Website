@@ -122,19 +122,7 @@ async function fetchEmployees(currentUser) {
     const tbody = document.getElementById("employeeTable");
     console.log("👀 Tbody found?", !!tbody);
     tbody.innerHTML = "";
-    const testRow = document.createElement("tr");
-testRow.innerHTML = `
-  <td class="p-2 border"><input type="checkbox" /></td>
-  <td class="p-2 border">NGX999</td>
-  <td class="p-2 border">Test User</td>
-  <td class="p-2 border">9999999999</td>
-  <td class="p-2 border">01-01-1990</td>
-  <td class="p-2 border">Admin</td>
-  <td class="p-2 border">Tech Team</td>
-  <td class="p-2 border">—</td>
-`;
-tbody.appendChild(testRow);
-
+    
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
