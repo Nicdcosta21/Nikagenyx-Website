@@ -7,15 +7,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
   await fetchEmployees(currentUser);
-  // ✅ Fill Admin Profile Section
-document.getElementById("p_name").textContent = currentUser.name || "-";
-document.getElementById("p_phone").textContent = currentUser.phone || "-";
-document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-document.getElementById("p_dept").textContent = currentUser.department || "-";
-document.getElementById("p_role").textContent = currentUser.role || "-";
 
+  try {
+    document.getElementById("p_name").textContent = currentUser.name || "-";
+    document.getElementById("p_phone").textContent = currentUser.phone || "-";
+    document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+    document.getElementById("p_dept").textContent = currentUser.department || "-";
+    document.getElementById("p_role").textContent = currentUser.role || "-";
+  } catch (err) {
+    console.warn("⚠️ Some profile DOM elements were not found:", err);
+  }
 
- // ✅ Correct search logic here
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", function () {
@@ -30,6 +32,7 @@ document.getElementById("p_role").textContent = currentUser.role || "-";
     });
   }
 });
+
 
 function logout() {
   localStorage.removeItem("emp_session");
@@ -109,7 +112,9 @@ async function fetchEmployees(currentUser) {
 
     const data = await res.json();
     const employees = data.employees;
+    console.log("📦 EMPLOYEE FETCH START");
     const tbody = document.getElementById("employeeTable");
+    console.log("👀 Tbody found?", !!tbody);
     tbody.innerHTML = "";
 
     employees.forEach(emp => {
