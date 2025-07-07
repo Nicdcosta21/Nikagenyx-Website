@@ -606,35 +606,69 @@ window.closeEmailModal = function () {
 
 document.getElementById("bulkEmailForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
   if (selectedIds.length === 0) return showToast("No employees selected");
 
-  const from = document.getElementById("emailFrom").value;
+  const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
+  const empId = session.emp_id;
+  let smtpPassword = session.smtp_password;
+
+  // 🔐 Step 1: Get SMTP password if not in session
+  if (!smtpPassword) {
+    const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+    const data = await res.json();
+    if (data.smtp_password) {
+      smtpPassword = data.smtp_password;
+    } else {
+      smtpPassword = prompt("Enter your email password to send:");
+      if (!smtpPassword) return showToast("Cancelled");
+
+      await fetch("/.netlify/functions/save_smtp_password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+      });
+
+      // Cache it
+      session.smtp_password = smtpPassword;
+      localStorage.setItem("emp_session", JSON.stringify(session));
+    }
+  }
+
+  const from = session.email;
   const subject = document.getElementById("emailSubject").value;
   const body = document.getElementById("emailBody").value;
-  const attachment = document.getElementById("emailAttachment").files[0];
+  const attachments = document.getElementById("emailAttachment").files;
 
   const formData = new FormData();
   formData.append("from", from);
+  formData.append("smtp_password", smtpPassword);
   formData.append("subject", subject);
   formData.append("body", body);
   formData.append("recipients", JSON.stringify(selectedIds));
-  if (attachment) formData.append("attachment", attachment);
+  [...attachments].forEach(file => formData.append("attachment", file));
 
   const res = await fetch("/.netlify/functions/send_bulk_email", {
     method: "POST",
     body: formData,
   });
 
-  const result = await res.json();
-  if (res.ok) {
-    showToast(result.message || "✅ Emails sent successfully.");
-    document.getElementById("emailModal").classList.add("hidden");
-  } else {
-    showToast(result.message || "❌ Email sending failed.");
-    console.error(result);
+  try {
+    const result = await res.json();
+    if (res.ok) {
+      showToast(result.message || "✅ Emails sent successfully.");
+      document.getElementById("bulkEmailModal").classList.add("hidden");
+    } else {
+      showToast(result.message || "❌ Email sending failed.");
+      console.error(result);
+    }
+  } catch (err) {
+    showToast("❌ Unexpected server error.");
+    console.error("❌ Failed to parse response:", err);
   }
 });
+
 
 // Step 2 — Modal Control & File Preview
 function openEmailModal() {
