@@ -94,8 +94,7 @@
       <div>
         <label class="block text-sm font-medium">Attachments (optional):</label>
         <input id="emailAttachment" type="file" class="w-full border rounded px-3 py-2" multiple />
-<ul id="filePreview" class="text-sm mt-2 space-y-2"></ul>
-
+        <ul id="filePreview" class="text-xs text-gray-600 mt-2"></ul>
       </div>
       <div class="flex justify-end space-x-3 mt-4">
         <button type="button" onclick="closeBulkEmailModal()" class="bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
@@ -125,7 +124,7 @@
         <th class="p-2 border min-w-[240px]">Actions</th>
       </tr>
     </thead>
-    <tbody id="employeeTable" class="text-center text-sm text-white"></tbody>
+    <tbody id="employeeTable" class="text-center text-sm"></tbody>
   </table>
 </div>
 
@@ -180,6 +179,5 @@
 </div>
 
 <script src="/assets/js/admin_dashboard.js" defer></script>
-
 </body>
 </html>
