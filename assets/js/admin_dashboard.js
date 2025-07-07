@@ -641,11 +641,13 @@ function openEmailModal() {
   const modal = document.getElementById("bulkEmailModal");
   const fromInput = document.getElementById("emailFrom");
   const session = JSON.parse(localStorage.getItem("emp_session"));
+
   if (modal && fromInput && session) {
-    fromInput.value = session.email || session.emp_id + "@nikagenyx.com";
+    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
     modal.classList.remove("hidden");
   }
 }
+
 
 function closeBulkEmailModal() {
   document.getElementById("bulkEmailModal").classList.add("hidden");
