@@ -37,26 +37,27 @@ exports.handler = async (event) => {
 
       try {
         const from = fields.from?.[0];
+        const smtp_password = fields.smtp_password?.[0];
         const subject = fields.subject?.[0];
         const body = fields.body?.[0];
         const empIds = JSON.parse(fields.recipients?.[0] || "[]");
         const attachmentFiles = files.attachment || [];
 
-        if (!from || !subject || !body || empIds.length === 0) {
+        if (!from || !smtp_password || !subject || !body || empIds.length === 0) {
           return resolve({
             statusCode: 400,
             body: JSON.stringify({ message: "Missing required fields" }),
           });
         }
 
-        // --- Create transporter dynamically for the logged-in admin ---
+        // Create transporter for the logged-in admin
         const transporter = nodemailer.createTransport({
           host: "smtpout.secureserver.net",
           port: 465,
           secure: true,
           auth: {
             user: from,
-            pass: process.env.ADMIN_EMAIL_PASS,
+            pass: smtp_password
           },
         });
 
