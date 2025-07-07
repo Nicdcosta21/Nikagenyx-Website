@@ -242,6 +242,179 @@
   renderMonthSelector();
   renderDateSelector();
   loadAttendance();
+</script><script>
+  const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+  const today = new Date();
+  let currentMonth = today.getMonth();
+  let currentYear = today.getFullYear();
+  let selectedDate = today.getDate();
+  let mouseDown = false;
+  let dragStatus = "P";
+  let employees = [];
+
+  document.addEventListener("mousedown", () => { mouseDown = true; });
+  document.addEventListener("mouseup", () => { mouseDown = false; });
+  document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
+
+  function formatAMPM(index) {
+    const hour = Math.floor(index / 2);
+    const minute = index % 2 === 0 ? '00' : '30';
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${formattedHour}:${minute} ${ampm}`;
+  }
+
+  function daysInMonth(month, year) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  function renderMonthSelector() {
+    const container = document.getElementById("monthSelector");
+    container.innerHTML = "";
+    months.forEach((m, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = `${m} ${currentYear}`;
+      btn.className = `month-btn ${i === currentMonth ? "active" : ""}`;
+      btn.onclick = () => {
+        currentMonth = i; selectedDate = 1;
+        renderMonthSelector(); renderDateSelector(); loadAttendance();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function renderDateSelector() {
+    const container = document.getElementById("dateSelector");
+    container.innerHTML = "";
+    for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
+      const btn = document.createElement("button");
+      btn.textContent = d;
+      btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
+      btn.onclick = () => { selectedDate = d; renderDateSelector(); loadAttendance(); };
+      container.appendChild(btn);
+    }
+  }
+
+  async function loadAttendance() {
+    const grid = document.getElementById("attendanceGrid");
+    grid.innerHTML = "Loading...";
+    const res = await fetch(`/.netlify/functions/get_attendance_calendar?month=${currentMonth + 1}&year=${currentYear}`);
+    const { data } = await res.json();
+    employees = data;
+    grid.innerHTML = "";
+
+    data.forEach(emp => {
+      const row = document.createElement("div");
+      row.className = "employee-row p-4 mb-4 rounded shadow";
+      row.id = `row-${emp.emp_id}`;
+
+      const title = document.createElement("div");
+      title.className = "font-bold mb-2";
+      title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
+      row.appendChild(title);
+
+      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+      emp.blockStates = [...blocks];
+
+      let summary = { P: 0, A: 0, L: 0 };
+      const blockWrap = document.createElement("div");
+      blockWrap.className = "block-wrap";
+
+      emp.blockStates.forEach((state, i) => {
+        const finalState = ["P", "L", "A"].includes(state) ? state : "A";
+        summary[finalState] = (summary[finalState] || 0) + 1;
+
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${finalState}`;
+        box.dataset.index = i;
+        box.dataset.state = finalState;
+        box.title = formatAMPM(i);
+
+        // Drag: set to dragStatus (for bulk marking)
+        box.addEventListener("mouseenter", (e) => {
+          if (mouseDown && box.dataset.state !== dragStatus) {
+            setBlockState(box, emp.emp_id, dragStatus);
+          }
+        });
+
+        // Click: toggle between P and A
+        box.addEventListener("click", () => {
+          // Toggle only between P and A, leave "L" as is unless you want to toggle that too.
+          let newState;
+          if (box.dataset.state === "P") newState = "A";
+          else if (box.dataset.state === "A") newState = "P";
+          else newState = dragStatus; // For "L", use dragStatus (or keep as "L" if you wish)
+          setBlockState(box, emp.emp_id, newState);
+        });
+
+        // Touch support
+        box.addEventListener("touchstart", (e) => {
+          let newState;
+          if (box.dataset.state === "P") newState = "A";
+          else if (box.dataset.state === "A") newState = "P";
+          else newState = dragStatus;
+          setBlockState(box, emp.emp_id, newState);
+        });
+
+        blockWrap.appendChild(box);
+      });
+
+      row.appendChild(blockWrap);
+
+      const totalP = emp.blockStates.filter(b => b === "P").length;
+      const totalHours = totalP * 0.5;
+      const info = document.createElement("div");
+      info.textContent = `P: ${totalP} | A: ${emp.blockStates.filter(b=>b==="A").length} | L: ${emp.blockStates.filter(b=>b==="L").length} → ${totalHours.toFixed(2)} hrs`;
+      info.className = "text-sm mt-2 text-gray-300";
+      row.appendChild(info);
+
+      row.classList.remove("row-red", "row-yellow", "row-green");
+      if (totalHours < 5) row.classList.add("row-red");
+      else if (totalHours < 7) row.classList.add("row-yellow");
+      else row.classList.add("row-green");
+
+      const btn = document.createElement("button");
+      btn.textContent = "Confirm Changes";
+      btn.className = "confirm-btn mt-2";
+      btn.onclick = () => submit(emp.emp_id);
+      row.appendChild(btn);
+
+      grid.appendChild(row);
+    });
+  }
+
+  // Helper to set a block state and update data
+  function setBlockState(box, empId, newState) {
+    box.dataset.state = newState;
+    box.className = `half-hour-box ${newState}`;
+
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = newState;
+  }
+
+  async function submit(empId) {
+    const emp = employees.find(e => e.emp_id === empId);
+    const slots = emp.blockStates.map((state, i) => ({ slot: i, status: state }));
+    const res = await fetch("/.netlify/functions/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emp_id: empId,
+        year: currentYear,
+        month: currentMonth + 1,
+        day: selectedDate,
+        slots
+      })
+    });
+    const result = await res.json();
+    alert(result.message || result.error);
+    loadAttendance();
+  }
+
+  renderMonthSelector();
+  renderDateSelector();
+  loadAttendance();
 </script>
 </body>
 </html>
