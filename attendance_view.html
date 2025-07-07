@@ -44,9 +44,10 @@
       border-radius: 3px;
       display: inline-block;
     }
-    .P { background-color: #22c55e; }
-    .A { background-color: #ef4444; }
-    .L { background-color: #facc15; }
+    .P { background-color: #22c55e; } /* Present */
+    .A { background-color: #ef4444; } /* Absent */
+    .L { background-color: #facc15; } /* Leave */
+    .B { background-color: #60a5fa; } /* Break */
 
     .row-green { background-color: #15803d33; }
     .row-yellow { background-color: #facc1533; }
@@ -61,7 +62,7 @@
   </style>
 </head>
 <body>
-  <h1>📅 Employee Attendance - Date View</h1>
+  <h1>🗕️ Employee Attendance - Date View</h1>
   <div id="monthSelector"></div>
   <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
   <div class="text-center mb-4">
@@ -70,6 +71,7 @@
       <option value="P">Present</option>
       <option value="L">Leave</option>
       <option value="A">Absent</option>
+      <option value="B">Break</option>
     </select>
   </div>
   <div id="attendanceGrid"></div>
@@ -147,13 +149,13 @@
       const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
       emp.blockStates = [...blocks];
 
-      let summary = { P: 0, A: 0 };
+      let summary = { P: 0, A: 0, L: 0, B: 0 };
       const blockWrap = document.createElement("div");
       blockWrap.className = "block-wrap";
 
       emp.blockStates.forEach((state, i) => {
-        const finalState = ["P", "L", "A"].includes(state) ? state : "A";
-        summary[finalState] = (summary[finalState] || 0) + 1;
+        const finalState = ["P", "L", "A", "B"].includes(state) ? state : "A";
+        summary[finalState]++;
 
         const box = document.createElement("div");
         box.className = `half-hour-box ${finalState}`;
@@ -169,8 +171,9 @@
       row.appendChild(blockWrap);
 
       const info = document.createElement("div");
-      const totalHours = summary.P * 0.5;
-      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      const effectiveP = summary.P; // Only count "P" as working hours
+      const totalHours = effectiveP * 0.5;
+      info.textContent = `P: ${summary.P} | L: ${summary.L} | B: ${summary.B} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
 
@@ -190,26 +193,24 @@
   }
 
   function toggleBlock(box, empId) {
-    const current = box.dataset.state;
-    const next = current === dragStatus ? "A" : dragStatus;
-    box.dataset.state = next;
-    box.className = `half-hour-box ${next}`;
-
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
-    if (emp) emp.blockStates[index] = next;
+    if (!emp) return;
+
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
+    emp.blockStates[index] = dragStatus;
   }
 
   function dragToggleBlock(box, empId) {
     if (!mouseDown) return;
-    const current = box.dataset.state;
-    const newState = current === dragStatus ? "A" : dragStatus;
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
     if (!emp) return;
-    box.dataset.state = newState;
-    box.className = `half-hour-box ${newState}`;
-    emp.blockStates[index] = newState;
+
+    box.dataset.state = dragStatus;
+    box.className = `half-hour-box ${dragStatus}`;
+    emp.blockStates[index] = dragStatus;
   }
 
   async function submit(empId) {
