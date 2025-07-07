@@ -614,73 +614,88 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   const empId = session.emp_id;
   let smtpPassword = session.smtp_password;
 
-  // 🔐 Step 1: Get SMTP password if not in session
-  if (!smtpPassword) {
-  const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
-  const data = await res.json();
-  if (data.smtp_password) {
-    smtpPassword = data.smtp_password;
-  } else {
-    smtpPassword = prompt("Enter your email password to send:");
-    if (!smtpPassword) return showToast("Cancelled");
+  // ✅ Step 1: Get SMTP password if not stored
+  if (!smtpPassword || smtpPassword === "undefined") {
+    try {
+      const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+      const data = await res.json();
+      if (data.smtp_password && data.smtp_password !== "undefined") {
+        smtpPassword = data.smtp_password;
+      } else {
+        smtpPassword = prompt("Enter your email password to send:");
+        if (!smtpPassword || smtpPassword.trim() === "") {
+          showToast("❌ Sending cancelled – no password entered.");
+          return;
+        }
 
-    await fetch("/.netlify/functions/save_smtp_password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
-    });
+        await fetch("/.netlify/functions/save_smtp_password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+        });
 
-    // Cache it
-    session.smtp_password = smtpPassword;
-    localStorage.setItem("emp_session", JSON.stringify(session));
-  }
-}
-
-
-  const from = session.email;
-const subject = document.getElementById("emailSubject").value;
-const body = document.getElementById("emailBody").value;
-const attachments = document.getElementById("emailAttachment").files;
-
-const formData = new FormData();
-formData.append("from", from);
-formData.append("smtp_password", smtpPassword);
-formData.append("subject", subject);
-formData.append("body", body);
-formData.append("recipients", JSON.stringify(selectedIds));
-[...attachments].forEach(file => formData.append("attachment", file));
-
-const res = await fetch("/.netlify/functions/send_bulk_email", {
-  method: "POST",
-  body: formData,
-});
-
-try {
-  const contentType = res.headers.get("content-type") || "";
-  
-  if (!res.ok) {
-    const errorText = await res.text(); // log HTML or error body
-    console.error("❌ Email failed:", errorText);
-    showToast("❌ Email sending failed.");
-    return;
+        session.smtp_password = smtpPassword;
+        localStorage.setItem("emp_session", JSON.stringify(session));
+      }
+    } catch (err) {
+      console.error("❌ Error loading SMTP password:", err);
+      showToast("❌ Could not retrieve your SMTP credentials.");
+      return;
+    }
   }
 
-  if (!contentType.includes("application/json")) {
-    const errorText = await res.text();
-    console.error("❌ Unexpected non-JSON response:", errorText);
-    showToast("❌ Unexpected server error.");
-    return;
+  // ✅ Step 2: Prepare email data
+  const from = "n.dcosta@nikagenyx.com";
+  const fromName = session.name || "Nikagenyx HR";
+  const subject = document.getElementById("emailSubject").value;
+  const body = document.getElementById("emailBody").value;
+  const attachments = document.getElementById("emailAttachment").files;
+
+  const formData = new FormData();
+  formData.append("from", from);
+  formData.append("from_name", fromName);
+  formData.append("smtp_password", smtpPassword);
+  formData.append("subject", subject);
+  formData.append("body", body);
+  formData.append("recipients", JSON.stringify(selectedIds));
+  [...attachments].forEach(file => formData.append("attachment", file));
+
+  // ✅ Step 3: Send email
+  const res = await fetch("/.netlify/functions/send_bulk_email", {
+    method: "POST",
+    body: formData,
+  });
+
+  try {
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("❌ Email failed:", errorText);
+      showToast("❌ Email sending failed.");
+      return;
+    }
+
+    if (!contentType.includes("application/json")) {
+      const errorText = await res.text();
+      console.error("❌ Unexpected non-JSON response:", errorText);
+      showToast("❌ Unexpected server error.");
+      return;
+    }
+
+    const result = await res.json();
+    if (result.failed?.length) {
+      showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
+    } else {
+      showToast(result.message || "✅ Emails sent successfully.");
+    }
+
+    document.getElementById("bulkEmailModal").classList.add("hidden");
+
+  } catch (err) {
+    console.error("❌ Exception during email send:", err);
+    showToast("❌ Unexpected error occurred.");
   }
-
-  const result = await res.json();
-  showToast(result.message || "✅ Emails sent successfully.");
-  document.getElementById("bulkEmailModal").classList.add("hidden");
-
-} catch (err) {
-  showToast("❌ Unexpected error occurred.");
-  console.error("❌ Exception:", err);
-}
-
 });
 
 
