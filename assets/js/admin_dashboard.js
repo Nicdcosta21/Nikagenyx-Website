@@ -733,7 +733,7 @@ function closeBulkEmailModal() {
 }
 
 
-document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
 
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
@@ -778,3 +778,5 @@ function setupAttachmentPreview() {
     attachInput.files = dt.files;
   }
 }
+
+document.addEventListener("DOMContentLoaded", setupAttachmentPreview);  
