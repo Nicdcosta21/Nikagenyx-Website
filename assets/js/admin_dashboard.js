@@ -685,79 +685,27 @@ function openEmailModal() {
 
 function closeBulkEmailModal() {
   document.getElementById("bulkEmailModal").classList.add("hidden");
+  document.getElementById("bulkEmailForm").reset();
+  document.getElementById("filePreview").innerHTML = "";
 }
 
+
 // Show selected file names below attachment input
-document.addEventListener("DOMContentLoaded", () => {
+function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
+  if (!attachInput || !fileList) return;
 
-  if (attachInput && fileList) {
-    attachInput.addEventListener("change", function () {
-      fileList.innerHTML = "";
-      for (const file of this.files) {
-        const li = document.createElement("li");
-        li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-        fileList.appendChild(li);
-      }
-    });
-  }
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  // === Handle attachment preview ===
-  const attachInput = document.getElementById("emailAttachment");
-  const fileList = document.getElementById("filePreview");
-  if (attachInput && fileList) {
-    attachInput.addEventListener("change", function () {
-      fileList.innerHTML = "";
-      for (const file of this.files) {
-        const li = document.createElement("li");
-        li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-        fileList.appendChild(li);
-      }
-    });
-  }
-
-const emailForm = document.getElementById("bulkEmailForm");
-if (emailForm) {
-  emailForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
-    if (selectedIds.length === 0) return showToast("No employees selected");
-
-    const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
-
-    const from = session.email;
-    const smtpPassword = session.smtp_password; // ✅ Make sure this is stored at login
-    const subject = document.getElementById("emailSubject").value;
-    const body = document.getElementById("emailBody").value;
-    const attachments = document.getElementById("emailAttachment").files;
-
-    const formData = new FormData();
-    formData.append("from", from);
-    formData.append("smtp_password", smtpPassword);
-    formData.append("subject", subject);
-    formData.append("body", body);
-    formData.append("recipients", JSON.stringify(selectedIds));
-    [...attachments].forEach(file => {
-      formData.append("attachment", file);
-    });
-
-    const res = await fetch("/.netlify/functions/send_bulk_email", {
-      method: "POST",
-      body: formData,
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      showToast(result.message || "✅ Emails sent successfully.");
-      document.getElementById("bulkEmailModal").classList.add("hidden");
-    } else {
-      showToast(result.message || "❌ Email sending failed.");
-      console.error(result);
+  attachInput.addEventListener("change", function () {
+    fileList.innerHTML = "";
+    for (const file of this.files) {
+      const li = document.createElement("li");
+      li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+      fileList.appendChild(li);
     }
   });
-  }
-});
+}
+
+document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
+
