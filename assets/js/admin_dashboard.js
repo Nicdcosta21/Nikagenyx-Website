@@ -748,7 +748,7 @@ function setupAttachmentPreview() {
     }
   });
 }
-
 document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
 
 
