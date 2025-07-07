@@ -55,7 +55,7 @@ exports.handler = async (event) => {
 
       try {
         const from = "n.dcosta@nikagenyx.com"; // ✅ Fixed authenticated sender
-        const fromName = fields.from_name?.[0] || "Nikagenyx MD";
+        const fromName = fields.from_name?.[0] || "Nik D'Costa";
         const smtpPass = fields.smtp_password?.[0];
         const subject = fields.subject?.[0];
         const body = fields.body?.[0];
@@ -98,13 +98,24 @@ exports.handler = async (event) => {
         <div style="text-align:center; background-color:#0f0e2c;">
           <img src="${header_base64}" alt="Header" style="max-width:100%; height:auto; display:block;" />
         </div>
-        <div style="padding: 30px 40px;">
-          <p style="font-size: 18px;">Dear ${emp.name},</p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            ${body.replace(/\n/g, "<br/>")}
-          </p>
-          <p style="margin-top: 30px;">Best regards,<br/><strong>${fromName}</strong></p>
-        </div>
+       <div style="padding: 30px 40px; font-family: Arial, sans-serif;">
+  <p style="font-size: 18px;">Dear ${emp.name},</p>
+
+  <p style="font-size: 16px; line-height: 1.6;">
+    ${body.replace(/\n/g, "<br/>")}
+  </p>
+
+  <p style="margin-top: 30px; font-size: 16px;">
+    Best regards,<br/>
+    <strong>${fromName || "Nik D’Costa"}</strong><br/>
+    Managing Director<br/>
+    Nikagenyx Vision Tech Private Limited<br/>
+    <a href="mailto:n.dcosta@nikagenyx.com">n.dcosta@nikagenyx.com</a><br/>
+    +91 86004 50072<br/>
+    Pune, Maharashtra, India
+  </p>
+</div>
+
         <div style="text-align:center; background-color:#0f0e2c;">
           <img src="${footer_base64}" alt="Footer" style="max-width:100%; height:auto; display:block;" />
         </div>
