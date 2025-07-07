@@ -80,11 +80,12 @@
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
   let mouseDown = false;
-  let employees = [];
+  let dragStarted = false;
   let dragStatus = "P";
+  let employees = [];
 
-  document.addEventListener("mousedown", () => mouseDown = true);
-  document.addEventListener("mouseup", () => mouseDown = false);
+  document.addEventListener("mousedown", () => { mouseDown = true; dragStarted = false; });
+  document.addEventListener("mouseup", () => { mouseDown = false; dragStarted = false; });
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
   function formatAMPM(index) {
@@ -147,7 +148,7 @@
       const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
       emp.blockStates = [...blocks];
 
-      let summary = { P: 0, A: 0 };
+      let summary = { P: 0, A: 0, L: 0 };
       const blockWrap = document.createElement("div");
       blockWrap.className = "block-wrap";
 
@@ -161,16 +162,48 @@
         box.dataset.state = finalState;
         box.title = formatAMPM(i);
 
-        box.onclick = () => toggleBlock(box, emp.emp_id);
-        box.onmouseover = () => dragToggleBlock(box, emp.emp_id);
+        // --- FIX 1: Always change state on mousedown, not only onclick
+        box.addEventListener("mousedown", (e) => {
+          mouseDown = true;
+          // Set to dragStatus directly, do not toggle
+          setBlockState(box, emp.emp_id, dragStatus);
+          dragStarted = true;
+        });
+
+        // Support pointer events for touch screens
+        box.addEventListener("touchstart", (e) => {
+          setBlockState(box, emp.emp_id, dragStatus);
+        });
+
+        // --- FIX 2: On drag, always set to dragStatus (no toggling), allow multiple drags
+        box.addEventListener("mouseenter", (e) => {
+          if (mouseDown) {
+            setBlockState(box, emp.emp_id, dragStatus);
+            dragStarted = true;
+          }
+        });
+
+        // --- FIX 2 (continued): reset drag state on mouseup
+        box.addEventListener("mouseup", () => {
+          mouseDown = false;
+          dragStarted = false;
+        });
+
+        // --- For accessibility, still allow click/tap to set state
+        box.addEventListener("click", () => {
+          setBlockState(box, emp.emp_id, dragStatus);
+        });
+
         blockWrap.appendChild(box);
       });
 
       row.appendChild(blockWrap);
 
+      // --- FIX 3+4: Only count green (P) for total hours, allow gaps
+      const totalP = emp.blockStates.filter(b => b === "P").length;
+      const totalHours = totalP * 0.5;
       const info = document.createElement("div");
-      const totalHours = summary.P * 0.5;
-      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      info.textContent = `P: ${totalP} | A: ${emp.blockStates.filter(b=>b==="A").length} | L: ${emp.blockStates.filter(b=>b==="L").length} → ${totalHours.toFixed(2)} hrs`;
       info.className = "text-sm mt-2 text-gray-300";
       row.appendChild(info);
 
@@ -189,27 +222,15 @@
     });
   }
 
-  function toggleBlock(box, empId) {
-    const current = box.dataset.state;
-    const next = current === dragStatus ? "A" : dragStatus;
-    box.dataset.state = next;
-    box.className = `half-hour-box ${next}`;
-
-    const index = parseInt(box.dataset.index);
-    const emp = employees.find(e => e.emp_id === empId);
-    if (emp) emp.blockStates[index] = next;
-  }
-
-  function dragToggleBlock(box, empId) {
-    if (!mouseDown) return;
-    const current = box.dataset.state;
-    const newState = current === dragStatus ? "A" : dragStatus;
-    const index = parseInt(box.dataset.index);
-    const emp = employees.find(e => e.emp_id === empId);
-    if (!emp) return;
+  // Helper to set a block state and update data
+  function setBlockState(box, empId, newState) {
     box.dataset.state = newState;
     box.className = `half-hour-box ${newState}`;
-    emp.blockStates[index] = newState;
+
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = newState;
+    // Optionally, update the summary/hours display here if you want live updating
   }
 
   async function submit(empId) {
