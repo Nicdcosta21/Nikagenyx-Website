@@ -737,17 +737,40 @@ function closeBulkEmailModal() {
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
+
   if (!attachInput || !fileList) return;
 
   attachInput.addEventListener("change", function () {
     fileList.innerHTML = "";
-    for (const file of this.files) {
+    for (let i = 0; i < this.files.length; i++) {
+      const file = this.files[i];
+
       const li = document.createElement("li");
-      li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+      li.classList.add("relative", "bg-gray-100", "p-2", "rounded", "shadow");
+
+      const nameSpan = document.createElement("span");
+      nameSpan.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)}K)`;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "×";
+      removeBtn.className = "absolute top-1 right-2 text-red-500 font-bold text-lg hover:text-red-700";
+      removeBtn.onclick = () => {
+        // Create a new FileList without this file
+        const dt = new DataTransfer();
+        [...attachInput.files].forEach((f, index) => {
+          if (index !== i) dt.items.add(f);
+        });
+        attachInput.files = dt.files;
+        setupAttachmentPreview(); // Refresh preview
+      };
+
+      li.appendChild(nameSpan);
+      li.appendChild(removeBtn);
       fileList.appendChild(li);
     }
   });
 }
+
 document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
 
 
