@@ -15,9 +15,19 @@ document.getElementById("p_dept").textContent = currentUser.department || "-";
 document.getElementById("p_role").textContent = currentUser.role || "-";
 
 
+ // ✅ Correct search logic here
   const searchInput = document.getElementById("search");
   if (searchInput) {
-    searchInput.addEventListener("input", filterEmployeeTable);
+    searchInput.addEventListener("input", function () {
+      const searchTerm = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#employeeTable tr");
+      rows.forEach(row => {
+        const empId = row.cells[1]?.textContent.toLowerCase() || "";
+        const empName = row.cells[2]?.textContent.toLowerCase() || "";
+        const match = empId.includes(searchTerm) || empName.includes(searchTerm);
+        row.style.display = match ? "" : "none";
+      });
+    });
   }
 });
 
@@ -142,18 +152,7 @@ async function fetchEmployees(currentUser) {
     showToast("Failed to load employee data.");
   }
 }
-// ✅ Enable live search after rows are loaded
-const searchInput = document.getElementById("search");
-searchInput.addEventListener("input", function () {
-const searchTerm = this.value.toLowerCase();
-const rows = document.querySelectorAll("#employeeTable tr");
-rows.forEach(row => {
-const empId = row.cells[1]?.textContent.toLowerCase() || "";
-const empName = row.cells[2]?.textContent.toLowerCase() || "";
-const match = empId.includes(searchTerm) || empName.includes(searchTerm);
-row.style.display = match ? "" : "none";
-});
-});
+
 
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
