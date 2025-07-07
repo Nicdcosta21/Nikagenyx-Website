@@ -24,8 +24,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const searchTerm = this.value.toLowerCase();
       const rows = document.querySelectorAll("#employeeTable tr");
       rows.forEach(row => {
-        const empId = row.cells[1]?.textContent.toLowerCase() || "";
-        const empName = row.cells[2]?.textContent.toLowerCase() || "";
+        if (!row || row.cells.length < 3) return;
+
+const empId = row.cells[1].textContent.toLowerCase();
+const empName = row.cells[2].textContent.toLowerCase();
+
         const match = empId.includes(searchTerm) || empName.includes(searchTerm);
         row.style.display = match ? "" : "none";
       });
@@ -112,10 +115,26 @@ async function fetchEmployees(currentUser) {
 
     const data = await res.json();
     const employees = data.employees;
+    console.log("👥 EMPLOYEES:", employees);
+    console.log("📍 Table:", document.getElementById("employeeTable"));
+
     console.log("📦 EMPLOYEE FETCH START");
     const tbody = document.getElementById("employeeTable");
     console.log("👀 Tbody found?", !!tbody);
     tbody.innerHTML = "";
+    const testRow = document.createElement("tr");
+testRow.innerHTML = `
+  <td class="p-2 border"><input type="checkbox" /></td>
+  <td class="p-2 border">NGX999</td>
+  <td class="p-2 border">Test User</td>
+  <td class="p-2 border">9999999999</td>
+  <td class="p-2 border">01-01-1990</td>
+  <td class="p-2 border">Admin</td>
+  <td class="p-2 border">Tech Team</td>
+  <td class="p-2 border">—</td>
+`;
+tbody.appendChild(testRow);
+
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
@@ -151,6 +170,8 @@ async function fetchEmployees(currentUser) {
 
 
       tbody.appendChild(tr);
+      console.log("✅ Row added:", emp.emp_id);
+
       setupRowListeners(tr, emp, currentUser);
     });
   } catch (err) {
