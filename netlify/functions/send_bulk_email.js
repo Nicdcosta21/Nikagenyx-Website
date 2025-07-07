@@ -9,19 +9,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// --- Setup Transporter ---
-const transporter = nodemailer.createTransport({
-  host: "smtpout.secureserver.net",
-  port: 465,
-  secure: true, // true for port 465
-  auth: {
-    user: process.env.EMAIL_USER || process.env.MAIL_USER,
-    pass: process.env.EMAIL_PASS || process.env.MAIL_PASS,
-  },
-});
-
-
-// --- Helper to fetch emails from DB ---
+// --- Helper to fetch employee emails ---
 async function getEmployeeEmails(empIds) {
   const client = await pool.connect();
   try {
@@ -35,10 +23,7 @@ async function getEmployeeEmails(empIds) {
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      body: "Method Not Allowed",
-    };
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   return new Promise((resolve) => {
@@ -46,7 +31,7 @@ exports.handler = async (event) => {
 
     form.parse(event, async (err, fields, files) => {
       if (err) {
-        console.error("Form parse error:", err);
+        console.error("❌ Form parsing error:", err);
         return resolve({ statusCode: 500, body: "Form parsing failed" });
       }
 
@@ -55,7 +40,7 @@ exports.handler = async (event) => {
         const subject = fields.subject?.[0];
         const body = fields.body?.[0];
         const empIds = JSON.parse(fields.recipients?.[0] || "[]");
-        const attachmentFile = files.attachment?.[0];
+        const attachmentFiles = files.attachment || [];
 
         if (!from || !subject || !body || empIds.length === 0) {
           return resolve({
@@ -63,6 +48,17 @@ exports.handler = async (event) => {
             body: JSON.stringify({ message: "Missing required fields" }),
           });
         }
+
+        // --- Create transporter dynamically for the logged-in admin ---
+        const transporter = nodemailer.createTransport({
+          host: "smtpout.secureserver.net",
+          port: 465,
+          secure: true,
+          auth: {
+            user: from,
+            pass: process.env.ADMIN_EMAIL_PASS,
+          },
+        });
 
         const recipients = await getEmployeeEmails(empIds);
         const failed = [];
@@ -88,13 +84,11 @@ exports.handler = async (event) => {
             `,
           };
 
-          if (attachmentFile) {
-            mailOptions.attachments = [
-              {
-                filename: attachmentFile.originalFilename,
-                content: fs.createReadStream(attachmentFile.path),
-              },
-            ];
+          if (attachmentFiles.length > 0) {
+            mailOptions.attachments = attachmentFiles.map(file => ({
+              filename: file.originalFilename,
+              content: fs.createReadStream(file.path),
+            }));
           }
 
           try {
@@ -117,7 +111,7 @@ exports.handler = async (event) => {
         console.error("❌ Error in send_bulk_email:", error);
         return resolve({
           statusCode: 500,
-          body: JSON.stringify({ message: "Internal error" }),
+          body: JSON.stringify({ message: "Internal server error" }),
         });
       }
     });
