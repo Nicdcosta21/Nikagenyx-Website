@@ -603,7 +603,7 @@ window.closeEmailModal = function () {
   document.getElementById("emailModal").classList.add("hidden");
 };
 
-document.getElementById("emailForm").addEventListener("submit", async (e) => {
+document.getElementById("bulkEmailForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
   if (selectedIds.length === 0) return showToast("No employees selected");
