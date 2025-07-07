@@ -637,36 +637,49 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   }
 
   const from = session.email;
-  const subject = document.getElementById("emailSubject").value;
-  const body = document.getElementById("emailBody").value;
-  const attachments = document.getElementById("emailAttachment").files;
+const subject = document.getElementById("emailSubject").value;
+const body = document.getElementById("emailBody").value;
+const attachments = document.getElementById("emailAttachment").files;
 
-  const formData = new FormData();
-  formData.append("from", from);
-  formData.append("smtp_password", smtpPassword);
-  formData.append("subject", subject);
-  formData.append("body", body);
-  formData.append("recipients", JSON.stringify(selectedIds));
-  [...attachments].forEach(file => formData.append("attachment", file));
+const formData = new FormData();
+formData.append("from", from);
+formData.append("smtp_password", smtpPassword);
+formData.append("subject", subject);
+formData.append("body", body);
+formData.append("recipients", JSON.stringify(selectedIds));
+[...attachments].forEach(file => formData.append("attachment", file));
 
-  const res = await fetch("/.netlify/functions/send_bulk_email", {
-    method: "POST",
-    body: formData,
-  });
+const res = await fetch("/.netlify/functions/send_bulk_email", {
+  method: "POST",
+  body: formData,
+});
 
-  try {
-    const result = await res.json();
-    if (res.ok) {
-      showToast(result.message || "✅ Emails sent successfully.");
-      document.getElementById("bulkEmailModal").classList.add("hidden");
-    } else {
-      showToast(result.message || "❌ Email sending failed.");
-      console.error(result);
-    }
-  } catch (err) {
-    showToast("❌ Unexpected server error.");
-    console.error("❌ Failed to parse response:", err);
+try {
+  const contentType = res.headers.get("content-type") || "";
+  
+  if (!res.ok) {
+    const errorText = await res.text(); // log HTML or error body
+    console.error("❌ Email failed:", errorText);
+    showToast("❌ Email sending failed.");
+    return;
   }
+
+  if (!contentType.includes("application/json")) {
+    const errorText = await res.text();
+    console.error("❌ Unexpected non-JSON response:", errorText);
+    showToast("❌ Unexpected server error.");
+    return;
+  }
+
+  const result = await res.json();
+  showToast(result.message || "✅ Emails sent successfully.");
+  document.getElementById("bulkEmailModal").classList.add("hidden");
+
+} catch (err) {
+  showToast("❌ Unexpected error occurred.");
+  console.error("❌ Exception:", err);
+}
+
 });
 
 
