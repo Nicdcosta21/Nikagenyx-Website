@@ -686,41 +686,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // === Handle email form submission ===
-  const emailForm = document.getElementById("bulkEmailForm");
-  if (emailForm) {
-    emailForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
-      if (selectedIds.length === 0) return showToast("No employees selected");
+const emailForm = document.getElementById("bulkEmailForm");
+if (emailForm) {
+  emailForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+    if (selectedIds.length === 0) return showToast("No employees selected");
 
-      const from = document.getElementById("emailFrom").value;
-      const subject = document.getElementById("emailSubject").value;
-      const body = document.getElementById("emailBody").value;
-      const attachments = document.getElementById("emailAttachment").files;
+    const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
 
-      const formData = new FormData();
-      formData.append("from", from);
-      formData.append("subject", subject);
-      formData.append("body", body);
-      formData.append("recipients", JSON.stringify(selectedIds));
-      [...attachments].forEach(file => {
-        formData.append("attachment", file);
-      });
+    const from = session.email;
+    const smtpPassword = session.smtp_password; // ✅ Make sure this is stored at login
+    const subject = document.getElementById("emailSubject").value;
+    const body = document.getElementById("emailBody").value;
+    const attachments = document.getElementById("emailAttachment").files;
 
-      const res = await fetch("/.netlify/functions/send_bulk_email", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await res.json();
-      if (res.ok) {
-        showToast(result.message || "✅ Emails sent successfully.");
-        document.getElementById("bulkEmailModal").classList.add("hidden");
-      } else {
-        showToast(result.message || "❌ Email sending failed.");
-        console.error(result);
-      }
+    const formData = new FormData();
+    formData.append("from", from);
+    formData.append("smtp_password", smtpPassword);
+    formData.append("subject", subject);
+    formData.append("body", body);
+    formData.append("recipients", JSON.stringify(selectedIds));
+    [...attachments].forEach(file => {
+      formData.append("attachment", file);
     });
-  }
-});
+
+    const res = await fetch("/.netlify/functions/send_bulk_email", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      showToast(result.message || "✅ Emails sent successfully.");
+      document.getElementById("bulkEmailModal").classList.add("hidden");
+    } else {
+      showToast(result.message || "❌ Email sending failed.");
+      console.error(result);
+    }
+  });
+}
