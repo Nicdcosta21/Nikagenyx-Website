@@ -80,12 +80,11 @@
   let currentYear = today.getFullYear();
   let selectedDate = today.getDate();
   let mouseDown = false;
-  let dragStarted = false;
   let dragStatus = "P";
   let employees = [];
 
-  document.addEventListener("mousedown", () => { mouseDown = true; dragStarted = false; });
-  document.addEventListener("mouseup", () => { mouseDown = false; dragStarted = false; });
+  document.addEventListener("mousedown", () => { mouseDown = true; });
+  document.addEventListener("mouseup", () => { mouseDown = false; });
   document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
   function formatAMPM(index) {
@@ -162,35 +161,25 @@
         box.dataset.state = finalState;
         box.title = formatAMPM(i);
 
-        // --- FIX 1: Always change state on mousedown, not only onclick
-        box.addEventListener("mousedown", (e) => {
-          mouseDown = true;
-          // Set to dragStatus directly, do not toggle
-          setBlockState(box, emp.emp_id, dragStatus);
-          dragStarted = true;
-        });
-
-        // Support pointer events for touch screens
-        box.addEventListener("touchstart", (e) => {
-          setBlockState(box, emp.emp_id, dragStatus);
-        });
-
-        // --- FIX 2: On drag, always set to dragStatus (no toggling), allow multiple drags
+        // Fix 1: Only trigger change on drag if mouse is down, and if not already in the wanted state
         box.addEventListener("mouseenter", (e) => {
-          if (mouseDown) {
+          if (mouseDown && box.dataset.state !== dragStatus) {
             setBlockState(box, emp.emp_id, dragStatus);
-            dragStarted = true;
           }
         });
 
-        // --- FIX 2 (continued): reset drag state on mouseup
-        box.addEventListener("mouseup", () => {
-          mouseDown = false;
-          dragStarted = false;
+        // Fix 2: Always set to dragStatus, allow changing "P" to anything else
+        box.addEventListener("mousedown", (e) => {
+          setBlockState(box, emp.emp_id, dragStatus);
         });
 
-        // --- For accessibility, still allow click/tap to set state
+        // For accessibility: click sets state
         box.addEventListener("click", () => {
+          setBlockState(box, emp.emp_id, dragStatus);
+        });
+
+        // Touch support
+        box.addEventListener("touchstart", (e) => {
           setBlockState(box, emp.emp_id, dragStatus);
         });
 
@@ -199,7 +188,6 @@
 
       row.appendChild(blockWrap);
 
-      // --- FIX 3+4: Only count green (P) for total hours, allow gaps
       const totalP = emp.blockStates.filter(b => b === "P").length;
       const totalHours = totalP * 0.5;
       const info = document.createElement("div");
@@ -230,7 +218,6 @@
     const index = parseInt(box.dataset.index);
     const emp = employees.find(e => e.emp_id === empId);
     if (emp) emp.blockStates[index] = newState;
-    // Optionally, update the summary/hours display here if you want live updating
   }
 
   async function submit(empId) {
