@@ -25,10 +25,21 @@ exports.handler = async (event) => {
     }
 
     // 🔍 Fetch full employee including failed_pin_attempts
-    const result = await pool.query(
-      'SELECT emp_id, role, pin, failed_pin_attempts FROM employees WHERE emp_id = $1',
-      [empId]
-    );
+    body: JSON.stringify({
+  ok: true,
+  user: {
+    emp_id: user.emp_id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    dob: user.dob,
+    department: user.department,
+    base_salary: user.base_salary,
+    role: user.role,
+    failed_pin_attempts: 0
+  }
+})
+
 
     if (result.rows.length === 0) {
       return {
