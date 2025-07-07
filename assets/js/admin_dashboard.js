@@ -596,7 +596,8 @@ window.openEmailModal = function () {
     document.getElementById("emailFrom").value = email || "n.dcosta@nikagenyx.com";
   }
 
-  document.getElementById("emailModal").classList.remove("hidden");
+  document.getElementById("bulkEmailModal").classList.remove("hidden");
+
 };
 
 window.closeEmailModal = function () {
