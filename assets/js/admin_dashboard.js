@@ -733,45 +733,50 @@ function closeBulkEmailModal() {
 }
 
 
-// Show selected file names below attachment input
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
 
   if (!attachInput || !fileList) return;
 
-  attachInput.addEventListener("change", function () {
+  // Store files independently so we can modify them
+  let selectedFiles = [];
+
+  attachInput.addEventListener("change", function (e) {
+    const newFiles = Array.from(e.target.files);
+    selectedFiles = [...selectedFiles, ...newFiles];
+
+    renderFileList();
+  });
+
+  function renderFileList() {
     fileList.innerHTML = "";
-    for (let i = 0; i < this.files.length; i++) {
-      const file = this.files[i];
-
+    selectedFiles.forEach((file, index) => {
       const li = document.createElement("li");
-      li.classList.add("relative", "bg-gray-100", "p-2", "rounded", "shadow");
+      li.className = "relative bg-white border rounded p-2 shadow flex justify-between items-center";
 
-      const nameSpan = document.createElement("span");
-      nameSpan.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)}K)`;
+      const fileInfo = document.createElement("span");
+      fileInfo.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
+      fileInfo.className = "text-sm text-gray-800";
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "×";
-      removeBtn.className = "absolute top-1 right-2 text-red-500 font-bold text-lg hover:text-red-700";
+      removeBtn.className = "text-red-500 hover:text-red-700 font-bold text-xl";
       removeBtn.onclick = () => {
-        // Create a new FileList without this file
-        const dt = new DataTransfer();
-        [...attachInput.files].forEach((f, index) => {
-          if (index !== i) dt.items.add(f);
-        });
-        attachInput.files = dt.files;
-        setupAttachmentPreview(); // Refresh preview
+        selectedFiles.splice(index, 1);
+        renderFileList();
       };
 
-      li.appendChild(nameSpan);
+      li.appendChild(fileInfo);
       li.appendChild(removeBtn);
       fileList.appendChild(li);
-    }
-  });
+    });
+
+    // Reconstruct DataTransfer object for the input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    attachInput.files = dt.files;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
-
-
-
