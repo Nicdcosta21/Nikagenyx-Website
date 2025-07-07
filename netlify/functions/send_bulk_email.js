@@ -88,12 +88,22 @@ exports.handler = async (event) => {
   to: emp.email,
   subject,
   html: `
-    <div style="font-family: Arial, sans-serif;">
-      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAAGfCAYAAADLDzJ1AAAAAXNSR0IArs4c6QAAIABJREFUeF7s3Q..." style="width:100%;max-width:600px;" />
-      <p>Dear ${emp.name},</p>
-      <div style="margin: 10px 0;">${body.replace(/\n/g, "<br/>")}</div>
-      <p>Best regards,<br/>${fromName}</p>
-      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAADACAYAAACQoIPjAAAAAXNSR0IArs4c6QAAIABJREFUeF7t3X..." style="width:100%;max-width:600px;" />
+    <div style="background-color:#f5f5f5; padding: 40px 0; font-family: Arial, sans-serif;">
+      <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+        <div style="text-align:center; background-color:#0f0e2c;">
+          <img src="${header_base64}" alt="Header" style="max-width:100%; height:auto; display:block;" />
+        </div>
+        <div style="padding: 30px 40px;">
+          <p style="font-size: 18px;">Dear ${emp.name},</p>
+          <p style="font-size: 16px; line-height: 1.6;">
+            ${body.replace(/\n/g, "<br/>")}
+          </p>
+          <p style="margin-top: 30px;">Best regards,<br/><strong>${fromName}</strong></p>
+        </div>
+        <div style="text-align:center; background-color:#0f0e2c;">
+          <img src="${footer_base64}" alt="Footer" style="max-width:100%; height:auto; display:block;" />
+        </div>
+      </div>
     </div>
   `,
   attachments: attachments.map(file => ({
@@ -101,6 +111,7 @@ exports.handler = async (event) => {
     content: fs.createReadStream(file.path),
   })),
 };
+
 
 
           try {
