@@ -667,3 +667,57 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  // === Handle attachment preview ===
+  const attachInput = document.getElementById("emailAttachment");
+  const fileList = document.getElementById("filePreview");
+  if (attachInput && fileList) {
+    attachInput.addEventListener("change", function () {
+      fileList.innerHTML = "";
+      for (const file of this.files) {
+        const li = document.createElement("li");
+        li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        fileList.appendChild(li);
+      }
+    });
+  }
+
+  // === Handle email form submission ===
+  const emailForm = document.getElementById("bulkEmailForm");
+  if (emailForm) {
+    emailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+      if (selectedIds.length === 0) return showToast("No employees selected");
+
+      const from = document.getElementById("emailFrom").value;
+      const subject = document.getElementById("emailSubject").value;
+      const body = document.getElementById("emailBody").value;
+      const attachments = document.getElementById("emailAttachment").files;
+
+      const formData = new FormData();
+      formData.append("from", from);
+      formData.append("subject", subject);
+      formData.append("body", body);
+      formData.append("recipients", JSON.stringify(selectedIds));
+      [...attachments].forEach(file => {
+        formData.append("attachment", file);
+      });
+
+      const res = await fetch("/.netlify/functions/send_bulk_email", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        showToast(result.message || "✅ Emails sent successfully.");
+        document.getElementById("bulkEmailModal").classList.add("hidden");
+      } else {
+        showToast(result.message || "❌ Email sending failed.");
+        console.error(result);
+      }
+    });
+  }
+});
