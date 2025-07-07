@@ -11,12 +11,15 @@ const pool = new Pool({
 
 // --- Setup Transporter ---
 const transporter = nodemailer.createTransport({
-  service: "gmail", // or your SMTP provider
+  host: "smtpout.secureserver.net",
+  port: 465,
+  secure: true, // true for port 465
   auth: {
     user: process.env.EMAIL_USER || process.env.MAIL_USER,
     pass: process.env.EMAIL_PASS || process.env.MAIL_PASS,
   },
 });
+
 
 // --- Helper to fetch emails from DB ---
 async function getEmployeeEmails(empIds) {
