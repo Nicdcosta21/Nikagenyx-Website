@@ -725,4 +725,4 @@ if (emailForm) {
       console.error(result);
     }
   });
-}
+
