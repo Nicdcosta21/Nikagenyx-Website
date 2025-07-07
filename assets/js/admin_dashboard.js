@@ -7,35 +7,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
   await fetchEmployees(currentUser);
+  // ✅ Fill Admin Profile Section
+document.getElementById("p_name").textContent = currentUser.name || "-";
+document.getElementById("p_phone").textContent = currentUser.phone || "-";
+document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+document.getElementById("p_dept").textContent = currentUser.department || "-";
+document.getElementById("p_role").textContent = currentUser.role || "-";
 
-  try {
-    document.getElementById("p_name").textContent = currentUser.name || "-";
-    document.getElementById("p_phone").textContent = currentUser.phone || "-";
-    document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-    document.getElementById("p_dept").textContent = currentUser.department || "-";
-    document.getElementById("p_role").textContent = currentUser.role || "-";
-  } catch (err) {
-    console.warn("⚠️ Some profile DOM elements were not found:", err);
-  }
 
+ // ✅ Correct search logic here
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", function () {
       const searchTerm = this.value.toLowerCase();
       const rows = document.querySelectorAll("#employeeTable tr");
       rows.forEach(row => {
-        if (!row || row.cells.length < 3) return;
-
-const empId = row.cells[1].textContent.toLowerCase();
-const empName = row.cells[2].textContent.toLowerCase();
-
+        const empId = row.cells[1]?.textContent.toLowerCase() || "";
+        const empName = row.cells[2]?.textContent.toLowerCase() || "";
         const match = empId.includes(searchTerm) || empName.includes(searchTerm);
         row.style.display = match ? "" : "none";
       });
     });
   }
 });
-
 
 function logout() {
   localStorage.removeItem("emp_session");
@@ -115,14 +109,8 @@ async function fetchEmployees(currentUser) {
 
     const data = await res.json();
     const employees = data.employees;
-    console.log("👥 EMPLOYEES:", employees);
-    console.log("📍 Table:", document.getElementById("employeeTable"));
-
-    console.log("📦 EMPLOYEE FETCH START");
     const tbody = document.getElementById("employeeTable");
-    console.log("👀 Tbody found?", !!tbody);
     tbody.innerHTML = "";
-    
 
     employees.forEach(emp => {
       const tr = document.createElement("tr");
@@ -158,8 +146,6 @@ async function fetchEmployees(currentUser) {
 
 
       tbody.appendChild(tr);
-      console.log("✅ Row added:", emp.emp_id);
-
       setupRowListeners(tr, emp, currentUser);
     });
   } catch (err) {
@@ -747,50 +733,22 @@ function closeBulkEmailModal() {
 }
 
 
-
-
+// Show selected file names below attachment input
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
   if (!attachInput || !fileList) return;
 
-  let selectedFiles = [];
-
-  attachInput.addEventListener("change", (e) => {
-    const newFiles = Array.from(e.target.files);
-    for (const file of newFiles) {
-      const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size);
-      if (!exists) selectedFiles.push(file);
-    }
-    renderFileList();
-  });
-
-  function renderFileList() {
+  attachInput.addEventListener("change", function () {
     fileList.innerHTML = "";
-    selectedFiles.forEach((file, index) => {
+    for (const file of this.files) {
       const li = document.createElement("li");
-      li.className = "relative bg-gray-100 text-gray-800 p-2 pl-3 pr-8 rounded shadow text-sm flex items-center justify-between";
-
-      const fileText = document.createElement("span");
-      fileText.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
-
-      const removeBtn = document.createElement("button");
-      removeBtn.textContent = "×";
-      removeBtn.className = "absolute right-2 top-1 text-red-500 hover:text-red-700 font-bold text-lg";
-      removeBtn.onclick = () => {
-        selectedFiles.splice(index, 1);
-        renderFileList();
-      };
-
-      li.appendChild(fileText);
-      li.appendChild(removeBtn);
+      li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
       fileList.appendChild(li);
-    });
-
-    const dt = new DataTransfer();
-    selectedFiles.forEach(file => dt.items.add(file));
-    attachInput.files = dt.files;
-  }
+    }
+  });
 }
 
-document.addEventListener("DOMContentLoaded", setupAttachmentPreview);  
+document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
+
