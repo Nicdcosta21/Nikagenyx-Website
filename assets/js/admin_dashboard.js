@@ -634,3 +634,30 @@ document.getElementById("emailForm").addEventListener("submit", async (e) => {
     console.error(result);
   }
 });
+
+// Step 2 — Modal Control & File Preview
+function openEmailModal() {
+  const modal = document.getElementById("bulkEmailModal");
+  const fromInput = document.getElementById("emailFrom");
+  const session = JSON.parse(localStorage.getItem("emp_session"));
+  if (modal && fromInput && session) {
+    fromInput.value = session.email || session.emp_id + "@nikagenyx.com";
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeBulkEmailModal() {
+  document.getElementById("bulkEmailModal").classList.add("hidden");
+}
+
+// Show selected file names below attachment input
+document.getElementById("emailAttachment")?.addEventListener("change", function () {
+  const preview = document.getElementById("filePreview");
+  preview.innerHTML = "";
+  for (const file of this.files) {
+    const li = document.createElement("li");
+    li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+    preview.appendChild(li);
+  }
+});
+
