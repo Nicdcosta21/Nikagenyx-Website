@@ -616,25 +616,26 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
 
   // 🔐 Step 1: Get SMTP password if not in session
   if (!smtpPassword) {
-    const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
-    const data = await res.json();
-    if (data.smtp_password) {
-      smtpPassword = data.smtp_password;
-    } else {
-      smtpPassword = prompt("Enter your email password to send:");
-      if (!smtpPassword) return showToast("Cancelled");
+  const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+  const data = await res.json();
+  if (data.smtp_password) {
+    smtpPassword = data.smtp_password;
+  } else {
+    smtpPassword = prompt("Enter your email password to send:");
+    if (!smtpPassword) return showToast("Cancelled");
 
-      await fetch("/.netlify/functions/save_smtp_password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
-      });
+    await fetch("/.netlify/functions/save_smtp_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+    });
 
-      // Cache it
-      session.smtp_password = smtpPassword;
-      localStorage.setItem("emp_session", JSON.stringify(session));
-    }
+    // Cache it
+    session.smtp_password = smtpPassword;
+    localStorage.setItem("emp_session", JSON.stringify(session));
   }
+}
+
 
   const from = session.email;
 const subject = document.getElementById("emailSubject").value;
