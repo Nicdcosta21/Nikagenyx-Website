@@ -84,23 +84,24 @@ exports.handler = async (event) => {
           }
 
           const mailOptions = {
-            from: `"${fromName}" <${from}>`, // ✅ Display name + fixed sender
-            to: emp.email,
-            subject,
-            html: `
-              <div style="font-family: Arial, sans-serif;">
-                <img src="https://nikagenyx.netlify.app/assets/HEADER.png" style="width:100%;max-width:600px;" />
-                <p>Dear ${emp.name},</p>
-                <div style="margin: 10px 0;">${body.replace(/\n/g, "<br/>")}</div>
-                <p>Best regards,<br/>${fromName}</p>
-                <img src="https://nikagenyx.netlify.app/assets/FOOTER.png" style="width:100%;max-width:600px;" />
-              </div>
-            `,
-            attachments: attachments.map(file => ({
-              filename: file.originalFilename,
-              content: fs.createReadStream(file.path),
-            })),
-          };
+  from: `"${fromName}" <${from}>`,
+  to: emp.email,
+  subject,
+  html: `
+    <div style="font-family: Arial, sans-serif;">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAAGfCAYAAADLDzJ1AAAAAXNSR0IArs4c6QAAIABJREFUeF7s3Q..." style="width:100%;max-width:600px;" />
+      <p>Dear ${emp.name},</p>
+      <div style="margin: 10px 0;">${body.replace(/\n/g, "<br/>")}</div>
+      <p>Best regards,<br/>${fromName}</p>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAADACAYAAACQoIPjAAAAAXNSR0IArs4c6QAAIABJREFUeF7t3X..." style="width:100%;max-width:600px;" />
+    </div>
+  `,
+  attachments: attachments.map(file => ({
+    filename: file.originalFilename,
+    content: fs.createReadStream(file.path),
+  })),
+};
+
 
           try {
             await transporter.sendMail(mailOptions);
