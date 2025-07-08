@@ -733,22 +733,48 @@ function closeBulkEmailModal() {
 }
 
 
-// Show selected file names below attachment input
+document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
+
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
   const fileList = document.getElementById("filePreview");
   if (!attachInput || !fileList) return;
 
-  attachInput.addEventListener("change", function () {
-    fileList.innerHTML = "";
-    for (const file of this.files) {
-      const li = document.createElement("li");
-      li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-      fileList.appendChild(li);
+  let selectedFiles = [];
+
+  attachInput.addEventListener("change", (e) => {
+    const newFiles = Array.from(e.target.files);
+    for (const file of newFiles) {
+      const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+      if (!exists) selectedFiles.push(file);
     }
+    renderFileList();
   });
+
+  function renderFileList() {
+    fileList.innerHTML = "";
+    selectedFiles.forEach((file, index) => {
+      const li = document.createElement("li");
+      li.className = "relative bg-gray-100 text-gray-800 p-2 pl-3 pr-8 rounded shadow text-sm flex items-center justify-between";
+
+      const fileText = document.createElement("span");
+      fileText.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "×";
+      removeBtn.className = "absolute right-2 top-1 text-red-500 hover:text-red-700 font-bold text-lg";
+      removeBtn.onclick = () => {
+        selectedFiles.splice(index, 1);
+        renderFileList();
+      };
+
+      li.appendChild(fileText);
+      li.appendChild(removeBtn);
+      fileList.appendChild(li);
+    });
+
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    attachInput.files = dt.files;
+  }
 }
-
-document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
-
-
