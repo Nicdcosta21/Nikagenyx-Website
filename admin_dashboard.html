@@ -80,7 +80,23 @@ body {
   <button onclick="openEmailModal()" class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700">Send Email</button>
 <textarea id="pdfLetterBody" rows="8" class="w-full p-2 border rounded mb-4" placeholder="Type your letter content here. You can use {{name}}, {{emp_id}}, {{department}}, etc. to personalize."></textarea>
 <button id="generatePDFLetter" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded text-white">Generate PDF Letters</button></div>
+<button onclick="openPDFLetterModal()" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded text-white">
+  Generate PDF Letters
+</button>
 
+<!-- 📄 Compose Letter Modal -->
+<div id="pdfLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+  <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg">
+    <h2 class="text-xl font-bold mb-4">✉️ Compose Letter</h2>
+    <textarea id="letterBody" class="w-full h-60 border border-gray-300 p-4 text-black" placeholder="Hi {{name}}, your role is {{role}}."></textarea>
+    <div class="flex justify-end mt-4 gap-4">
+      <button onclick="closePDFLetterModal()" class="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
+      <button onclick="generatePDFLetters()" class="px-4 py-2 bg-green-600 text-white rounded">Export Letters</button>
+    </div>
+  </div>
+</div>
+
+  
 <!-- Bulk Email Modal -->
 <div id="bulkEmailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-center items-center">
   <div class="bg-white text-black rounded-lg shadow-xl p-6 w-full max-w-xl relative">
