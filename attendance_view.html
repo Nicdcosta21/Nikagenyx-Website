@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Attendance Date View - Nikagenyx</title>
-  <script src="./assets/js/auth-gate.js"></script>
+  <script src="/assets/js/auth-gate.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -33,11 +32,6 @@
       margin: 2px;
       cursor: pointer;
       user-select: none;
-      border: none;
-      transition: background-color 0.2s;
-    }
-    .month-btn:hover, .date-btn:hover {
-      background-color: #334155;
     }
     .month-btn.active, .date-btn.active {
       background-color: #6366f1;
@@ -49,11 +43,6 @@
       margin: 1px;
       border-radius: 3px;
       display: inline-block;
-      cursor: pointer;
-      transition: opacity 0.1s;
-    }
-    .half-hour-box:hover {
-      opacity: 0.8;
     }
     .P { background-color: #22c55e; }
     .A { background-color: #ef4444; }
@@ -69,171 +58,44 @@
       gap: 2px;
       margin-top: 0.25rem;
     }
-
-    .loading {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #94a3b8;
-      padding: 2rem;
-    }
-
-    .error {
-      background-color: #dc2626;
-      color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem 0;
-      text-align: center;
-    }
-
-    .confirm-btn {
-      background-color: #059669;
-      color: white;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: background-color 0.2s;
-    }
-    .confirm-btn:hover {
-      background-color: #047857;
-    }
-    .confirm-btn:disabled {
-      background-color: #6b7280;
-      cursor: not-allowed;
-    }
-
-    .bulk-actions {
-      background-color: #1e293b;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
   </style>
 </head>
 <body>
   <nav class="flex justify-between items-center mb-6">
-    <div class="text-lg font-bold text-white">🗓️ Nikagenyx Attendance</div>
-    <a href="./admin_dashboard.html">
-      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow">
-        Go to Admin Dashboard
-      </button>
-    </a>
-  </nav>
-
+  <div class="text-lg font-bold text-white">🗓️ Nikagenyx Attendance</div>
+  <a href="https://www.nikagenyx.com/admin_dashboard.html">
+    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow">
+      Go to Admin Dashboard
+    </button>
+  </a>
+</nav>
   <h1>📅 Employee Attendance - Date View</h1>
-
-  <div id="errorContainer"></div>
-  <div id="loadingContainer" class="loading hidden">Loading attendance data...</div>
-
-  <div id="monthSelector" role="group" aria-label="Select month"></div>
-  <div id="dateSelector" class="flex flex-wrap justify-center mb-4" role="group" aria-label="Select date"></div>
-
+  <div id="monthSelector"></div>
+  <div id="dateSelector" class="flex flex-wrap justify-center mb-4"></div>
   <div class="text-center mb-4">
-    <label for="dragMode" class="mr-2">Drag Mode:</label>
-    <select id="dragMode" class="bg-gray-800 text-white p-1 rounded" aria-label="Select attendance status for dragging">
+    <label class="mr-2">Drag Mode:</label>
+    <select id="dragMode" class="bg-gray-800 text-white p-1 rounded">
       <option value="P">Present</option>
       <option value="L">Leave</option>
       <option value="A">Absent</option>
     </select>
   </div>
-
-  <div class="bulk-actions">
-    <h3 class="text-lg font-semibold mb-2">Bulk Actions</h3>
-    <div class="flex flex-wrap gap-2">
-      <button id="selectAllPresent" class="confirm-btn">Mark All Present</button>
-      <button id="selectAllAbsent" class="confirm-btn">Mark All Absent</button>
-      <button id="confirmAllChanges" class="confirm-btn">Confirm All Changes</button>
-    </div>
-  </div>
-
-  <div id="attendanceGrid" role="main" aria-label="Employee attendance grid"></div>
-
+  <div id="attendanceGrid"></div>
 <script>
-class AttendanceManager {
-  constructor() {
-    this.months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
-    this.today = new Date();
-    this.currentMonth = this.today.getMonth();
-    this.currentYear = this.today.getFullYear();
-    this.selectedDate = this.today.getDate();
-    this.mouseDown = false;
-    this.employees = [];
-    this.dragStatus = "P";
-    this.isLoading = false;
-    this.originalStates = new Map();
-    
-    this.init();
-  }
+  const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+  const today = new Date();
+  let currentMonth = today.getMonth();
+  let currentYear = today.getFullYear();
+  let selectedDate = today.getDate();
+  let mouseDown = false;
+  let employees = [];
+  let dragStatus = "P";
 
-  init() {
-    this.setupEventListeners();
-    this.renderMonthSelector();
-    this.renderDateSelector();
-    this.loadAttendance();
-  }
+  document.addEventListener("mousedown", () => mouseDown = true);
+  document.addEventListener("mouseup", () => mouseDown = false);
+  document.getElementById("dragMode").onchange = e => dragStatus = e.target.value;
 
-  setupEventListeners() {
-    document.addEventListener("mousedown", () => this.mouseDown = true);
-    document.addEventListener("mouseup", () => this.mouseDown = false);
-    
-    const dragModeSelect = document.getElementById("dragMode");
-    dragModeSelect.addEventListener("change", (e) => this.dragStatus = e.target.value);
-
-    // Bulk action listeners
-    document.getElementById("selectAllPresent").addEventListener("click", () => this.bulkSetStatus("P"));
-    document.getElementById("selectAllAbsent").addEventListener("click", () => this.bulkSetStatus("A"));
-    document.getElementById("confirmAllChanges").addEventListener("click", () => this.confirmAllChanges());
-
-    // Keyboard navigation
-    document.addEventListener("keydown", (e) => this.handleKeyNavigation(e));
-  }
-
-  handleKeyNavigation(e) {
-    if (e.key === "ArrowLeft" && this.selectedDate > 1) {
-      this.selectedDate--;
-      this.renderDateSelector();
-      this.loadAttendance();
-    } else if (e.key === "ArrowRight" && this.selectedDate < this.daysInMonth(this.currentMonth, this.currentYear)) {
-      this.selectedDate++;
-      this.renderDateSelector();
-      this.loadAttendance();
-    }
-  }
-
-  showError(message) {
-    const container = document.getElementById("errorContainer");
-    container.innerHTML = `<div class="error" role="alert">${message}</div>`;
-    setTimeout(() => container.innerHTML = "", 5000);
-  }
-
-  showLoading(show = true) {
-    this.isLoading = show;
-    const loadingContainer = document.getElementById("loadingContainer");
-    const grid = document.getElementById("attendanceGrid");
-    
-    if (show) {
-      loadingContainer.classList.remove("hidden");
-      grid.innerHTML = "";
-    } else {
-      loadingContainer.classList.add("hidden");
-    }
-  }
-
-  formatAMPM(index) {
+  function formatAMPM(index) {
     const hour = Math.floor(index / 2);
     const minute = index % 2 === 0 ? '00' : '30';
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -241,329 +103,145 @@ class AttendanceManager {
     return `${formattedHour}:${minute} ${ampm}`;
   }
 
-  daysInMonth(month, year) {
+  function daysInMonth(month, year) {
     return new Date(year, month + 1, 0).getDate();
   }
 
-  renderMonthSelector() {
+  function renderMonthSelector() {
     const container = document.getElementById("monthSelector");
     container.innerHTML = "";
-    
-    this.months.forEach((m, i) => {
+    months.forEach((m, i) => {
       const btn = document.createElement("button");
-      btn.textContent = `${m} ${this.currentYear}`;
-      btn.className = `month-btn ${i === this.currentMonth ? "active" : ""}`;
-      btn.setAttribute("aria-pressed", i === this.currentMonth ? "true" : "false");
-      btn.onclick = () => this.selectMonth(i);
+      btn.textContent = `${m} ${currentYear}`;
+      btn.className = `month-btn ${i === currentMonth ? "active" : ""}`;
+      btn.onclick = () => {
+        currentMonth = i; selectedDate = 1;
+        renderMonthSelector(); renderDateSelector(); loadAttendance();
+      };
       container.appendChild(btn);
     });
   }
 
-  selectMonth(monthIndex) {
-    this.currentMonth = monthIndex;
-    this.selectedDate = 1;
-    this.renderMonthSelector();
-    this.renderDateSelector();
-    this.loadAttendance();
-  }
-
-  renderDateSelector() {
+  function renderDateSelector() {
     const container = document.getElementById("dateSelector");
     container.innerHTML = "";
-    
-    for (let d = 1; d <= this.daysInMonth(this.currentMonth, this.currentYear); d++) {
+    for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
       const btn = document.createElement("button");
       btn.textContent = d;
-      btn.className = `date-btn ${d === this.selectedDate ? "active" : ""}`;
-      btn.setAttribute("aria-pressed", d === this.selectedDate ? "true" : "false");
-      btn.onclick = () => this.selectDate(d);
+      btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
+      btn.onclick = () => { selectedDate = d; renderDateSelector(); loadAttendance(); };
       container.appendChild(btn);
     }
   }
 
-  selectDate(date) {
-    this.selectedDate = date;
-    this.renderDateSelector();
-    this.loadAttendance();
-  }
-
-  async loadAttendance() {
-    if (this.isLoading) return;
-    
-    this.showLoading(true);
-    
-    try {
-      const response = await fetch(`/.netlify/functions/get_attendance_calendar?month=${this.currentMonth + 1}&year=${this.currentYear}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load attendance data: ${response.status} ${response.statusText}`);
-      }
-      
-      const { data } = await response.json();
-      
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid data format received from server");
-      }
-      
-      this.employees = data;
-      this.originalStates.clear();
-      
-      // Store original states for comparison
-      this.employees.forEach(emp => {
-        const blocks = emp.status[this.selectedDate - 1]?.blocks || Array(48).fill("A");
-        emp.blockStates = [...blocks];
-        this.originalStates.set(emp.emp_id, [...blocks]);
-      });
-      
-      this.renderAttendanceGrid();
-      
-    } catch (error) {
-      console.error("Error loading attendance:", error);
-      this.showError(error.message || "Failed to load attendance data. Please try again.");
-    } finally {
-      this.showLoading(false);
-    }
-  }
-
-  renderAttendanceGrid() {
+  async function loadAttendance() {
     const grid = document.getElementById("attendanceGrid");
+    grid.innerHTML = "Loading...";
+    const res = await fetch(`/.netlify/functions/get_attendance_calendar?month=${currentMonth + 1}&year=${currentYear}`);
+    const { data } = await res.json();
+    employees = data;
     grid.innerHTML = "";
 
-    this.employees.forEach(emp => {
-      const row = this.createEmployeeRow(emp);
+    data.forEach(emp => {
+      const row = document.createElement("div");
+      row.className = "employee-row p-4 mb-4 rounded shadow";
+      row.id = `row-${emp.emp_id}`;
+
+      const title = document.createElement("div");
+      title.className = "font-bold mb-2";
+      title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
+      row.appendChild(title);
+
+      const blocks = emp.status[selectedDate - 1]?.blocks || Array(48).fill("A");
+      emp.blockStates = [...blocks];
+
+      let summary = { P: 0, A: 0 };
+      const blockWrap = document.createElement("div");
+      blockWrap.className = "block-wrap";
+
+      emp.blockStates.forEach((state, i) => {
+        const finalState = ["P", "L", "A"].includes(state) ? state : "A";
+        summary[finalState] = (summary[finalState] || 0) + 1;
+
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${finalState}`;
+        box.dataset.index = i;
+        box.dataset.state = finalState;
+        box.title = formatAMPM(i);
+
+        box.onclick = () => toggleBlock(box, emp.emp_id);
+        box.onmouseover = () => dragToggleBlock(box, emp.emp_id);
+        blockWrap.appendChild(box);
+      });
+
+      row.appendChild(blockWrap);
+
+      const info = document.createElement("div");
+      const totalHours = summary.P * 0.5;
+      info.textContent = `P: ${summary.P} | A: ${summary.A} → ${totalHours.toFixed(2)} hrs`;
+      info.className = "text-sm mt-2 text-gray-300";
+      row.appendChild(info);
+
+      row.classList.remove("row-red", "row-yellow", "row-green");
+      if (totalHours < 5) row.classList.add("row-red");
+      else if (totalHours < 7) row.classList.add("row-yellow");
+      else row.classList.add("row-green");
+
+      const btn = document.createElement("button");
+      btn.textContent = "Confirm Changes";
+      btn.className = "confirm-btn mt-2";
+      btn.onclick = () => submit(emp.emp_id);
+      row.appendChild(btn);
+
       grid.appendChild(row);
     });
   }
 
-  createEmployeeRow(emp) {
-    const row = document.createElement("div");
-    row.className = "employee-row p-4 mb-4 rounded shadow";
-    row.id = `row-${emp.emp_id}`;
-    row.setAttribute("role", "region");
-    row.setAttribute("aria-label", `Attendance for ${emp.name}`);
-
-    const title = document.createElement("div");
-    title.className = "font-bold mb-2";
-    title.textContent = `${emp.name} (${emp.role}) - ${emp.department}`;
-    row.appendChild(title);
-
-    const blockWrap = document.createElement("div");
-    blockWrap.className = "block-wrap";
-    blockWrap.setAttribute("role", "grid");
-    blockWrap.setAttribute("aria-label", "Time slots for attendance");
-
-    let summary = { P: 0, A: 0, L: 0 };
-
-    emp.blockStates.forEach((state, i) => {
-      const finalState = ["P", "L", "A"].includes(state) ? state : "A";
-      summary[finalState] = (summary[finalState] || 0) + 1;
-
-      const box = document.createElement("div");
-      box.className = `half-hour-box ${finalState}`;
-      box.dataset.index = i;
-      box.dataset.state = finalState;
-      box.dataset.empId = emp.emp_id;
-      box.title = this.formatAMPM(i);
-      box.setAttribute("role", "gridcell");
-      box.setAttribute("aria-label", `${this.formatAMPM(i)} - ${this.getStatusText(finalState)}`);
-      box.setAttribute("tabindex", "0");
-
-      box.addEventListener("click", () => this.toggleBlock(box, emp.emp_id));
-      box.addEventListener("mouseover", () => this.dragToggleBlock(box, emp.emp_id));
-      box.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          this.toggleBlock(box, emp.emp_id);
-        }
-      });
-
-      blockWrap.appendChild(box);
-    });
-
-    row.appendChild(blockWrap);
-
-    const info = document.createElement("div");
-    const totalHours = summary.P * 0.5;
-    info.textContent = `Present: ${summary.P} | Absent: ${summary.A} | Leave: ${summary.L} → ${totalHours.toFixed(1)} hrs`;
-    info.className = "text-sm mt-2 text-gray-300";
-    row.appendChild(info);
-
-    // Update row styling based on hours
-    row.classList.remove("row-red", "row-yellow", "row-green");
-    if (totalHours < 5) row.classList.add("row-red");
-    else if (totalHours < 7) row.classList.add("row-yellow");
-    else row.classList.add("row-green");
-
-    const btn = document.createElement("button");
-    btn.textContent = "Confirm Changes";
-    btn.className = "confirm-btn mt-2";
-    btn.disabled = !this.hasChanges(emp.emp_id);
-    btn.onclick = () => this.submitChanges(emp.emp_id);
-    btn.setAttribute("aria-label", `Confirm attendance changes for ${emp.name}`);
-    row.appendChild(btn);
-
-    return row;
-  }
-
-  getStatusText(status) {
-    const statusMap = { P: "Present", A: "Absent", L: "Leave" };
-    return statusMap[status] || "Unknown";
-  }
-
-  hasChanges(empId) {
-    const emp = this.employees.find(e => e.emp_id === empId);
-    const original = this.originalStates.get(empId);
-    if (!emp || !original) return false;
-    
-    return JSON.stringify(emp.blockStates) !== JSON.stringify(original);
-  }
-
-  toggleBlock(box, empId) {
+  function toggleBlock(box, empId) {
     const current = box.dataset.state;
-    const next = current === this.dragStatus ? "A" : this.dragStatus;
-    this.updateBlockState(box, next, empId);
-  }
-
-  dragToggleBlock(box, empId) {
-    if (!this.mouseDown) return;
-    const current = box.dataset.state;
-    const newState = current === this.dragStatus ? "A" : this.dragStatus;
-    this.updateBlockState(box, newState, empId);
-  }
-
-  updateBlockState(box, newState, empId) {
-    box.dataset.state = newState;
-    box.className = `half-hour-box ${newState}`;
-    box.setAttribute("aria-label", `${box.title} - ${this.getStatusText(newState)}`);
+    const next = current === dragStatus ? "A" : dragStatus;
+    box.dataset.state = next;
+    box.className = `half-hour-box ${next}`;
 
     const index = parseInt(box.dataset.index);
-    const emp = this.employees.find(e => e.emp_id === empId);
-    if (emp) {
-      emp.blockStates[index] = newState;
-      this.updateEmployeeRow(emp);
-    }
+    const emp = employees.find(e => e.emp_id === empId);
+    if (emp) emp.blockStates[index] = next;
   }
 
-  updateEmployeeRow(emp) {
-    const row = document.getElementById(`row-${emp.emp_id}`);
-    if (!row) return;
-
-    // Update summary
-    let summary = { P: 0, A: 0, L: 0 };
-    emp.blockStates.forEach(state => {
-      const finalState = ["P", "L", "A"].includes(state) ? state : "A";
-      summary[finalState]++;
-    });
-
-    const info = row.querySelector('.text-sm');
-    const totalHours = summary.P * 0.5;
-    info.textContent = `Present: ${summary.P} | Absent: ${summary.A} | Leave: ${summary.L} → ${totalHours.toFixed(1)} hrs`;
-
-    // Update row styling
-    row.classList.remove("row-red", "row-yellow", "row-green");
-    if (totalHours < 5) row.classList.add("row-red");
-    else if (totalHours < 7) row.classList.add("row-yellow");
-    else row.classList.add("row-green");
-
-    // Update confirm button
-    const confirmBtn = row.querySelector('.confirm-btn');
-    confirmBtn.disabled = !this.hasChanges(emp.emp_id);
-  }
-
-  bulkSetStatus(status) {
-    this.employees.forEach(emp => {
-      emp.blockStates.fill(status);
-      const blocks = document.querySelectorAll(`[data-emp-id="${emp.emp_id}"]`);
-      blocks.forEach(box => {
-        box.dataset.state = status;
-        box.className = `half-hour-box ${status}`;
-        box.setAttribute("aria-label", `${box.title} - ${this.getStatusText(status)}`);
-      });
-      this.updateEmployeeRow(emp);
-    });
-  }
-
-  async confirmAllChanges() {
-    const changedEmployees = this.employees.filter(emp => this.hasChanges(emp.emp_id));
-    
-    if (changedEmployees.length === 0) {
-      this.showError("No changes to confirm");
-      return;
-    }
-
-    if (!confirm(`Confirm changes for ${changedEmployees.length} employee(s)?`)) {
-      return;
-    }
-
-    for (const emp of changedEmployees) {
-      try {
-        await this.submitChanges(emp.emp_id, false);
-      } catch (error) {
-        console.error(`Failed to update ${emp.name}:`, error);
-      }
-    }
-    
-    this.showError("All changes have been processed");
-    this.loadAttendance();
-  }
-
-  async submitChanges(empId, showAlert = true) {
-    const emp = this.employees.find(e => e.emp_id === empId);
+  function dragToggleBlock(box, empId) {
+    if (!mouseDown) return;
+    const current = box.dataset.state;
+    const newState = current === dragStatus ? "A" : dragStatus;
+    const index = parseInt(box.dataset.index);
+    const emp = employees.find(e => e.emp_id === empId);
     if (!emp) return;
-
-    const confirmBtn = document.querySelector(`#row-${empId} .confirm-btn`);
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = "Saving...";
-
-    try {
-      const slots = emp.blockStates.map((state, i) => ({ slot: i, status: state }));
-      
-      const response = await fetch("/.netlify/functions/update_attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emp_id: empId,
-          year: this.currentYear,
-          month: this.currentMonth + 1,
-          day: this.selectedDate,
-          slots
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Update original state
-      this.originalStates.set(empId, [...emp.blockStates]);
-      
-      if (showAlert) {
-        this.showError(result.message || "Changes saved successfully");
-      }
-
-    } catch (error) {
-      console.error("Error submitting changes:", error);
-      if (showAlert) {
-        this.showError(`Failed to save changes: ${error.message}`);
-      }
-    } finally {
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = "Confirm Changes";
-      this.updateEmployeeRow(emp);
-    }
+    box.dataset.state = newState;
+    box.className = `half-hour-box ${newState}`;
+    emp.blockStates[index] = newState;
   }
-}
 
-// Initialize the application
-document.addEventListener("DOMContentLoaded", () => {
-  new AttendanceManager();
-});
+  async function submit(empId) {
+    const emp = employees.find(e => e.emp_id === empId);
+    const slots = emp.blockStates.map((state, i) => ({ slot: i, status: state }));
+    const res = await fetch("/.netlify/functions/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emp_id: empId,
+        year: currentYear,
+        month: currentMonth + 1,
+        day: selectedDate,
+        slots
+      })
+    });
+    const result = await res.json();
+    alert(result.message || result.error);
+    loadAttendance();
+  }
+
+  renderMonthSelector();
+  renderDateSelector();
+  loadAttendance();
 </script>
 </body>
 </html>
