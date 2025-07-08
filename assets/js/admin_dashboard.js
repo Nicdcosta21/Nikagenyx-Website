@@ -87,6 +87,7 @@ document.getElementById("letterBody").addEventListener("input", updatePDFPreview
   await fetchEmployees(currentUser);
 });
 
+
 tinymce.init({
   selector: '#letterBody',
   height: 300,
@@ -94,9 +95,10 @@ tinymce.init({
   plugins: 'lists link table',
   toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
   setup: function (editor) {
-    editor.on('input', updatePDFPreview); // call preview every time user types
+    editor.on('input', updatePDFPreview);
   }
 });
+
 
 
 function logout() {
@@ -952,8 +954,9 @@ function mergeTemplate(template, emp) {
 
 function openPDFLetterModal() {
   document.getElementById("pdfLetterModal").classList.remove("hidden");
-  updatePDFPreview(); // show preview when opening modal
+  updatePDFPreview();
 }
+
 
 function closePDFLetterModal() {
   document.getElementById("pdfLetterModal").classList.add("hidden");
@@ -1059,7 +1062,7 @@ function updatePDFPreview() {
     return;
   }
 
-  // Get TinyMCE HTML content
+  // Get content from TinyMCE safely
   const raw = tinymce.get("letterBody")?.getContent() || "";
 
   fetch("/.netlify/functions/get_employees")
@@ -1068,6 +1071,7 @@ function updatePDFPreview() {
       const emp = employees.find(e => selectedIds.includes(e.emp_id));
       if (!emp) return;
 
+      // Replace merge tags
       const merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1078,12 +1082,13 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.role || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
+      // Final preview with header + content + footer
       preview.innerHTML = `
-        <div style="text-align:center;">
+        <div style="text-align:center; padding-bottom: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
         </div>
-        <div style="padding: 30px; font-size: 14px;">${merged}</div>
-        <div style="text-align:center;">
+        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">${merged}</div>
+        <div style="text-align:center; padding-top: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
         </div>
       `;
