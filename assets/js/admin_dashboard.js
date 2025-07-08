@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
   document.getElementById("p_dept").textContent = currentUser.department || "-";
   document.getElementById("p_role").textContent = currentUser.role || "-";
-  document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
+document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
 
 
   // ✅ Correct search logic here
@@ -86,6 +86,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   await fetchEmployees(currentUser);
 });
+
+tinymce.init({
+  selector: '#letterBody',
+  height: 300,
+  menubar: false,
+  plugins: 'lists link table',
+  toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+  setup: function (editor) {
+    editor.on('input', updatePDFPreview); // call preview every time user types
+  }
+});
+
 
 function logout() {
   localStorage.removeItem("emp_session");
@@ -1039,15 +1051,16 @@ async function loadImageAsDataURL(url) {
 }
 
 function updatePDFPreview() {
-  const editor = document.getElementById("letterBody");
   const preview = document.getElementById("pdfPreview");
-  const raw = editor.innerHTML; // because it's now contenteditable
 
   const selectedIds = getSelectedEmployeeIds();
   if (selectedIds.length === 0) {
     preview.innerHTML = "(Select an employee to see preview)";
     return;
   }
+
+  // Get TinyMCE HTML content
+  const raw = tinymce.get("letterBody")?.getContent() || "";
 
   fetch("/.netlify/functions/get_employees")
     .then(res => res.json())
@@ -1076,11 +1089,4 @@ function updatePDFPreview() {
       `;
     });
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const editor = document.getElementById("letterBody");
-  if (editor) {
-    editor.addEventListener("input", updatePDFPreview);
-  }
-});
 
