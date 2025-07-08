@@ -205,8 +205,7 @@ function setupRowListeners(tr, emp, currentUser) {
     }
   }
 
-  // ... rest of your logic (edit, delete, privilege) ...
-}
+
 
   const editBtn = tr.querySelector(".edit");
   if (editBtn) {
