@@ -34,7 +34,7 @@ exports.handler = async (event) => {
         phone, 
         dob, 
         department, 
-        employment_role AS role, 
+        employment_role AS employment_role, 
         base_salary,
         privilege 
       FROM employees
