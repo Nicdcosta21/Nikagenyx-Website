@@ -8,46 +8,52 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-  body { font-family: 'Questrial', sans-serif; }
-  .section-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
 
-  /* Disabled state for buttons */
-  button[disabled] {
-    opacity: 0.4 !important;
-    cursor: not-allowed !important;
-    background-color: #4b5563 !important;
-    color: #9ca3af !important;
-    pointer-events: none !important;
-  }
-  button[disabled]:hover {
-    background-color: #4b5563 !important;
-    transform: none !important;
-  }
+.header, .navbar {
+  width: 100%;
+  box-sizing: border-box;
+}
 
-  /* Force nowrap globally, but override for Name & Role */
-  table {
-    table-layout: auto;
-    white-space: nowrap;
-  }
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 16px;
+}
 
-  th, td {
-    padding: 0.5rem 0.75rem;
-  }
+.dashboard-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
 
-  /* ✅ Allow wrapping for Name and Role cells */
-  td.wrap, th.wrap {
-    white-space: normal !important;
-    word-break: break-word;
-    max-width: 200px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-content {
+    flex-direction: column;
+    gap: 8px;
   }
+  .container {
+    padding: 8px;
+  }
+  .header, .navbar {
+    font-size: 1.1em;
+  }
+}
 
-  /* Ensure actions stay tight */
-  td .flex {
-    flex-wrap: nowrap !important;
-    flex-direction: row;
-    gap: 0.25rem;
-    justify-content: center;
+@media (max-width: 480px) {
+  .header, .navbar {
+    font-size: 1em;
+    padding: 8px;
   }
+  .container {
+    padding: 4px;
+  }
+}
 </style>
 
 
