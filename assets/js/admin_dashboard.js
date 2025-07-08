@@ -475,7 +475,31 @@ window.showEmployeeDetails = async function(empId) {
       }
     }
 
-    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+    // Format Joining Date
+    let formattedJoinDate = '-';
+    if (data.joining_date) {
+      try {
+        const joinDate = new Date(data.joining_date);
+        formattedJoinDate = joinDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch (e) {
+        formattedJoinDate = data.joining_date.split('T')[0];
+      }
+    }
+
+    // Set the employee ID and profile image
+    const modalEmpId = document.getElementById('modalEmpId');
+    modalEmpId.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="text-lg font-semibold">Employee ID: ${empId}</span>
+        ${
+          data.profile_photo_url
+            ? `<img src="${data.profile_photo_url}" alt="Profile Photo" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />`
+            : ''
+        }
+      </div>
+    `;
+
+    // Fill details
     document.getElementById('modalDetails').innerHTML = `
       <p><strong>Name:</strong> ${data.name || '-'}</p>
       <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
@@ -483,27 +507,41 @@ window.showEmployeeDetails = async function(empId) {
       <p><strong>DOB:</strong> ${formattedDOB}</p>
       <p><strong>Department:</strong> ${data.department || '-'}</p>
       <p><strong>Role:</strong> ${data.role || '-'}</p>
+      <p><strong>Reporting Manager:</strong> ${data.reporting_manager || '-'}</p>
+      <p><strong>Joining Date:</strong> ${formattedJoinDate}</p>
       <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
       <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? `${data.total_hours} hrs` : '0 hrs'}</p>
     `;
 
+    // List documents
     const docList = document.getElementById("docLinks");
     docList.innerHTML = '';
 
-    // Handle documents properly
     if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
-      data.documents.forEach(doc => {
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
-                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
-        docList.appendChild(li);
-      });
-    } else if (data.profile_photo_url) {
+  data.documents.forEach(doc => {
+    const fileName = decodeURIComponent(doc.url.split('/').pop()); // Extract actual file name from URL
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <p class="mb-1">
+        <strong>${doc.name || 'Document'}:</strong> ${fileName} &nbsp;
+        <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View</a> |
+        <a href="${doc.url}" class="text-green-600 underline" download>Download</a>
+      </p>
+    `;
+    docList.appendChild(li);
+  });
+}
+
+
+    // Show profile photo as document too
+    if (data.profile_photo_url) {
       const li = document.createElement("li");
       li.innerHTML = `<a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
                       <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>`;
       docList.appendChild(li);
-    } else {
+    }
+
+    if (!data.documents?.length && !data.profile_photo_url) {
       docList.innerHTML = '<li>No documents uploaded</li>';
     }
 
@@ -513,6 +551,7 @@ window.showEmployeeDetails = async function(empId) {
     showToast('Failed to load employee details');
   }
 };
+
 
 window.closeModal = function () {
   document.getElementById("employeeModal").classList.add("hidden");
