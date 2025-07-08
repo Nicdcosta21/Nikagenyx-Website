@@ -464,7 +464,7 @@ window.showEmployeeDetails = async function(empId) {
     if (!res.ok) throw new Error(`Failed to fetch employee details: ${res.status}`);
     const data = await res.json();
 
-    // Format DOB properly
+    // Format DOB
     let formattedDOB = '-';
     if (data.dob) {
       try {
@@ -486,20 +486,20 @@ window.showEmployeeDetails = async function(empId) {
       }
     }
 
-    // Set the employee ID and profile image
+    // Set the employee ID and profile image (thumbnail)
     const modalEmpId = document.getElementById('modalEmpId');
     modalEmpId.innerHTML = `
-      <div class="flex justify-between items-center">
-        <span class="text-lg font-semibold">Employee ID: ${empId}</span>
+      <div class="flex justify-between items-start">
+        <div class="text-lg font-semibold">Employee ID: ${empId}</div>
         ${
           data.profile_photo_url
-            ? `<img src="${data.profile_photo_url}" alt="Profile Photo" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />`
+            ? `<img src="${data.profile_photo_url}" alt="Profile Photo" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow ml-4" />`
             : ''
         }
       </div>
     `;
 
-    // Fill details
+    // Fill in personal and job details
     document.getElementById('modalDetails').innerHTML = `
       <p><strong>Name:</strong> ${data.name || '-'}</p>
       <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
@@ -509,39 +509,52 @@ window.showEmployeeDetails = async function(empId) {
       <p><strong>Role:</strong> ${data.role || '-'}</p>
       <p><strong>Reporting Manager:</strong> ${data.reporting_manager || '-'}</p>
       <p><strong>Joining Date:</strong> ${formattedJoinDate}</p>
-      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
-      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? `${data.total_hours} hrs` : '0 hrs'}</p>
+      <p><strong>Total Pay:</strong> ${
+        data.total_pay && data.total_pay !== 'undefined'
+          ? `₹${Number(data.total_pay).toLocaleString('en-IN')}`
+          : '-'
+      }</p>
+      <p><strong>Total Hours:</strong> ${
+        data.total_hours && data.total_hours !== 'undefined' ? `${data.total_hours} hrs` : '0 hrs'
+      }</p>
     `;
 
-    // List documents
+    // Show documents
     const docList = document.getElementById("docLinks");
-    docList.innerHTML = '';
+    docList.innerHTML = ''; // Clear previous content
+
+    let docShown = false;
 
     if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
-  data.documents.forEach(doc => {
-    const fileName = decodeURIComponent(doc.url.split('/').pop()); // Extract actual file name from URL
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <p class="mb-1">
-        <strong>${doc.name || 'Document'}:</strong> ${fileName} &nbsp;
-        <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View</a> |
-        <a href="${doc.url}" class="text-green-600 underline" download>Download</a>
-      </p>
-    `;
-    docList.appendChild(li);
-  });
-}
-
-
-    // Show profile photo as document too
-    if (data.profile_photo_url) {
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
-                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>`;
-      docList.appendChild(li);
+      data.documents.forEach(doc => {
+        const fileName = decodeURIComponent(doc.url.split('/').pop());
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <p class="mb-1">
+            <strong>${doc.name || 'Document'}:</strong> ${fileName} &nbsp;
+            <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View</a> |
+            <a href="${doc.url}" class="text-green-600 underline" download>Download</a>
+          </p>
+        `;
+        docList.appendChild(li);
+        docShown = true;
+      });
     }
 
-    if (!data.documents?.length && !data.profile_photo_url) {
+    // Add passport photo as downloadable doc if available
+    if (data.profile_photo_url) {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <p><strong>Profile Photo:</strong> 
+          <a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View</a> | 
+          <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>
+        </p>
+      `;
+      docList.appendChild(li);
+      docShown = true;
+    }
+
+    if (!docShown) {
       docList.innerHTML = '<li>No documents uploaded</li>';
     }
 
@@ -551,6 +564,7 @@ window.showEmployeeDetails = async function(empId) {
     showToast('Failed to load employee details');
   }
 };
+
 
 
 window.closeModal = function () {
