@@ -720,112 +720,114 @@ window.closeEmailModal = function () {
 };
 
 document.getElementById("bulkEmailForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+  e.preventDefault();document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("bulkEmailForm");
+  if (!form) return;
 
-  const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
-  if (selectedIds.length === 0) return showToast("No employees selected");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
-  const empId = session.emp_id;
-  let smtpPassword = session.smtp_password;
+    const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+    if (selectedIds.length === 0) return showToast("No employees selected");
 
-  // ✅ Step 1: Get SMTP password if not stored
-  if (!smtpPassword || smtpPassword === "undefined") {
-    try {
-      const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
-      const data = await res.json();
-      if (data.smtp_password && data.smtp_password !== "undefined") {
-        smtpPassword = data.smtp_password;
-      } else {
-        smtpPassword = prompt("Enter your email password to send:");
-        if (!smtpPassword || smtpPassword.trim() === "") {
-          showToast("❌ Sending cancelled – no password entered.");
-          return;
+    const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
+    const empId = session.emp_id;
+    let smtpPassword = session.smtp_password;
+
+    // ✅ Step 1: Get SMTP password if not stored
+    if (!smtpPassword || smtpPassword === "undefined") {
+      try {
+        const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+        const data = await res.json();
+        if (data.smtp_password && data.smtp_password !== "undefined") {
+          smtpPassword = data.smtp_password;
+        } else {
+          smtpPassword = prompt("Enter your email password to send:");
+          if (!smtpPassword || smtpPassword.trim() === "") {
+            showToast("❌ Sending cancelled – no password entered.");
+            return;
+          }
+
+          await fetch("/.netlify/functions/save_smtp_password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+          });
+
+          session.smtp_password = smtpPassword;
+          localStorage.setItem("emp_session", JSON.stringify(session));
         }
-
-        await fetch("/.netlify/functions/save_smtp_password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
-        });
-
-        session.smtp_password = smtpPassword;
-        localStorage.setItem("emp_session", JSON.stringify(session));
+      } catch (err) {
+        console.error("❌ Error loading SMTP password:", err);
+        showToast("❌ Could not retrieve your SMTP credentials.");
+        return;
       }
+    }
+
+    // ✅ Step 2: Prepare email data
+    const from = "n.dcosta@nikagenyx.com";
+    const fromName = session.name || "Nik D'Costa";
+    const subject = document.getElementById("emailSubject").value;
+    const body = document.getElementById("emailBody").value;
+    const attachments = document.getElementById("emailAttachment").files;
+
+    const formData = new FormData();
+    formData.append("from", from);
+    formData.append("from_name", fromName);
+    formData.append("smtp_password", smtpPassword);
+    formData.append("subject", subject);
+    formData.append("body", body);
+    formData.append("recipients", JSON.stringify(selectedIds));
+    [...attachments].forEach(file => formData.append("attachment", file));
+
+    // ✅ Step 3: Send email
+    const res = await fetch("/.netlify/functions/send_bulk_email", {
+      method: "POST",
+      body: formData,
+    });
+
+    try {
+      const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ Email failed:", errorText);
+
+        try {
+          const errorJson = JSON.parse(errorText);
+          showToast(errorJson.message || "❌ Email sending failed.");
+        } catch {
+          showToast("❌ Email sending failed.");
+        }
+        return;
+      }
+
+      if (!contentType.includes("application/json")) {
+        const fallbackText = await res.text();
+        console.warn("⚠️ Non-JSON response:", fallbackText);
+        try {
+          const parsed = JSON.parse(fallbackText);
+          showToast(parsed.message || "✅ Emails sent (fallback parsed).");
+        } catch {
+          showToast("✅ Emails sent, but unexpected response format.");
+        }
+        return;
+      }
+
+      const result = await res.json();
+      if (result.failed?.length) {
+        showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
+      } else {
+        showToast(result.message || "✅ Emails sent successfully.");
+      }
+
+      document.getElementById("bulkEmailModal").classList.add("hidden");
+
     } catch (err) {
-      console.error("❌ Error loading SMTP password:", err);
-      showToast("❌ Could not retrieve your SMTP credentials.");
-      return;
+      console.error("❌ Exception during email send:", err);
+      showToast("❌ Unexpected error occurred.");
     }
-  }
-
-  // ✅ Step 2: Prepare email data
-  const from = "n.dcosta@nikagenyx.com";
-  const fromName = session.name || "Nik D'Costa";
-  const subject = document.getElementById("emailSubject").value;
-  const body = document.getElementById("emailBody").value;
-  const attachments = document.getElementById("emailAttachment").files;
-
-  const formData = new FormData();
-  formData.append("from", from);
-  formData.append("from_name", fromName);
-  formData.append("smtp_password", smtpPassword);
-  formData.append("subject", subject);
-  formData.append("body", body);
-  formData.append("recipients", JSON.stringify(selectedIds));
-  [...attachments].forEach(file => formData.append("attachment", file));
-
-  // ✅ Step 3: Send email
-  const res = await fetch("/.netlify/functions/send_bulk_email", {
-    method: "POST",
-    body: formData,
   });
-
-  try {
-    const contentType = (res.headers.get("content-type") || "").toLowerCase();
-
-    // Handle error responses first
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("❌ Email failed:", errorText);
-
-      // Try to parse message if it's actually JSON
-      try {
-        const errorJson = JSON.parse(errorText);
-        showToast(errorJson.message || "❌ Email sending failed.");
-      } catch {
-        showToast("❌ Email sending failed.");
-      }
-      return;
-    }
-
-    // If content-type is NOT JSON, still try to parse it manually
-    if (!contentType.includes("application/json")) {
-      const fallbackText = await res.text();
-      console.warn("⚠️ Non-JSON response:", fallbackText);
-      try {
-        const parsed = JSON.parse(fallbackText);
-        showToast(parsed.message || "✅ Emails sent (fallback parsed).");
-      } catch {
-        showToast("✅ Emails sent, but unexpected response format.");
-      }
-      return;
-    }
-
-    // ✅ Success case: valid JSON response
-    const result = await res.json();
-    if (result.failed?.length) {
-      showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
-    } else {
-      showToast(result.message || "✅ Emails sent successfully.");
-    }
-
-    document.getElementById("bulkEmailModal").classList.add("hidden");
-
-  } catch (err) {
-    console.error("❌ Exception during email send:", err);
-    showToast("❌ Unexpected error occurred.");
-  }
 });
 
 // Step 2 — Modal Control & File Preview
