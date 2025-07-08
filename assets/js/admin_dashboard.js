@@ -55,6 +55,17 @@ window.fetchEmployees = fetchEmployees;
 console.log("✅ fetchEmployees is ready globally");
 
 document.addEventListener("DOMContentLoaded", async () => {
+    tinymce.init({
+    selector: '#letterBody',
+    height: 300,
+    menubar: false,
+    plugins: 'lists link table',
+    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+    setup: function (editor) {
+      editor.on('input', updatePDFPreview);
+    }
+  });
+});
   const session = localStorage.getItem("emp_session");
   if (!session) return (window.location.href = "/employee_portal.html");
 
@@ -85,18 +96,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   await fetchEmployees(currentUser);
-});
-
-
-tinymce.init({
-  selector: '#letterBody',
-  height: 300,
-  menubar: false,
-  plugins: 'lists link table',
-  toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-  setup: function (editor) {
-    editor.on('input', updatePDFPreview); // 🔁 Safe event binding
-  }
 });
 
 
@@ -269,11 +268,11 @@ if (deleteBtn) {
       const newPrivilege = privilegeSelect.value;
       try {
         const res = await fetch("/.netlify/functions/update_privilege", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege })
-          credentials: "include"
-        });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege }),
+  credentials: "include"
+});
         if (!res.ok) throw new Error();
         showToast("Privileges updated successfully.");
       } catch {
@@ -720,8 +719,7 @@ window.closeEmailModal = function () {
   document.getElementById("emailModal").classList.add("hidden");
 };
 
-document.getElementById("bulkEmailForm").addEventListener("submit", async (e) => {
-  e.preventDefault();document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("bulkEmailForm");
   if (!form) return;
 
@@ -1059,6 +1057,7 @@ async function loadImageAsDataURL(url) {
 }
 
 function updatePDFPreview() {
+ 
   const preview = document.getElementById("pdfPreview");
 
   const selectedIds = getSelectedEmployeeIds();
@@ -1099,4 +1098,5 @@ function updatePDFPreview() {
       `;
     });
 }
+
 
