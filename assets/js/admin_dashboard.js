@@ -938,6 +938,7 @@ function mergeTemplate(template, emp) {
 
 function openPDFLetterModal() {
   document.getElementById("pdfLetterModal").classList.remove("hidden");
+  updatePDFPreview(); // show preview when opening modal
 }
 
 function closePDFLetterModal() {
