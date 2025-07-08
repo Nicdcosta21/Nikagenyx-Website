@@ -890,12 +890,25 @@ async function generatePDFLetters() {
       .replace(/{{role}}/gi, emp.role || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
+    const font = document.getElementById("pdfFont").value || "helvetica";
+const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
+doc.setFont(font, "normal");
+doc.setFontSize(fontSize);
+
     doc.setTextColor(0, 0, 0);
 
     doc.text(`Dear ${emp.name || "Employee"},`, 20, 30);
-    doc.text(personalized, 20, 50, { maxWidth: 170, lineHeightFactor: 1.5 });
+    const lines = doc.splitTextToSize(personalized, 170);
+let y = 50;
+
+lines.forEach(line => {
+  if (y > 270) { // bottom of page
+    doc.addPage();
+    y = 30;
+  }
+  doc.text(line, 20, y);
+  y += 20;
+});
     doc.text("Best regards,", 20, 110);
     doc.text("Nik D’Costa", 20, 117);
     doc.text("Managing Director", 20, 124);
@@ -907,44 +920,3 @@ async function generatePDFLetters() {
   closePDFLetterModal();
 }
 
-async function generatePDFLetters() {
-  const { jsPDF } = window.jspdf;
-  const letterContent = document.getElementById("letterBody").value.trim();
-  if (!letterContent) return alert("Please enter letter content.");
-  
-  const selectedIds = getSelectedEmployeeIds();
-  if (!selectedIds.length) return alert("Please select employees.");
-
-  const res = await fetch("/.netlify/functions/get_employees");
-  const { employees } = await res.json();
-  const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
-
-  selectedEmployees.forEach(emp => {
-    const doc = new jsPDF();
-
-    const personalized = letterContent
-      .replace(/{{name}}/gi, emp.name || "")
-      .replace(/{{emp_id}}/gi, emp.emp_id || "")
-      .replace(/{{email}}/gi, emp.email || "")
-      .replace(/{{phone}}/gi, emp.phone || "")
-      .replace(/{{dob}}/gi, emp.dob || "")
-      .replace(/{{department}}/gi, emp.department || "")
-      .replace(/{{role}}/gi, emp.role || "")
-      .replace(/{{base_salary}}/gi, emp.base_salary || "");
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-
-    doc.text(`Dear ${emp.name || "Employee"},`, 20, 30);
-    doc.text(personalized, 20, 50, { maxWidth: 170, lineHeightFactor: 1.5 });
-    doc.text("Best regards,", 20, 110);
-    doc.text("Nik D’Costa", 20, 117);
-    doc.text("Managing Director", 20, 124);
-
-    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.role}.pdf`;
-    doc.save(filename);
-  });
-
-  closePDFLetterModal();
-}
