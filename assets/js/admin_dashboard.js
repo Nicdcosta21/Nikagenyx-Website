@@ -787,3 +787,7 @@ function setupAttachmentPreview() {
 
 
 
+if (typeof window.fetchEmployees !== "function") {
+  window.fetchEmployees = fetchEmployees;
+  console.log("✅ fetchEmployees globally exposed");
+}
