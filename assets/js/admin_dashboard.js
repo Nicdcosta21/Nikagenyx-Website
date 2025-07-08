@@ -272,6 +272,7 @@ if (deleteBtn) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege })
+          credentials: "include"
         });
         if (!res.ok) throw new Error();
         showToast("Privileges updated successfully.");
