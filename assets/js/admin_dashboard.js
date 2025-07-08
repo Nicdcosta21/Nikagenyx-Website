@@ -325,26 +325,6 @@ function showEditModal(emp, row) {
               <input id="edit_joining_date" value="${empData.joining_date ? empData.joining_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-2" />
             </label>
 
-            <label>Agreement Day:
-              <input id="edit_agreement_day" value="${empData.agreement_day || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
-            </label>
-
-            <label>Agreement Month:
-              <input id="edit_agreement_month" value="${empData.agreement_month || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
-            </label>
-
-            <label>Agreement Year:
-              <input id="edit_agreement_year" value="${empData.agreement_year || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
-            </label>
-
-            <label>Signed Date:
-              <input id="edit_signed_date" value="${empData.signed_date ? empData.signed_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-2" />
-            </label>
-
-            <label>Signed Place:
-              <input id="edit_signed_place" value="${empData.signed_place || ''}" type="text" class="w-full border px-2 py-1 mb-4" />
-            </label>
-
             <div class="flex justify-between">
               <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
               <button class="bg-blue-700 text-white px-4 py-1 rounded" id="saveEditBtn">Save</button>
