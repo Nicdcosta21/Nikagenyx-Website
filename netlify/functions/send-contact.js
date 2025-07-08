@@ -65,7 +65,7 @@ exports.handler = async (event) => {
     };
   }
 };
-const nodemailer = require("nodemailer");
+
 
 exports.handler = async (event) => {
   try {
