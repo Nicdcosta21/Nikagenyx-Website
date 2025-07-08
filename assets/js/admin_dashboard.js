@@ -155,25 +155,58 @@ async function loadPayrollMode() {
 }
 
 function setupRowListeners(tr, emp, currentUser) {
+  // --- Reset PIN Button ---
   const resetPinBtn = tr.querySelector(".reset-pin");
   if (resetPinBtn) {
-    const canReset = emp.failed_pin_attempts >= 3 || emp.reset_pin_ready === true;
-
-    resetPinBtn.disabled = !canReset;
-    resetPinBtn.classList.remove("btn-gray", "btn-yellow");
-    resetPinBtn.classList.add(canReset ? "btn-yellow" : "btn-gray");
-
-    resetPinBtn.title = canReset
+    const canResetPin = (emp.failed_pin_attempts && emp.failed_pin_attempts >= 3) || emp.reset_pin_ready === true;
+    resetPinBtn.disabled = !canResetPin;
+    resetPinBtn.classList.toggle("opacity-40", !canResetPin);
+    resetPinBtn.classList.toggle("cursor-not-allowed", !canResetPin);
+    resetPinBtn.title = canResetPin
       ? "Click to reset this employee's PIN"
       : "Reset PIN is only available after 3 failed attempts or a request from employee.";
-
-    if (canReset) {
+    if (canResetPin) {
       resetPinBtn.onclick = () =>
         triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
     } else {
       resetPinBtn.onclick = null;
     }
   }
+
+  // --- Reset MFA Button ---
+  const resetMfaBtn = tr.querySelector(".reset-mfa");
+  if (resetMfaBtn) {
+    const canResetMfa = emp.failed_mfa_attempts && emp.failed_mfa_attempts >= 3;
+    resetMfaBtn.disabled = !canResetMfa;
+    resetMfaBtn.classList.toggle("opacity-40", !canResetMfa);
+    resetMfaBtn.classList.toggle("cursor-not-allowed", !canResetMfa);
+    resetMfaBtn.title = canResetMfa
+      ? "Click to reset this employee's MFA"
+      : "Reset MFA is only available after 3 failed attempts.";
+    if (canResetMfa) {
+      resetMfaBtn.onclick = async () => {
+        try {
+          const res = await fetch("/.netlify/functions/reset_mfa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emp_id: emp.emp_id })
+          });
+          if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+          const data = await res.json();
+          showToast("MFA reset successfully. Employee can now scan QR code.");
+          showMfaModal(data, emp.emp_id);
+        } catch (error) {
+          console.error("MFA reset error:", error);
+          showToast("Failed to reset MFA. Please try again.");
+        }
+      };
+    } else {
+      resetMfaBtn.onclick = null;
+    }
+  }
+
+ 
+
 
   const resetMfaBtn = tr.querySelector(".reset-mfa");
   if (resetMfaBtn && emp.failed_mfa_attempts >= 3) {
