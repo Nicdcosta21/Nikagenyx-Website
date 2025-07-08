@@ -954,7 +954,11 @@ function toggleSelectAll(mainCheckbox) {
 }
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
-  const letterContent = document.getElementById("letterBody").value.trim();
+  const letterContent = document.getElementById("letterBody").value
+  .replace(/\u00A0/g, " ")         // Replace non-breaking spaces
+  .replace(/[^\x00-\x7F]/g, "")    // Remove weird characters (optional)
+  .trim();
+;
   const font = document.getElementById("pdfFont").value || "helvetica";
   const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
 
@@ -996,7 +1000,7 @@ async function generatePDFLetters() {
       .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
     // Split long content
-    const lines = doc.splitTextToSize(`Dear ${emp.name || "Employee"},\n\n${personalized}\n\nBest regards,\nNik D’Costa\nManaging Director`, maxTextWidth);
+const lines = doc.splitTextToSize(personalized, maxTextWidth);
     
     let y = 140; // Start after header
     let lineHeight = fontSize + 6;
