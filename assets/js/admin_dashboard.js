@@ -53,11 +53,8 @@ async function fetchEmployees(currentUser) {
   }
 }
 
-
-
 window.fetchEmployees = fetchEmployees;
 console.log("✅ fetchEmployees is ready globally");
-
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
@@ -65,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
-  await fetchEmployees(currentUser);
+  
   // ✅ Fill Admin Profile Section
 document.getElementById("p_name").textContent = currentUser.name || "-";
 document.getElementById("p_phone").textContent = currentUser.phone || "-";
@@ -88,6 +85,7 @@ document.getElementById("p_role").textContent = currentUser.role || "-";
       });
     });
   }
+  await fetchEmployees(currentUser);
 });
 
 function logout() {
