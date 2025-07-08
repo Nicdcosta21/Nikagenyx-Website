@@ -15,8 +15,10 @@ exports.handler = async (event) => {
   }
 
   try {
-    const user = verify(event); // JWT session decode
-    if (!user || user.privilege !== 'admin') {
+    const user = verify(event);
+    console.log("🔐 Decoded user from token:", user);
+    if (!user || user.role !== 'admin')
+ {
       return {
         statusCode: 403,
         body: JSON.stringify({ message: 'Forbidden: Admin access required' })
