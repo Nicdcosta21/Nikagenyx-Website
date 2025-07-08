@@ -290,10 +290,14 @@ function showEditModal(emp, row) {
       const modal = document.createElement("div");
       modal.innerHTML = `
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
+          <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
             <input id="editEmail" value="${!empData.email || empData.email === 'undefined' ? '' : empData.email}" type="email" class="w-full border px-2 py-1 mb-2" placeholder="Email" />
-            <label>Phone: <input id="editPhone" value="${empData.phone || ''}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" /></label>
+            
+            <label>Phone: 
+              <input id="editPhone" value="${empData.phone || ''}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" />
+            </label>
+            
             <label>Department:
               <select id="editDept" class="w-full border px-2 py-1 mb-2">
                 <option value="">-- Select --</option>
@@ -301,12 +305,46 @@ function showEditModal(emp, row) {
                 <option value="Admin Team" ${empData.department === "Admin Team" ? "selected" : ""}>Admin Team</option>
               </select>
             </label>
+            
             <label>Role:
               <select id="editRole" class="w-full border px-2 py-1 mb-2">
                 <option value="">-- Select Role --</option>
               </select>
             </label>
-            <label>Salary (INR): <input id="editSalary" value="${empData.base_salary || ''}" type="number" class="w-full border px-2 py-1 mb-4" /></label>
+            
+            <label>Salary (INR): 
+              <input id="editSalary" value="${empData.base_salary || ''}" type="number" class="w-full border px-2 py-1 mb-4" />
+            </label>
+
+            <!-- 📄 Mail Merge Fields -->
+            <label>Reporting Manager:
+              <input id="edit_reporting_manager" value="${empData.reporting_manager || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Joining Date:
+              <input id="edit_joining_date" value="${empData.joining_date ? empData.joining_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Agreement Day:
+              <input id="edit_agreement_day" value="${empData.agreement_day || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Agreement Month:
+              <input id="edit_agreement_month" value="${empData.agreement_month || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Agreement Year:
+              <input id="edit_agreement_year" value="${empData.agreement_year || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Signed Date:
+              <input id="edit_signed_date" value="${empData.signed_date ? empData.signed_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-2" />
+            </label>
+
+            <label>Signed Place:
+              <input id="edit_signed_place" value="${empData.signed_place || ''}" type="text" class="w-full border px-2 py-1 mb-4" />
+            </label>
+
             <div class="flex justify-between">
               <button class="bg-gray-600 text-white px-4 py-1 rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
               <button class="bg-blue-700 text-white px-4 py-1 rounded" id="saveEditBtn">Save</button>
@@ -356,12 +394,14 @@ function showEditModal(emp, row) {
           });
         }
       }
+
       dept.addEventListener("change", () => updateRoleOptions(dept.value, ""));
       updateRoleOptions(empData.department, empData.role);
 
       modal.querySelector("#saveEditBtn").onclick = () => submitEdit(emp.emp_id, modal, row);
     });
 }
+
 
 function triggerReset(type, empId, message) {
   fetch(`/.netlify/functions/${type}`, {
