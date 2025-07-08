@@ -15,34 +15,32 @@ async function fetchEmployees(currentUser) {
       const tr = document.createElement("tr");
       tr.className = "border-b border-gray-700";
 
-      tr.innerHTML =`
-  <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
-  <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
-  <td class="p-2 border wrap">${emp.name}</td>
-  <td class="p-2 border">${emp.phone}</td>
-  <td class="p-2 border">${formatDate(emp.dob)}</td>
-
-  <td class="p-2 border">
-    <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
-    <div class="mt-1 flex items-center gap-1">
-      <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
-        <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
-        <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
-      </select>
-      <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
-    </div>
-  </td>
-  <td class="p-2 border">${emp.department || "-"}</td>
-  <td class="p-2 border">
-    <div class="flex items-center justify-center gap-1">
-      <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
-      <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
-      <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
-      <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
-    </div>
-  </td>
-`;
-
+      tr.innerHTML = `
+        <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
+        <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
+        <td class="p-2 border wrap">${emp.name}</td>
+        <td class="p-2 border">${emp.phone}</td>
+        <td class="p-2 border">${formatDate(emp.dob)}</td>
+        <td class="p-2 border">
+          <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
+          <div class="mt-1 flex items-center gap-1">
+            <select class="privilege-select bg-gray-700 text-white border border-gray-500 rounded px-1 py-0.5 text-sm">
+              <option value="user" ${emp.privilege === "user" ? "selected" : ""}>User</option>
+              <option value="admin" ${emp.privilege === "admin" ? "selected" : ""}>Admin</option>
+            </select>
+            <button class="confirm-privilege bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">Confirm</button>
+          </div>
+        </td>
+        <td class="p-2 border">${emp.department || "-"}</td>
+        <td class="p-2 border">
+          <div class="flex items-center justify-center gap-1">
+            <button class="reset-pin bg-yellow-500 hover:bg-yellow-600 px-2 py-1 rounded text-xs" disabled>Reset PIN</button>
+            <button class="reset-mfa bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs" disabled>Reset MFA</button>
+            <button class="edit bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">Edit</button>
+            <button class="delete bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs">Delete</button>
+          </div>
+        </td>
+      `;
 
       tbody.appendChild(tr);
       setupRowListeners(tr, emp, currentUser);
@@ -64,14 +62,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadPayrollMode();
   
   // ✅ Fill Admin Profile Section
-document.getElementById("p_name").textContent = currentUser.name || "-";
-document.getElementById("p_phone").textContent = currentUser.phone || "-";
-document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-document.getElementById("p_dept").textContent = currentUser.department || "-";
-document.getElementById("p_role").textContent = currentUser.role || "-";
+  document.getElementById("p_name").textContent = currentUser.name || "-";
+  document.getElementById("p_phone").textContent = currentUser.phone || "-";
+  document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+  document.getElementById("p_dept").textContent = currentUser.department || "-";
+  document.getElementById("p_role").textContent = currentUser.role || "-";
 
-
- // ✅ Correct search logic here
+  // ✅ Correct search logic here
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", function () {
@@ -99,9 +96,8 @@ function formatDate(dob) {
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return ${day}-${month}-${year};
+  return `${day}-${month}-${year}`;
 }
-
 
 function showToast(msg) {
   const toast = document.createElement("div");
@@ -134,7 +130,7 @@ async function loadPayrollMode() {
   if (!toggle || !status) return;
 
   toggle.value = data.mode || "freelance";
-  status.textContent = ${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active;
+  status.textContent = `${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active`;
   status.className = toggle.value === "freelance"
     ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
     : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
@@ -152,35 +148,32 @@ async function loadPayrollMode() {
       });
 
       const data = await res.json();
-      showToast(data.message || Payroll mode updated);
+      showToast(data.message || "Payroll mode updated");
       loadPayrollMode();
     };
   }
 }
 
-
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
-if (resetPinBtn) {
-  const canReset = emp.failed_pin_attempts >= 3 || emp.reset_pin_ready === true;
+  if (resetPinBtn) {
+    const canReset = emp.failed_pin_attempts >= 3 || emp.reset_pin_ready === true;
 
-  resetPinBtn.disabled = !canReset;
-  resetPinBtn.classList.remove("btn-gray", "btn-yellow");
-  resetPinBtn.classList.add(canReset ? "btn-yellow" : "btn-gray");
+    resetPinBtn.disabled = !canReset;
+    resetPinBtn.classList.remove("btn-gray", "btn-yellow");
+    resetPinBtn.classList.add(canReset ? "btn-yellow" : "btn-gray");
 
-  resetPinBtn.title = canReset
-    ? "Click to reset this employee's PIN"
-    : "Reset PIN is only available after 3 failed attempts or a request from employee.";
+    resetPinBtn.title = canReset
+      ? "Click to reset this employee's PIN"
+      : "Reset PIN is only available after 3 failed attempts or a request from employee.";
 
-  if (canReset) {
-    resetPinBtn.onclick = () =>
-      triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
-  } else {
-    resetPinBtn.onclick = null;
+    if (canReset) {
+      resetPinBtn.onclick = () =>
+        triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
+    } else {
+      resetPinBtn.onclick = null;
+    }
   }
-}
-
-
 
   const resetMfaBtn = tr.querySelector(".reset-mfa");
   if (resetMfaBtn && emp.failed_mfa_attempts >= 3) {
@@ -192,7 +185,7 @@ if (resetPinBtn) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emp_id: emp.emp_id })
         });
-        if (!res.ok) throw new Error(Reset failed: ${res.status});
+        if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
         const data = await res.json();
         showToast("MFA reset successfully. Employee can now scan QR code.");
         showMfaModal(data, emp.emp_id);
@@ -212,7 +205,7 @@ if (resetPinBtn) {
   if (deleteBtn) {
     deleteBtn.onclick = async () => {
       if (emp.emp_id === currentUser.emp_id) return;
-      if (!confirm(Delete ${emp.emp_id}?)) return;
+      if (!confirm(`Delete ${emp.emp_id}?`)) return;
 
       const token = prompt("Enter your MFA token:");
       if (!token) return;
@@ -258,10 +251,9 @@ if (resetPinBtn) {
   }
 }
 
-
 function showMfaModal(data, empId) {
   const modal = document.createElement("div");
-  modal.innerHTML = 
+  modal.innerHTML = `
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white text-black p-6 rounded shadow-lg max-w-md">
         <h2 class="text-lg font-bold mb-2">MFA Reset Complete for ${empId}</h2>
@@ -275,16 +267,17 @@ function showMfaModal(data, empId) {
         <p class="text-sm text-gray-600 mb-4">The employee should scan this QR code and then test with a 6-digit token before closing this window.</p>
         <button onclick="this.closest('.fixed').remove(); location.reload();" class="bg-red-600 text-white px-4 py-2 rounded w-full">Close & Refresh</button>
       </div>
-    </div>;
+    </div>
+  `;
   document.body.appendChild(modal);
 }
 
 function showEditModal(emp, row) {
-  fetch(/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id})
+  fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`)
     .then(res => res.json())
     .then(empData => {
       const modal = document.createElement("div");
-      modal.innerHTML = 
+      modal.innerHTML = `
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
             <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
@@ -308,7 +301,8 @@ function showEditModal(emp, row) {
               <button class="bg-blue-700 text-white px-4 py-1 rounded" id="saveEditBtn">Save</button>
             </div>
           </div>
-        </div>;
+        </div>
+      `;
       document.body.appendChild(modal);
 
       const dept = modal.querySelector("#editDept");
@@ -359,14 +353,14 @@ function showEditModal(emp, row) {
 }
 
 function triggerReset(type, empId, message) {
-  fetch(/.netlify/functions/${type}, {
+  fetch(`/.netlify/functions/${type}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ emp_id: empId })
   })
     .then(res => res.json())
     .then(() => showToast(message))
-    .catch(err => console.error(${type} failed:, err));
+    .catch(err => console.error(`${type} failed:`, err));
 }
 
 async function submitEdit(empId, modal, row) {
@@ -435,8 +429,8 @@ async function submitEdit(empId, modal, row) {
 
 window.showEmployeeDetails = async function(empId) {
   try {
-    const res = await fetch(/.netlify/functions/get_employee_profile?emp_id=${empId});
-    if (!res.ok) throw new Error(Failed to fetch employee details: ${res.status});
+    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+    if (!res.ok) throw new Error(`Failed to fetch employee details: ${res.status}`);
     const data = await res.json();
 
     // Format DOB properly
@@ -450,17 +444,17 @@ window.showEmployeeDetails = async function(empId) {
       }
     }
 
-    document.getElementById('modalEmpId').textContent = Employee ID: ${empId};
-    document.getElementById('modalDetails').innerHTML = 
+    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
+    document.getElementById('modalDetails').innerHTML = `
       <p><strong>Name:</strong> ${data.name || '-'}</p>
       <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
       <p><strong>Phone:</strong> ${data.phone || '-'}</p>
       <p><strong>DOB:</strong> ${formattedDOB}</p>
       <p><strong>Department:</strong> ${data.department || '-'}</p>
       <p><strong>Role:</strong> ${data.role || '-'}</p>
-      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? ₹${Number(data.total_pay).toLocaleString('en-IN')} : '-'}</p>
-      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? ${data.total_hours} hrs : '0 hrs'}</p>
-    ;
+      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
+      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? `${data.total_hours} hrs` : '0 hrs'}</p>
+    `;
 
     const docList = document.getElementById("docLinks");
     docList.innerHTML = '';
@@ -469,14 +463,14 @@ window.showEmployeeDetails = async function(empId) {
     if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
       data.documents.forEach(doc => {
         const li = document.createElement("li");
-        li.innerHTML = <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
-                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>;
+        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
         docList.appendChild(li);
       });
     } else if (data.profile_photo_url) {
       const li = document.createElement("li");
-      li.innerHTML = <a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
-                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>;
+      li.innerHTML = `<a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
+                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>`;
       docList.appendChild(li);
     } else {
       docList.innerHTML = '<li>No documents uploaded</li>';
@@ -497,7 +491,7 @@ window.printModalContent = function() {
   const modalContent = document.getElementById("modalDetails").innerHTML;
   const empId = document.getElementById("modalEmpId").textContent;
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(
+  printWindow.document.write(`
     <html>
       <head><title>Employee Details - ${empId}</title></head>
       <body>
@@ -506,14 +500,14 @@ window.printModalContent = function() {
         <script>window.print(); window.close();</script>
       </body>
     </html>
-  );
+  `);
 };
 
 window.exportModalToPDF = function() {
   const modalContent = document.getElementById("modalDetails").innerHTML;
   const empId = document.getElementById("modalEmpId").textContent;
   const pdfWindow = window.open('', '_blank');
-  pdfWindow.document.write(
+  pdfWindow.document.write(`
     <html>
       <head>
         <title>Employee Details - ${empId}</title>
@@ -533,7 +527,7 @@ window.exportModalToPDF = function() {
         </script>
       </body>
     </html>
-  );
+  `);
 };
 
 window.exportCSV = async function() {
@@ -559,7 +553,7 @@ window.exportCSV = async function() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = employees_${new Date().toISOString().split('T')[0]}.csv;
+    a.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     showToast('✅ CSV exported successfully');
@@ -621,7 +615,7 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   // ✅ Step 1: Get SMTP password if not stored
   if (!smtpPassword || smtpPassword === "undefined") {
     try {
-      const res = await fetch(/.netlify/functions/get_smtp_password?emp_id=${empId});
+      const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
       const data = await res.json();
       if (data.smtp_password && data.smtp_password !== "undefined") {
         smtpPassword = data.smtp_password;
@@ -666,56 +660,56 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
 
   // ✅ Step 3: Send email
   const res = await fetch("/.netlify/functions/send_bulk_email", {
-  method: "POST",
-  body: formData,
+    method: "POST",
+    body: formData,
+  });
+
+  try {
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
+
+    // Handle error responses first
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("❌ Email failed:", errorText);
+
+      // Try to parse message if it's actually JSON
+      try {
+        const errorJson = JSON.parse(errorText);
+        showToast(errorJson.message || "❌ Email sending failed.");
+      } catch {
+        showToast("❌ Email sending failed.");
+      }
+      return;
+    }
+
+    // If content-type is NOT JSON, still try to parse it manually
+    if (!contentType.includes("application/json")) {
+      const fallbackText = await res.text();
+      console.warn("⚠️ Non-JSON response:", fallbackText);
+      try {
+        const parsed = JSON.parse(fallbackText);
+        showToast(parsed.message || "✅ Emails sent (fallback parsed).");
+      } catch {
+        showToast("✅ Emails sent, but unexpected response format.");
+      }
+      return;
+    }
+
+    // ✅ Success case: valid JSON response
+    const result = await res.json();
+    if (result.failed?.length) {
+      showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
+    } else {
+      showToast(result.message || "✅ Emails sent successfully.");
+    }
+
+    document.getElementById("bulkEmailModal").classList.add("hidden");
+
+  } catch (err) {
+    console.error("❌ Exception during email send:", err);
+    showToast("❌ Unexpected error occurred.");
+  }
 });
-
-try {
-  const contentType = (res.headers.get("content-type") || "").toLowerCase();
-
-  // Handle error responses first
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("❌ Email failed:", errorText);
-
-    // Try to parse message if it's actually JSON
-    try {
-      const errorJson = JSON.parse(errorText);
-      showToast(errorJson.message || "❌ Email sending failed.");
-    } catch {
-      showToast("❌ Email sending failed.");
-    }
-    return;
-  }
-
-  // If content-type is NOT JSON, still try to parse it manually
-  if (!contentType.includes("application/json")) {
-    const fallbackText = await res.text();
-    console.warn("⚠️ Non-JSON response:", fallbackText);
-    try {
-      const parsed = JSON.parse(fallbackText);
-      showToast(parsed.message || "✅ Emails sent (fallback parsed).");
-    } catch {
-      showToast("✅ Emails sent, but unexpected response format.");
-    }
-    return;
-  }
-
-  // ✅ Success case: valid JSON response
-  const result = await res.json();
-  if (result.failed?.length) {
-    showToast(✅ Sent with some failures: ${result.failed.join(", ")});
-  } else {
-    showToast(result.message || "✅ Emails sent successfully.");
-  }
-
-  document.getElementById("bulkEmailModal").classList.add("hidden");
-
-} catch (err) {
-  console.error("❌ Exception during email send:", err);
-  showToast("❌ Unexpected error occurred.");
-}
-
 
 // Step 2 — Modal Control & File Preview
 function openEmailModal() {
@@ -724,18 +718,16 @@ function openEmailModal() {
   const session = JSON.parse(localStorage.getItem("emp_session"));
 
   if (modal && fromInput && session) {
-    fromInput.value = session?.email || (session?.emp_id ? ${session.emp_id}@nikagenyx.com : "");
+    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
     modal.classList.remove("hidden");
   }
 }
-
 
 function closeBulkEmailModal() {
   document.getElementById("bulkEmailModal").classList.add("hidden");
   document.getElementById("bulkEmailForm").reset();
   document.getElementById("filePreview").innerHTML = "";
 }
-
 
 document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
 
@@ -762,7 +754,7 @@ function setupAttachmentPreview() {
       li.className = "relative bg-gray-100 text-gray-800 p-2 pl-3 pr-8 rounded shadow text-sm flex items-center justify-between";
 
       const fileText = document.createElement("span");
-      fileText.innerHTML = <strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB);
+      fileText.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "×";
@@ -782,8 +774,6 @@ function setupAttachmentPreview() {
     attachInput.files = dt.files;
   }
 }
-
-
 
 if (typeof window.fetchEmployees !== "function") {
   window.fetchEmployees = fetchEmployees;
