@@ -142,20 +142,17 @@ body {
     </div>
 
     <!-- 📝 Letter Writing Box -->
-    <textarea
-      id="letterBody"
-      class="w-full h-60 border border-gray-300 p-4 text-black"
-      placeholder="Hi {{name}}, your role is {{role}}."
-    ></textarea>
+<!-- 📄 Rich Editor (like Outlook) -->
+<div class="border border-gray-300 rounded">
+  <div id="letterBody" contenteditable="true"
+       class="w-full h-60 p-4 text-black bg-white overflow-y-auto"
+       placeholder="Type your letter here..."
+       style="outline: none;"></div>
+</div>
 
-    <!-- 👁 Live Preview -->
-    <h3 class="text-sm font-bold mt-4 text-black">📄 PDF Preview:</h3>
-    <div
-      id="pdfPreview"
-      class="bg-gray-100 text-black p-4 mt-2 rounded border border-gray-300 text-sm h-60 overflow-y-auto whitespace-pre-line"
-    >
-      (Type something and select an employee to see preview)
-    </div>
+<!-- 👀 Live Preview -->
+<label class="text-sm font-semibold mt-4 block">PDF Preview:</label>
+<div id="pdfPreview" class="bg-white p-6 border rounded h-72 overflow-y-auto text-black shadow-inner text-sm"></div>
 
     <!-- ✅ Action Buttons -->
     <div class="flex justify-end mt-4 gap-4">
@@ -333,5 +330,7 @@ body {
 <script src="/assets/js/admin_dashboard.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  
 </body>
 </html>
