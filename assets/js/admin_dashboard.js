@@ -51,27 +51,22 @@ async function fetchEmployees(currentUser) {
   }
 }
 
+// If table not visible check here
+
 window.fetchEmployees = fetchEmployees;
 console.log("✅ fetchEmployees is ready globally");
 
 document.addEventListener("DOMContentLoaded", async () => {
-    tinymce.init({
-    selector: '#letterBody',
-    height: 300,
-    menubar: false,
-    plugins: 'lists link table',
-    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-    setup: function (editor) {
-      editor.on('input', updatePDFPreview);
-    }
-  });
-});
+  // ✅ Session check must be inside the function
   const session = localStorage.getItem("emp_session");
-  if (!session) return (window.location.href = "/employee_portal.html");
+  if (!session) {
+    window.location.href = "/employee_portal.html";
+    return;
+  }
 
   const currentUser = JSON.parse(session);
   await loadPayrollMode();
-  
+
   // ✅ Fill Admin Profile Section
   document.getElementById("p_name").textContent = currentUser.name || "-";
   document.getElementById("p_phone").textContent = currentUser.phone || "-";
@@ -79,9 +74,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("p_dept").textContent = currentUser.department || "-";
   document.getElementById("p_role").textContent = currentUser.role || "-";
 
-
-
-  // ✅ Correct search logic here
+  // ✅ Search logic
   const searchInput = document.getElementById("search");
   if (searchInput) {
     searchInput.addEventListener("input", function () {
@@ -95,11 +88,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
   }
+
+  // ✅ Initialize employee table
   await fetchEmployees(currentUser);
+
+  // ✅ Initialize TinyMCE *after* updatePDFPreview is defined
+  tinymce.init({
+    selector: '#letterBody',
+    height: 300,
+    menubar: false,
+    plugins: 'lists link table',
+    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+    setup: function (editor) {
+      editor.on('input', updatePDFPreview);
+    }
+  });
 });
-
-
-
 
 function logout() {
   localStorage.removeItem("emp_session");
