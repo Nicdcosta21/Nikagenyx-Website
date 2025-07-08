@@ -55,6 +55,9 @@ async function fetchEmployees(currentUser) {
 
 
 
+window.fetchEmployees = fetchEmployees;
+console.log("✅ fetchEmployees is ready globally");
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("emp_session");
@@ -783,5 +786,4 @@ function setupAttachmentPreview() {
 }
 
 
-window.fetchEmployees = fetchEmployees;
 
