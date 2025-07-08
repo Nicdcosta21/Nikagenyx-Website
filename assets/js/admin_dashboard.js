@@ -212,12 +212,13 @@ function setupRowListeners(tr, emp, currentUser) {
     editBtn.onclick = () => showEditModal(emp, tr);
   }
 
-  const deleteBtn = tr.querySelector(".delete");
-  if (deleteBtn) {
-    deleteBtn.onclick = async () => {
-      if (emp.emp_id === currentUser.emp_id) return;
-      if (!confirm(`Delete ${emp.emp_id}?`)) return;
+const deleteBtn = tr.querySelector(".delete");
+if (deleteBtn) {
+  deleteBtn.onclick = async () => {
+    if (emp.emp_id === currentUser.emp_id) return;
+    if (!confirm(`Delete ${emp.emp_id}?`)) return;
 
+    if (currentUser.emp_id !== "NGX001") {
       const token = prompt("Enter your MFA token:");
       if (!token) return;
 
@@ -228,17 +229,19 @@ function setupRowListeners(tr, emp, currentUser) {
       });
       const result = await verify.json();
       if (!result.valid) return showToast("❌ MFA failed");
+    }
 
-      const res = await fetch("/.netlify/functions/delete_employee", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emp_id: emp.emp_id })
-      });
-      const data = await res.json();
-      tr.remove();
-      showToast(data.message || "Deleted");
-    };
-  }
+    const res = await fetch("/.netlify/functions/delete_employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp_id: emp.emp_id })
+    });
+    const data = await res.json();
+    tr.remove();
+    showToast(data.message || "Deleted");
+  };
+}
+
 
   // ✅ Correct privilege dropdown logic
   const privilegeSelect = tr.querySelector(".privilege-select");
@@ -262,27 +265,6 @@ function setupRowListeners(tr, emp, currentUser) {
   }
 }
 
-function showMfaModal(data, empId) {
-  const modal = document.createElement("div");
-  modal.innerHTML = `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white text-black p-6 rounded shadow-lg max-w-md">
-        <h2 class="text-lg font-bold mb-2">MFA Reset Complete for ${empId}</h2>
-        <p class="text-sm mb-4">Share this QR code with the employee to scan in their authenticator app:</p>
-        <div class="text-center mb-4">
-          <img src="${data.qr_code_url}" class="w-48 h-48 mx-auto mb-2 border" />
-          <p class="text-xs break-all mb-2"><strong>Manual Key:</strong> ${data.secret_key}</p>
-          <button onclick="navigator.clipboard.writeText('${data.secret_key}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">Copy Key</button>
-          <button onclick="window.open('${data.qr_code_url}')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">Open QR</button>
-        </div>
-        <p class="text-sm text-gray-600 mb-4">The employee should scan this QR code and then test with a 6-digit token before closing this window.</p>
-        <button onclick="this.closest('.fixed').remove(); location.reload();" class="bg-red-600 text-white px-4 py-2 rounded w-full">Close & Refresh</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-}
-
 function showEditModal(emp, row) {
   fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`)
     .then(res => res.json())
@@ -292,12 +274,13 @@ function showEditModal(emp, row) {
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
+
             <input id="editEmail" value="${!empData.email || empData.email === 'undefined' ? '' : empData.email}" type="email" class="w-full border px-2 py-1 mb-2" placeholder="Email" />
-            
-            <label>Phone: 
+
+            <label>Phone:
               <input id="editPhone" value="${empData.phone || ''}" type="tel" maxlength="10" class="w-full border px-2 py-1 mb-2" />
             </label>
-            
+
             <label>Department:
               <select id="editDept" class="w-full border px-2 py-1 mb-2">
                 <option value="">-- Select --</option>
@@ -305,24 +288,27 @@ function showEditModal(emp, row) {
                 <option value="Admin Team" ${empData.department === "Admin Team" ? "selected" : ""}>Admin Team</option>
               </select>
             </label>
-            
+
             <label>Role:
               <select id="editRole" class="w-full border px-2 py-1 mb-2">
                 <option value="">-- Select Role --</option>
               </select>
             </label>
-            
-            <label>Salary (INR): 
+
+            <label>Salary (INR):
               <input id="editSalary" value="${empData.base_salary || ''}" type="number" class="w-full border px-2 py-1 mb-4" />
             </label>
 
-            <!-- 📄 Mail Merge Fields -->
             <label>Reporting Manager:
               <input id="edit_reporting_manager" value="${empData.reporting_manager || ''}" type="text" class="w-full border px-2 py-1 mb-2" />
             </label>
 
             <label>Joining Date:
-              <input id="edit_joining_date" value="${empData.joining_date ? empData.joining_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-2" />
+              <input id="edit_joining_date" value="${empData.joining_date ? empData.joining_date.split('T')[0] : ''}" type="date" class="w-full border px-2 py-1 mb-4" />
+            </label>
+
+            <label>Upload New Document:
+              <input type="file" id="uploadFile" class="w-full border px-2 py-1 mb-4" />
             </label>
 
             <div class="flex justify-between">
@@ -376,12 +362,34 @@ function showEditModal(emp, row) {
       }
 
       dept.addEventListener("change", () => updateRoleOptions(dept.value, ""));
-      updateRoleOptions(empData.department, empData.role);
+      updateRoleOptions(empData.department, empData.employment_role);
 
-      modal.querySelector("#saveEditBtn").onclick = () => submitEdit(emp.emp_id, modal, row);
+
+      modal.querySelector("#saveEditBtn").onclick = async () => {
+        const fileInput = modal.querySelector("#uploadFile");
+        let uploadedFileUrl = null;
+
+        if (fileInput && fileInput.files.length > 0) {
+          const formData = new FormData();
+          formData.append("file", fileInput.files[0]);
+
+          try {
+            const uploadRes = await fetch("/.netlify/functions/upload_to_dropbox", {
+              method: "POST",
+              body: formData
+            });
+            const result = await uploadRes.json();
+            uploadedFileUrl = result.url;
+          } catch (err) {
+            showToast("❌ Upload failed. Try again.");
+            return;
+          }
+        }
+
+        submitEdit(emp.emp_id, modal, row, uploadedFileUrl);
+      };
     });
 }
-
 
 function triggerReset(type, empId, message) {
   fetch(`/.netlify/functions/${type}`, {
@@ -394,7 +402,7 @@ function triggerReset(type, empId, message) {
     .catch(err => console.error(`${type} failed:`, err));
 }
 
-async function submitEdit(empId, modal, row) {
+async function submitEdit(empId, modal, row, uploadedFileUrl = null) {
   const parent = modal;
 
   const email = parent.querySelector("#editEmail")?.value.trim();
@@ -402,10 +410,11 @@ async function submitEdit(empId, modal, row) {
   const department = parent.querySelector("#editDept")?.value;
   const role = parent.querySelector("#editRole")?.value;
   const base_salary = parent.querySelector("#editSalary")?.value;
+  const reporting_manager = parent.querySelector("#edit_reporting_manager")?.value.trim();
+  const joining_date = parent.querySelector("#edit_joining_date")?.value;
 
-  // Validate optional fields
-  if (email && email !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast("❌ Invalid email format");
-  if (phone && phone.trim() !== "" && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast("❌ Invalid email format");
+  if (phone && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
 
   const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
   const updateData = {
@@ -413,11 +422,14 @@ async function submitEdit(empId, modal, row) {
     admin_id: currentUser.emp_id
   };
 
-  if (email !== undefined && email !== null) updateData.email = email.trim();
-  if (phone && phone.trim() !== "") updateData.phone = phone.trim();
-  if (department && department.trim() !== "") updateData.department = department;
-  if (role && role.trim() !== "") updateData.employment_role = role;
-  if (base_salary && base_salary.trim() !== "") updateData.base_salary = base_salary;
+  if (email) updateData.email = email;
+  if (phone) updateData.phone = phone;
+  if (department) updateData.department = department;
+  if (role) updateData.employment_role = role;
+  if (base_salary) updateData.base_salary = base_salary;
+  if (reporting_manager) updateData.reporting_manager = reporting_manager;
+  if (joining_date) updateData.joining_date = joining_date;
+  if (uploadedFileUrl) updateData.new_document = uploadedFileUrl;
 
   if (currentUser.emp_id !== "NGX001") {
     const token = prompt("Enter MFA token to confirm changes:");
@@ -439,6 +451,7 @@ async function submitEdit(empId, modal, row) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updateData)
   });
+
   const result = await res.json();
   if (res.ok) {
     showToast(result.message || "✅ Profile updated");
@@ -448,13 +461,14 @@ async function submitEdit(empId, modal, row) {
       row.querySelector('[data-field="department"]').textContent = department || "-";
       row.querySelector('[data-field="role"]').textContent = role || "-";
     }
-    parent.remove();
+    modal.remove();
     setTimeout(() => location.reload(), 800);
   } else {
     showToast(result.message || "❌ Update failed");
     console.error(result);
   }
 }
+
 
 // --- Modal-related global functions ---
 
