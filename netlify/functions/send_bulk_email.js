@@ -23,8 +23,8 @@ async function getEmployeeEmails(empIds) {
 }
 
 // Embed header and footer images as base64 (replace with your actual base64 images)
-const header_base64 = "data:image/png;base64,iVBORw0K..."; // Truncated for brevity
-const footer_base64 = "data:image/png;base64,iVBORw0K..."; // Truncated for brevity
+const header_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
+const footer_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -105,7 +105,7 @@ exports.handler = async (event) => {
               <div style="background-color:#f5f5f5; padding: 40px 0; font-family: Arial, sans-serif;">
                 <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
                   <div style="text-align:center; background-color:#0f0e2c;">
-<img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" alt="Header" style="max-width:100%; height:auto;" />
+<img src="${header_url}" alt="Header" style="max-width:100%; height:auto;" />
                   </div>
                   <div style="padding: 30px 40px; font-family: Arial, sans-serif;">
                     <p style="font-size: 18px;">Dear ${emp.name},</p>
@@ -123,7 +123,7 @@ exports.handler = async (event) => {
                     </p>
                   </div>
                   <div style="text-align:center; background-color:#0f0e2c;">
-<img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" alt="Footer" style="max-width:100%; height:auto;" />
+<img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
                   </div>
                 </div>
               </div>
