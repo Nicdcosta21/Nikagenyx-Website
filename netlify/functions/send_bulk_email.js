@@ -10,11 +10,15 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// Helper: Get employee emails
+// Helper: Get full employee data for mail merge
 async function getEmployeeEmails(empIds) {
   const client = await pool.connect();
   try {
-    const query = `SELECT emp_id, name, email FROM employees WHERE emp_id = ANY($1)`;
+    const query = `
+      SELECT emp_id, name, email, phone, dob, department, role, base_salary
+      FROM employees
+      WHERE emp_id = ANY($1)
+    `;
     const { rows } = await client.query(query, [empIds]);
     return rows;
   } finally {
@@ -22,7 +26,7 @@ async function getEmployeeEmails(empIds) {
   }
 }
 
-// Embed header and footer images as base64 (replace with your actual base64 images)
+// Public URLs for header and footer images
 const header_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
 const footer_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
 
@@ -62,7 +66,8 @@ exports.handler = async (event) => {
 
       try {
         const from = "n.dcosta@nikagenyx.com";
-        const fromName = fields.from_name?.[0] || "Nik D'Costa";
+        // Always use "Nik D'Costa" as sender
+        const fromName = "Nik D'Costa";
         const smtpPass = fields.smtp_password?.[0];
         const subject = fields.subject?.[0];
         const body = fields.body?.[0];
@@ -97,6 +102,20 @@ exports.handler = async (event) => {
             continue;
           }
 
+          // Format DOB if present
+          let formattedDob = "-";
+          if (emp.dob) {
+            try {
+              formattedDob = new Date(emp.dob).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            } catch {
+              formattedDob = emp.dob;
+            }
+          }
+
           const mailOptions = {
             from: `"${fromName}" <${from}>`,
             to: emp.email,
@@ -105,16 +124,28 @@ exports.handler = async (event) => {
               <div style="background-color:#f5f5f5; padding: 40px 0; font-family: Arial, sans-serif;">
                 <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
                   <div style="text-align:center; background-color:#0f0e2c;">
-<img src="${header_url}" alt="Header" style="max-width:100%; height:auto;" />
+                    <img src="${header_url}" alt="Header" style="max-width:100%; height:auto;" />
                   </div>
                   <div style="padding: 30px 40px; font-family: Arial, sans-serif;">
-                    <p style="font-size: 18px;">Dear ${emp.name},</p>
+                    <p style="font-size: 18px;">Dear ${emp.name || "-"},</p>
+                    <p style="font-size: 16px;">Here is your employee record as of today:</p>
+                    <ul style="font-size: 15px; line-height: 1.7; padding-left: 0; list-style: none;">
+                      <li><b>Employee ID:</b> ${emp.emp_id || "-"}</li>
+                      <li><b>Name:</b> ${emp.name || "-"}</li>
+                      <li><b>Email:</b> ${emp.email || "-"}</li>
+                      <li><b>Phone:</b> ${emp.phone || "-"}</li>
+                      <li><b>Date of Birth:</b> ${formattedDob}</li>
+                      <li><b>Department:</b> ${emp.department || "-"}</li>
+                      <li><b>Role:</b> ${emp.role || "-"}</li>
+                      <li><b>Base Salary:</b> ${emp.base_salary || "-"}</li>
+                    </ul>
+                    <br/>
                     <p style="font-size: 16px; line-height: 1.6;">
                       ${body.replace(/\n/g, "<br/>")}
                     </p>
                     <p style="margin-top: 30px; font-size: 16px;">
                       Best regards,<br/>
-                      <strong>${fromName || "Nik D’Costa"}</strong><br/>
+                      <strong>${fromName}</strong><br/>
                       Managing Director<br/>
                       Nikagenyx Vision Tech Private Limited<br/>
                       <a href="mailto:n.dcosta@nikagenyx.com">n.dcosta@nikagenyx.com</a><br/>
@@ -123,7 +154,7 @@ exports.handler = async (event) => {
                     </p>
                   </div>
                   <div style="text-align:center; background-color:#0f0e2c;">
-<img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
+                    <img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
                   </div>
                 </div>
               </div>
@@ -135,8 +166,7 @@ exports.handler = async (event) => {
           };
 
           try {
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`✔️ Sent email to ${emp.email}:`, info);
+            await transporter.sendMail(mailOptions);
             sentCount++;
           } catch (mailErr) {
             console.error(`❌ Failed for ${emp.emp_id} (${emp.email}):`, mailErr);
