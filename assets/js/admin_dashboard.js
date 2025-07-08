@@ -662,9 +662,11 @@ window.exportCSV = async function() {
 };
 
 // --- Bulk Selection Checkbox Logic ---
-function toggleSelectAll(masterCheckbox) {
-  const checkboxes = document.querySelectorAll('.employeeCheckbox');
-  checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+
+function toggleSelectAll(mainCheckbox) {
+  document.querySelectorAll('input[name="emp_checkbox"]').forEach(cb => {
+    cb.checked = mainCheckbox.checked;
+  });
 }
 
 // Keep master checkbox in sync when individual checkboxes change
@@ -947,11 +949,7 @@ function getSelectedEmployeeIds() {
     .map(cb => cb.dataset.empId);
 }
 
-function toggleSelectAll(mainCheckbox) {
-  document.querySelectorAll('input[name="emp_checkbox"]').forEach(cb => {
-    cb.checked = mainCheckbox.checked;
-  });
-}
+
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
   const letterContent = document.getElementById("letterBody").value
@@ -1035,3 +1033,33 @@ async function loadImageAsDataURL(url) {
     reader.readAsDataURL(blob);
   });
 }
+
+function updatePDFPreview() {
+  const raw = document.getElementById("letterBody").value;
+
+  const selectedIds = getSelectedEmployeeIds();
+  if (selectedIds.length === 0) {
+    document.getElementById("pdfPreview").textContent = "(Select an employee to see preview)";
+    return;
+  }
+
+  fetch("/.netlify/functions/get_employees")
+    .then(res => res.json())
+    .then(({ employees }) => {
+      const emp = employees.find(e => selectedIds.includes(e.emp_id));
+      if (!emp) return;
+
+      const preview = raw
+        .replace(/{{name}}/gi, emp.name || "")
+        .replace(/{{emp_id}}/gi, emp.emp_id || "")
+        .replace(/{{email}}/gi, emp.email || "")
+        .replace(/{{phone}}/gi, emp.phone || "")
+        .replace(/{{dob}}/gi, emp.dob || "")
+        .replace(/{{department}}/gi, emp.department || "")
+        .replace(/{{role}}/gi, emp.role || "")
+        .replace(/{{base_salary}}/gi, emp.base_salary || "");
+
+      document.getElementById("pdfPreview").textContent = preview;
+    });
+}
+document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
