@@ -67,6 +67,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
   document.getElementById("p_dept").textContent = currentUser.department || "-";
   document.getElementById("p_role").textContent = currentUser.role || "-";
+  document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
+
 
   // ✅ Correct search logic here
   const searchInput = document.getElementById("search");
@@ -1000,6 +1002,7 @@ async function generatePDFLetters() {
 
     // Split long content
 const lines = doc.splitTextToSize(personalized, maxTextWidth);
+    doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
     
     let y = 140; // Start after header
     let lineHeight = fontSize + 6;
@@ -1036,11 +1039,13 @@ async function loadImageAsDataURL(url) {
 }
 
 function updatePDFPreview() {
-  const raw = document.getElementById("letterBody").value;
+  const editor = document.getElementById("letterBody");
+  const preview = document.getElementById("pdfPreview");
+  const raw = editor.innerHTML; // because it's now contenteditable
 
   const selectedIds = getSelectedEmployeeIds();
   if (selectedIds.length === 0) {
-    document.getElementById("pdfPreview").textContent = "(Select an employee to see preview)";
+    preview.innerHTML = "(Select an employee to see preview)";
     return;
   }
 
@@ -1050,7 +1055,7 @@ function updatePDFPreview() {
       const emp = employees.find(e => selectedIds.includes(e.emp_id));
       if (!emp) return;
 
-      const preview = raw
+      const merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
         .replace(/{{email}}/gi, emp.email || "")
@@ -1060,7 +1065,22 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.role || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-      document.getElementById("pdfPreview").textContent = preview;
+      preview.innerHTML = `
+        <div style="text-align:center;">
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
+        </div>
+        <div style="padding: 30px; font-size: 14px;">${merged}</div>
+        <div style="text-align:center;">
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
+        </div>
+      `;
     });
 }
-document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
+
+document.addEventListener("DOMContentLoaded", () => {
+  const editor = document.getElementById("letterBody");
+  if (editor) {
+    editor.addEventListener("input", updatePDFPreview);
+  }
+});
+
