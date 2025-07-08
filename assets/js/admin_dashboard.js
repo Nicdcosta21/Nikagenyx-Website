@@ -839,10 +839,16 @@ function openEmailModal() {
   const fromInput = document.getElementById("emailFrom");
   const session = JSON.parse(localStorage.getItem("emp_session"));
 
-  if (modal && fromInput && session) {
-    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
-    modal.classList.remove("hidden");
+  if (!modal || !fromInput) {
+    console.error("❌ Modal or From input not found in DOM.");
+    return;
   }
+
+  if (session) {
+    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
+  }
+
+  modal.classList.remove("hidden");
 }
 
 function closeBulkEmailModal() {
