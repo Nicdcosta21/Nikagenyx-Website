@@ -9,15 +9,17 @@ exports.handler = async (event) => {
   try {
     const {
       emp_id,
-      name,
-      email,
-      phone,
-      dob,
-      employment_role,
-      department,
-      base_salary,
-      token,
-      admin_id
+  name,
+  email,
+  phone,
+  dob,
+  employment_role,
+  department,
+  base_salary,
+  reporting_manager,
+  joining_date,
+  token,
+  admin_id
     } = JSON.parse(event.body || "{}");
 
     if (!emp_id || !admin_id) {
@@ -98,6 +100,17 @@ exports.handler = async (event) => {
       updates.push(`base_salary = $${index++}`);
       values.push(Number(base_salary));
     }
+
+    if (reporting_manager && reporting_manager !== "undefined") {
+  updates.push(`reporting_manager = $${index++}`);
+  values.push(reporting_manager);
+}
+
+if (joining_date && joining_date !== "undefined") {
+  updates.push(`joining_date = $${index++}`);
+  values.push(joining_date);
+}
+
 
     if (updates.length === 0) {
       await db.end();
