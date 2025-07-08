@@ -133,18 +133,7 @@
 
     <!-- 📝 Rich Text Editor -->
     <textarea id="letterBody" class="hidden"></textarea>
-    <script>
-      tinymce.init({
-        selector: '#letterBody',
-        height: 300,
-        menubar: false,
-        plugins: 'lists link table',
-        toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-        setup: function (editor) {
-          editor.on('input', updatePDFPreview);
-        }
-      });
-    </script>
+    
 
     <!-- 👀 Live Preview -->
     <label class="text-sm font-semibold mt-4 block">PDF Preview:</label>
