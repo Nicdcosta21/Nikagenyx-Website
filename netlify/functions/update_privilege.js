@@ -15,8 +15,8 @@ exports.handler = async (event) => {
   }
 
   try {
-    const user = verify(event); // Ensure it's an admin
-    if (!user || user.role !== 'admin') {
+    const user = verify(event); // JWT session decode
+    if (!user || user.privilege !== 'admin') {
       return {
         statusCode: 403,
         body: JSON.stringify({ message: 'Forbidden: Admin access required' })
@@ -24,6 +24,8 @@ exports.handler = async (event) => {
     }
 
     const { emp_id, privilege } = JSON.parse(event.body || '{}');
+    console.log("🔁 Received request to update privilege:", { emp_id, privilege });
+
     if (!emp_id || !privilege) {
       return {
         statusCode: 400,
@@ -31,14 +33,24 @@ exports.handler = async (event) => {
       };
     }
 
-    await pool.query(
+    // Prevent super admin downgrade
+    if (emp_id === 'NGX001') {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({ message: 'Super admin privileges cannot be modified.' })
+      };
+    }
+
+    const result = await pool.query(
       'UPDATE employees SET privilege = $1 WHERE emp_id = $2',
       [privilege, emp_id]
     );
 
+    console.log(`✅ Privilege for ${emp_id} set to ${privilege}`);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Privilege updated successfully' })
+      body: JSON.stringify({ message: `Privilege for ${emp_id} updated to ${privilege}` })
     };
   } catch (err) {
     console.error('❌ update_privilege.js error:', err);
