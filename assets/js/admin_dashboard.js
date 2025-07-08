@@ -941,6 +941,9 @@ function toggleSelectAll(mainCheckbox) {
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
   const letterContent = document.getElementById("letterBody").value.trim();
+  const font = document.getElementById("pdfFont").value || "helvetica";
+  const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
+
   if (!letterContent) return alert("Please enter letter content.");
   
   const selectedIds = getSelectedEmployeeIds();
@@ -950,9 +953,24 @@ async function generatePDFLetters() {
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
-  selectedEmployees.forEach(emp => {
-    const doc = new jsPDF();
+  // Load header/footer once
+  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
+  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
+  const headerImage = await loadImageAsDataURL(headerURL);
+  const footerImage = await loadImageAsDataURL(footerURL);
 
+  for (const emp of selectedEmployees) {
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.setFont(font, "normal");
+    doc.setFontSize(fontSize);
+    doc.setTextColor(0, 0, 0);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxTextWidth = pageWidth - margin * 2;
+
+    // Replace merge fields
     const personalized = letterContent
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -963,33 +981,39 @@ async function generatePDFLetters() {
       .replace(/{{role}}/gi, emp.role || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-    const font = document.getElementById("pdfFont").value || "helvetica";
-const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
-doc.setFont(font, "normal");
-doc.setFontSize(fontSize);
+    // Split long content
+    const lines = doc.splitTextToSize(`Dear ${emp.name || "Employee"},\n\n${personalized}\n\nBest regards,\nNik D’Costa\nManaging Director`, maxTextWidth);
+    
+    let y = 140; // Start after header
+    let lineHeight = fontSize + 6;
 
-    doc.setTextColor(0, 0, 0);
+    for (let i = 0; i < lines.length; i++) {
+      if (y + lineHeight > pageHeight - 80) {
+        doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70); // Footer on current page
+        doc.addPage();
+        doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
+        y = 140;
+      }
+      doc.text(lines[i], margin, y);
+      y += lineHeight;
+    }
 
-    doc.text(`Dear ${emp.name || "Employee"},`, 20, 30);
-    const lines = doc.splitTextToSize(personalized, 170);
-let y = 50;
-
-lines.forEach(line => {
-  if (y > 270) { // bottom of page
-    doc.addPage();
-    y = 30;
-  }
-  doc.text(line, 20, y);
-  y += 20;
-});
-    doc.text("Best regards,", 20, 110);
-    doc.text("Nik D’Costa", 20, 117);
-    doc.text("Managing Director", 20, 124);
+    // Final page footer
+    doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70);
 
     const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.role}.pdf`;
     doc.save(filename);
-  });
+  }
 
   closePDFLetterModal();
 }
 
+async function loadImageAsDataURL(url) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
