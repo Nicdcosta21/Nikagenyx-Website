@@ -1,106 +1,5 @@
 // admin_dashboard.js (Fully Corrected Version)
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const session = localStorage.getItem("emp_session");
-  if (!session) return (window.location.href = "/employee_portal.html");
-
-  const currentUser = JSON.parse(session);
-  await loadPayrollMode();
-  await fetchEmployees(currentUser);
-  // ✅ Fill Admin Profile Section
-document.getElementById("p_name").textContent = currentUser.name || "-";
-document.getElementById("p_phone").textContent = currentUser.phone || "-";
-document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-document.getElementById("p_dept").textContent = currentUser.department || "-";
-document.getElementById("p_role").textContent = currentUser.role || "-";
-
-
- // ✅ Correct search logic here
-  const searchInput = document.getElementById("search");
-  if (searchInput) {
-    searchInput.addEventListener("input", function () {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll("#employeeTable tr");
-      rows.forEach(row => {
-        const empId = row.cells[1]?.textContent.toLowerCase() || "";
-        const empName = row.cells[2]?.textContent.toLowerCase() || "";
-        const match = empId.includes(searchTerm) || empName.includes(searchTerm);
-        row.style.display = match ? "" : "none";
-      });
-    });
-  }
-});
-
-function logout() {
-  localStorage.removeItem("emp_session");
-  window.location.href = "employee_portal.html";
-}
-
-function formatDate(dob) {
-  const d = new Date(dob);
-  if (isNaN(d)) return dob;
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}-${month}-${year}`;
-}
-
-
-function showToast(msg) {
-  const toast = document.createElement("div");
-  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-function filterEmployeeTable() {
-  const searchInput = document.getElementById("search");
-  if (!searchInput) return;
-  const searchTerm = searchInput.value.toLowerCase().trim();
-  const table = document.getElementById("employeeTable");
-  if (!table) return;
-  const rows = table.getElementsByTagName("tr");
-  for (let row of rows) {
-    const empId = row.cells[0]?.textContent.toLowerCase() || "";
-    const empName = row.cells[1]?.textContent.toLowerCase() || "";
-    row.style.display = empId.includes(searchTerm) || empName.includes(searchTerm) ? "" : "none";
-  }
-}
-
-async function loadPayrollMode() {
-  const res = await fetch("/.netlify/functions/get_payroll_mode");
-  const data = await res.json();
-  const toggle = document.getElementById("payrollToggle");
-  const status = document.getElementById("toggleStatus");
-
-  if (!toggle || !status) return;
-
-  toggle.value = data.mode || "freelance";
-  status.textContent = `${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active`;
-  status.className = toggle.value === "freelance"
-    ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
-    : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
-
-  const confirmPayroll = document.getElementById("confirmPayroll");
-  if (confirmPayroll) {
-    confirmPayroll.onclick = async () => {
-      const selected = toggle.value;
-      if (!selected) return showToast("Please select a payroll mode first.");
-
-      const res = await fetch("/.netlify/functions/set_payroll_mode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: selected })
-      });
-
-      const data = await res.json();
-      showToast(data.message || `Payroll mode updated`);
-      loadPayrollMode();
-    };
-  }
-}
-
 async function fetchEmployees(currentUser) {
   console.log("🔍 fetchEmployees triggered");
   try {
@@ -116,7 +15,7 @@ async function fetchEmployees(currentUser) {
       const tr = document.createElement("tr");
       tr.className = "border-b border-gray-700";
 
-      tr.innerHTML = `
+      tr.innerHTML =`
   <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" value="${emp.emp_id}" /></td>
   <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
   <td class="p-2 border wrap">${emp.name}</td>
@@ -154,6 +53,111 @@ async function fetchEmployees(currentUser) {
   }
 }
 
+window.fetchEmployees = fetchEmployees;
+console.log("✅ fetchEmployees is ready globally");
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const session = localStorage.getItem("emp_session");
+  if (!session) return (window.location.href = "/employee_portal.html");
+
+  const currentUser = JSON.parse(session);
+  await loadPayrollMode();
+  
+  // ✅ Fill Admin Profile Section
+document.getElementById("p_name").textContent = currentUser.name || "-";
+document.getElementById("p_phone").textContent = currentUser.phone || "-";
+document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+document.getElementById("p_dept").textContent = currentUser.department || "-";
+document.getElementById("p_role").textContent = currentUser.role || "-";
+
+
+ // ✅ Correct search logic here
+  const searchInput = document.getElementById("search");
+  if (searchInput) {
+    searchInput.addEventListener("input", function () {
+      const searchTerm = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#employeeTable tr");
+      rows.forEach(row => {
+        const empId = row.cells[1]?.textContent.toLowerCase() || "";
+        const empName = row.cells[2]?.textContent.toLowerCase() || "";
+        const match = empId.includes(searchTerm) || empName.includes(searchTerm);
+        row.style.display = match ? "" : "none";
+      });
+    });
+  }
+  await fetchEmployees(currentUser);
+});
+
+function logout() {
+  localStorage.removeItem("emp_session");
+  window.location.href = "employee_portal.html";
+}
+
+function formatDate(dob) {
+  const d = new Date(dob);
+  if (isNaN(d)) return dob;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return ${day}-${month}-${year};
+}
+
+
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function filterEmployeeTable() {
+  const searchInput = document.getElementById("search");
+  if (!searchInput) return;
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const table = document.getElementById("employeeTable");
+  if (!table) return;
+  const rows = table.getElementsByTagName("tr");
+  for (let row of rows) {
+    const empId = row.cells[0]?.textContent.toLowerCase() || "";
+    const empName = row.cells[1]?.textContent.toLowerCase() || "";
+    row.style.display = empId.includes(searchTerm) || empName.includes(searchTerm) ? "" : "none";
+  }
+}
+
+async function loadPayrollMode() {
+  const res = await fetch("/.netlify/functions/get_payroll_mode");
+  const data = await res.json();
+  const toggle = document.getElementById("payrollToggle");
+  const status = document.getElementById("toggleStatus");
+
+  if (!toggle || !status) return;
+
+  toggle.value = data.mode || "freelance";
+  status.textContent = ${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active;
+  status.className = toggle.value === "freelance"
+    ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
+    : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+
+  const confirmPayroll = document.getElementById("confirmPayroll");
+  if (confirmPayroll) {
+    confirmPayroll.onclick = async () => {
+      const selected = toggle.value;
+      if (!selected) return showToast("Please select a payroll mode first.");
+
+      const res = await fetch("/.netlify/functions/set_payroll_mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: selected })
+      });
+
+      const data = await res.json();
+      showToast(data.message || Payroll mode updated);
+      loadPayrollMode();
+    };
+  }
+}
+
 
 function setupRowListeners(tr, emp, currentUser) {
   const resetPinBtn = tr.querySelector(".reset-pin");
@@ -188,7 +192,7 @@ if (resetPinBtn) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emp_id: emp.emp_id })
         });
-        if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
+        if (!res.ok) throw new Error(Reset failed: ${res.status});
         const data = await res.json();
         showToast("MFA reset successfully. Employee can now scan QR code.");
         showMfaModal(data, emp.emp_id);
@@ -208,7 +212,7 @@ if (resetPinBtn) {
   if (deleteBtn) {
     deleteBtn.onclick = async () => {
       if (emp.emp_id === currentUser.emp_id) return;
-      if (!confirm(`Delete ${emp.emp_id}?`)) return;
+      if (!confirm(Delete ${emp.emp_id}?)) return;
 
       const token = prompt("Enter your MFA token:");
       if (!token) return;
@@ -257,7 +261,7 @@ if (resetPinBtn) {
 
 function showMfaModal(data, empId) {
   const modal = document.createElement("div");
-  modal.innerHTML = `
+  modal.innerHTML = 
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white text-black p-6 rounded shadow-lg max-w-md">
         <h2 class="text-lg font-bold mb-2">MFA Reset Complete for ${empId}</h2>
@@ -271,16 +275,16 @@ function showMfaModal(data, empId) {
         <p class="text-sm text-gray-600 mb-4">The employee should scan this QR code and then test with a 6-digit token before closing this window.</p>
         <button onclick="this.closest('.fixed').remove(); location.reload();" class="bg-red-600 text-white px-4 py-2 rounded w-full">Close & Refresh</button>
       </div>
-    </div>`;
+    </div>;
   document.body.appendChild(modal);
 }
 
 function showEditModal(emp, row) {
-  fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`)
+  fetch(/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id})
     .then(res => res.json())
     .then(empData => {
       const modal = document.createElement("div");
-      modal.innerHTML = `
+      modal.innerHTML = 
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white text-black p-6 rounded shadow-lg w-full max-w-md">
             <h2 class="text-lg font-semibold mb-4">Edit - ${empData.name}</h2>
@@ -304,7 +308,7 @@ function showEditModal(emp, row) {
               <button class="bg-blue-700 text-white px-4 py-1 rounded" id="saveEditBtn">Save</button>
             </div>
           </div>
-        </div>`;
+        </div>;
       document.body.appendChild(modal);
 
       const dept = modal.querySelector("#editDept");
@@ -355,14 +359,14 @@ function showEditModal(emp, row) {
 }
 
 function triggerReset(type, empId, message) {
-  fetch(`/.netlify/functions/${type}`, {
+  fetch(/.netlify/functions/${type}, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ emp_id: empId })
   })
     .then(res => res.json())
     .then(() => showToast(message))
-    .catch(err => console.error(`${type} failed:`, err));
+    .catch(err => console.error(${type} failed:, err));
 }
 
 async function submitEdit(empId, modal, row) {
@@ -431,8 +435,8 @@ async function submitEdit(empId, modal, row) {
 
 window.showEmployeeDetails = async function(empId) {
   try {
-    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
-    if (!res.ok) throw new Error(`Failed to fetch employee details: ${res.status}`);
+    const res = await fetch(/.netlify/functions/get_employee_profile?emp_id=${empId});
+    if (!res.ok) throw new Error(Failed to fetch employee details: ${res.status});
     const data = await res.json();
 
     // Format DOB properly
@@ -446,17 +450,17 @@ window.showEmployeeDetails = async function(empId) {
       }
     }
 
-    document.getElementById('modalEmpId').textContent = `Employee ID: ${empId}`;
-    document.getElementById('modalDetails').innerHTML = `
+    document.getElementById('modalEmpId').textContent = Employee ID: ${empId};
+    document.getElementById('modalDetails').innerHTML = 
       <p><strong>Name:</strong> ${data.name || '-'}</p>
       <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
       <p><strong>Phone:</strong> ${data.phone || '-'}</p>
       <p><strong>DOB:</strong> ${formattedDOB}</p>
       <p><strong>Department:</strong> ${data.department || '-'}</p>
       <p><strong>Role:</strong> ${data.role || '-'}</p>
-      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? `₹${Number(data.total_pay).toLocaleString('en-IN')}` : '-'}</p>
-      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? `${data.total_hours} hrs` : '0 hrs'}</p>
-    `;
+      <p><strong>Total Pay:</strong> ${data.total_pay && data.total_pay !== 'undefined' && data.total_pay !== undefined ? ₹${Number(data.total_pay).toLocaleString('en-IN')} : '-'}</p>
+      <p><strong>Total Hours:</strong> ${data.total_hours && data.total_hours !== 'undefined' && data.total_hours !== undefined ? ${data.total_hours} hrs : '0 hrs'}</p>
+    ;
 
     const docList = document.getElementById("docLinks");
     docList.innerHTML = '';
@@ -465,14 +469,14 @@ window.showEmployeeDetails = async function(empId) {
     if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
       data.documents.forEach(doc => {
         const li = document.createElement("li");
-        li.innerHTML = `<a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
-                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>`;
+        li.innerHTML = <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View ${doc.name}</a> | 
+                        <a href="${doc.url}" download class="text-green-600 underline">Download</a>;
         docList.appendChild(li);
       });
     } else if (data.profile_photo_url) {
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
-                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>`;
+      li.innerHTML = <a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View Profile Photo</a> | 
+                      <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>;
       docList.appendChild(li);
     } else {
       docList.innerHTML = '<li>No documents uploaded</li>';
@@ -493,7 +497,7 @@ window.printModalContent = function() {
   const modalContent = document.getElementById("modalDetails").innerHTML;
   const empId = document.getElementById("modalEmpId").textContent;
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
+  printWindow.document.write(
     <html>
       <head><title>Employee Details - ${empId}</title></head>
       <body>
@@ -502,14 +506,14 @@ window.printModalContent = function() {
         <script>window.print(); window.close();</script>
       </body>
     </html>
-  `);
+  );
 };
 
 window.exportModalToPDF = function() {
   const modalContent = document.getElementById("modalDetails").innerHTML;
   const empId = document.getElementById("modalEmpId").textContent;
   const pdfWindow = window.open('', '_blank');
-  pdfWindow.document.write(`
+  pdfWindow.document.write(
     <html>
       <head>
         <title>Employee Details - ${empId}</title>
@@ -529,7 +533,7 @@ window.exportModalToPDF = function() {
         </script>
       </body>
     </html>
-  `);
+  );
 };
 
 window.exportCSV = async function() {
@@ -555,7 +559,7 @@ window.exportCSV = async function() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = employees_${new Date().toISOString().split('T')[0]}.csv;
     a.click();
     window.URL.revokeObjectURL(url);
     showToast('✅ CSV exported successfully');
@@ -617,7 +621,7 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
   // ✅ Step 1: Get SMTP password if not stored
   if (!smtpPassword || smtpPassword === "undefined") {
     try {
-      const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+      const res = await fetch(/.netlify/functions/get_smtp_password?emp_id=${empId});
       const data = await res.json();
       if (data.smtp_password && data.smtp_password !== "undefined") {
         smtpPassword = data.smtp_password;
@@ -700,7 +704,7 @@ try {
   // ✅ Success case: valid JSON response
   const result = await res.json();
   if (result.failed?.length) {
-    showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
+    showToast(✅ Sent with some failures: ${result.failed.join(", ")});
   } else {
     showToast(result.message || "✅ Emails sent successfully.");
   }
@@ -720,7 +724,7 @@ function openEmailModal() {
   const session = JSON.parse(localStorage.getItem("emp_session"));
 
   if (modal && fromInput && session) {
-    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
+    fromInput.value = session?.email || (session?.emp_id ? ${session.emp_id}@nikagenyx.com : "");
     modal.classList.remove("hidden");
   }
 }
@@ -758,7 +762,7 @@ function setupAttachmentPreview() {
       li.className = "relative bg-gray-100 text-gray-800 p-2 pl-3 pr-8 rounded shadow text-sm flex items-center justify-between";
 
       const fileText = document.createElement("span");
-      fileText.innerHTML = `<strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB)`;
+      fileText.innerHTML = <strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB);
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "×";
@@ -777,4 +781,11 @@ function setupAttachmentPreview() {
     selectedFiles.forEach(file => dt.items.add(file));
     attachInput.files = dt.files;
   }
+}
+
+
+
+if (typeof window.fetchEmployees !== "function") {
+  window.fetchEmployees = fetchEmployees;
+  console.log("✅ fetchEmployees globally exposed");
 }
