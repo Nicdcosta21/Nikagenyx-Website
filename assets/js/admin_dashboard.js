@@ -205,29 +205,8 @@ function setupRowListeners(tr, emp, currentUser) {
     }
   }
 
- 
-
-
-  const resetMfaBtn = tr.querySelector(".reset-mfa");
-  if (resetMfaBtn && emp.failed_mfa_attempts >= 3) {
-    resetMfaBtn.disabled = false;
-    resetMfaBtn.onclick = async () => {
-      try {
-        const res = await fetch("/.netlify/functions/reset_mfa", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emp_id: emp.emp_id })
-        });
-        if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
-        const data = await res.json();
-        showToast("MFA reset successfully. Employee can now scan QR code.");
-        showMfaModal(data, emp.emp_id);
-      } catch (error) {
-        console.error("MFA reset error:", error);
-        showToast("Failed to reset MFA. Please try again.");
-      }
-    };
-  }
+  // ... rest of your logic (edit, delete, privilege) ...
+}
 
   const editBtn = tr.querySelector(".edit");
   if (editBtn) {
