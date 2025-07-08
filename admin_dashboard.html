@@ -146,6 +146,37 @@
     </div>
   </div>
 </div>
+<!-- 📧 Bulk Email Modal -->
+<div id="bulkEmailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+  <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg relative text-black">
+    <h2 class="text-xl font-bold mb-4">📧 Compose Email</h2>
+
+    <form id="bulkEmailForm">
+      <!-- From (auto-filled) -->
+      <label class="block mb-2 text-sm">From:</label>
+      <input id="emailFrom" type="email" class="w-full border px-3 py-2 rounded mb-4 bg-gray-100" disabled />
+
+      <!-- Subject -->
+      <label class="block mb-2 text-sm">Subject:</label>
+      <input id="emailSubject" type="text" class="w-full border px-3 py-2 rounded mb-4" required />
+
+      <!-- Body -->
+      <label class="block mb-2 text-sm">Message:</label>
+      <textarea id="emailBody" rows="5" class="w-full border px-3 py-2 rounded mb-4" required></textarea>
+
+      <!-- Attachments -->
+      <label class="block mb-2 text-sm">Attachments:</label>
+      <input id="emailAttachment" type="file" multiple class="mb-2" />
+      <ul id="filePreview" class="space-y-1 text-sm text-gray-800 mb-4"></ul>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeBulkEmailModal()" class="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Send Email</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- Employee Table -->
 <div class="overflow-x-auto mb-10">
