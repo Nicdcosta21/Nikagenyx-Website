@@ -655,7 +655,7 @@ document.getElementById("bulkEmailForm").addEventListener("submit", async (e) =>
 
   // ✅ Step 2: Prepare email data
   const from = "n.dcosta@nikagenyx.com";
-  const fromName = session.name || "Nikagenyx HR";
+  const fromName = session.name || "Nik D'Costa";
   const subject = document.getElementById("emailSubject").value;
   const body = document.getElementById("emailBody").value;
   const attachments = document.getElementById("emailAttachment").files;
