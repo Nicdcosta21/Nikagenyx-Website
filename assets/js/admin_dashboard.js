@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
   document.getElementById("p_dept").textContent = currentUser.department || "-";
   document.getElementById("p_role").textContent = currentUser.role || "-";
-document.getElementById("letterBody").addEventListener("input", updatePDFPreview);
+
 
 
   // ✅ Correct search logic here
@@ -95,9 +95,10 @@ tinymce.init({
   plugins: 'lists link table',
   toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
   setup: function (editor) {
-    editor.on('input', updatePDFPreview);
+    editor.on('input', updatePDFPreview); // 🔁 Safe event binding
   }
 });
+
 
 
 
@@ -970,10 +971,11 @@ function getSelectedEmployeeIds() {
 
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
-  const letterContent = document.getElementById("letterBody").value
-  .replace(/\u00A0/g, " ")         // Replace non-breaking spaces
-  .replace(/[^\x00-\x7F]/g, "")    // Remove weird characters (optional)
+ const letterContent = tinymce.get("letterBody")?.getContent({ format: "text" })
+  .replace(/\u00A0/g, " ")
+  .replace(/[^\x00-\x7F]/g, "")
   .trim();
+
 ;
   const font = document.getElementById("pdfFont").value || "helvetica";
   const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
