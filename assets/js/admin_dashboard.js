@@ -790,3 +790,59 @@ if (typeof window.fetchEmployees !== "function") {
   window.fetchEmployees = fetchEmployees;
   console.log("✅ fetchEmployees globally exposed");
 }
+
+document.getElementById("generatePDFLetter").addEventListener("click", async () => {
+  const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+  if (selectedIds.length === 0) {
+    alert("No employees selected!");
+    return;
+  }
+
+  const bodyTemplate = document.getElementById("pdfLetterBody").value;
+
+  const res = await fetch("/.netlify/functions/get_employees");
+  const { employees } = await res.json();
+  const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
+
+  for (const emp of selectedEmployees) {
+    const personalizedBody = mergeTemplate(bodyTemplate, emp);
+
+    const container = document.createElement("div");
+    container.style.width = "600px";
+    container.style.background = "#fff";
+    container.style.padding = "0";
+    container.innerHTML = `
+      <div style="text-align:center;">
+        <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%;" />
+      </div>
+      <div style="padding: 40px;">
+        ${personalizedBody.replace(/\n/g, "<br>")}
+      </div>
+      <div style="text-align:center;">
+        <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%;" />
+        <div style="font-size:12px; color:#888; margin-top:8px;">
+          © 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+        </div>
+      </div>
+    `;
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
+    document.body.appendChild(container);
+
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new window.jspdf.jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`${emp.emp_id}_letter.pdf`);
+
+    document.body.removeChild(container);
+  }
+});
+
+function mergeTemplate(template, emp) {
+  return template.replace(/{{(.*?)}}/g, (_, key) => emp[key.trim()] ?? "");
+}
