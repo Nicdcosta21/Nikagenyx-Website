@@ -154,8 +154,11 @@ exports.handler = async (event) => {
                     </p>
                   </div>
                   <div style="text-align:center; background-color:#0f0e2c;">
-                    <img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
-                  </div>
+  <img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
+  <div style="color:#ccc; font-size:12px; margin-top:8px;">
+    © 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+  </div>
+</div>
                 </div>
               </div>
             `,
