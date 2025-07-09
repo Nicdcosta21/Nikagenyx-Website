@@ -1075,7 +1075,7 @@ function updatePDFPreview() {
       if (!emp) return;
 
       // Replace merge tags
-      let merged = raw
+      const merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
         .replace(/{{email}}/gi, emp.email || "")
@@ -1085,37 +1085,30 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.employment_role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
-        .replace(/{{base_salary}}/gi, emp.base_salary || "")
-      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always; height: 0;"></div>');
+        .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-      // ✅ Replace page break marker with visual separator
-      merged = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
+      // Replace PAGEBREAK markers with divs that simulate a visual page break
+      const paginated = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
 
-      // Final preview
+      // Final HTML preview
       preview.innerHTML = `
         <div style="text-align:center; padding-bottom: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
         </div>
-        const paginated = merged.replace(/<!--PAGEBREAK-->/g, '<div class="page-break"></div>');
-
-preview.innerHTML = `
-  <div style="text-align:center; padding-bottom: 10px;">
-    <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
-  </div>
-  <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
-    ${paginated}
-  </div>
-  <div style="text-align:center; padding-top: 10px;">
-    <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
-  </div>
-`;
-
+        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
+          ${paginated}
+        </div>
         <div style="text-align:center; padding-top: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
         </div>
       `;
+    })
+    .catch(err => {
+      console.error("❌ updatePDFPreview error:", err);
+      preview.innerHTML = "(Error loading preview)";
     });
 }
+
 
 
 function initTinyMCE() {
