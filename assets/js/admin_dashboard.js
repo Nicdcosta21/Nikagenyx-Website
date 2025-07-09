@@ -972,41 +972,26 @@ function getSelectedEmployeeIds() {
 
 
 async function generatePDFLetters() {
-  const { jsPDF } = window.jspdf;
-
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
-  const raw = tinymce.get("letterBody")?.getContent({ format: "text" })
-    .replace(/\u00A0/g, " ")
-    .replace(/[^\x00-\x7F]/g, "")
-    .trim();
+  const rawHTML = tinymce.get("letterBody")?.getContent() || "";
+  const font = document.getElementById("pdfFont")?.value || "helvetica";
+  const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || 12);
 
-  const font = document.getElementById("pdfFont").value || "helvetica";
-  const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
+  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
+  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
+  const headerData = await loadImageAsDataURL(headerURL);
+  const footerData = await loadImageAsDataURL(footerURL);
+  const headerDim = await getImageDimensions(headerURL, 600);
+  const footerDim = await getImageDimensions(footerURL, 600);
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
-  const headerImage = await loadImageAsDataURL("/assets/HEADER.png");
-  const footerImage = await loadImageAsDataURL("/assets/FOOTER.png");
-
   for (const emp of selectedEmployees) {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFont(font);
-    doc.setFontSize(fontSize);
-    doc.setTextColor(0, 0, 0);
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    const maxTextWidth = pageWidth - margin * 2;
-    const headerHeight = 80;
-    const footerHeight = 70;
-    const startY = headerHeight + 40;
-
-    const content = raw
+    const personalizedHTML = rawHTML
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
       .replace(/{{email}}/gi, emp.email || "")
@@ -1014,36 +999,63 @@ async function generatePDFLetters() {
       .replace(/{{dob}}/gi, emp.dob || "")
       .replace(/{{department}}/gi, emp.department || "")
       .replace(/{{role}}/gi, emp.employment_role || "")
-      .replace(/{{base_salary}}/gi, emp.base_salary || "")
       .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
-      .replace(/{{joining_date}}/gi, emp.joining_date || "");
+      .replace(/{{joining_date}}/gi, emp.joining_date || "")
+      .replace(/{{base_salary}}/gi, emp.base_salary || "")
+      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after:always;"></div>');
 
-    const lines = doc.splitTextToSize(content, maxTextWidth);
-    let y = startY;
+    const container = document.createElement("div");
+    container.style.width = "800px";
+    container.innerHTML = `
+      <div style="text-align:center; margin-bottom: 20px;">
+        <img src="${headerData}" style="width:100%; max-width:${headerDim.width}px; height:auto;" />
+      </div>
+      <div style="padding: 30px; font-family: ${font}; font-size: ${fontSize}px; color: #000; line-height: 1.6;">
+        ${personalizedHTML}
+      </div>
+      <div style="text-align:center; margin-top: 40px;">
+        <img src="${footerData}" style="width:100%; max-width:${footerDim.width}px; height:auto;" />
+      </div>
+    `;
 
-    // First page header
-    doc.addImage(headerImage, "PNG", 0, 0, pageWidth, headerHeight);
+    document.body.appendChild(container);
 
-    const lineHeight = fontSize + 6;
-    for (const line of lines) {
-      if (y + lineHeight > pageHeight - footerHeight) {
-        doc.addImage(footerImage, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-        doc.addPage();
-        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, headerHeight);
-        y = startY;
-      }
-      doc.text(line, margin, y);
-      y += lineHeight;
-    }
-
-    // Final footer
-    doc.addImage(footerImage, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-
-    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.employment_role || emp.role || "Letter"}.pdf`;
-    doc.save(filename);
+    const pdf = new window.jspdf.jsPDF("p", "pt", "a4");
+    await pdf.html(container, {
+      callback: function (doc) {
+        const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_letter.pdf`;
+        doc.save(filename);
+        container.remove();
+      },
+      margin: [20, 20, 20, 20],
+      autoPaging: "text"
+    });
   }
 
   closePDFLetterModal();
+}
+
+async function getImageDimensions(imgUrl, maxWidth = 600) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.width / img.height;
+      const width = maxWidth;
+      const height = width / ratio;
+      resolve({ width, height });
+    };
+    img.src = imgUrl;
+  });
+}
+
+async function loadImageAsDataURL(url) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
 }
 
 
