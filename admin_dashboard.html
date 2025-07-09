@@ -10,58 +10,60 @@
   <script src="https://cdn.tiny.cloud/1/h7nzdh35qst8uns29had9zm5ynvjk5er6ke4syuggvgueoni/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
 
-    .header, .navbar {
-      width: 100%;
-      box-sizing: border-box;
-    }
+  .header, .navbar {
+    width: 100%;
+    box-sizing: border-box;
+  }
 
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 16px;
-    }
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 16px;
+  }
 
-    .dashboard-content {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
+  .dashboard-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
 
-    @media (max-width: 768px) {
-      .dashboard-content {
-        flex-direction: column;
-        gap: 8px;
-      }
-      .container {
-        padding: 8px;
-      }
-      .header, .navbar {
-        font-size: 1.1em;
-      }
-    }
-
-     .page-break {
+  .page-break {
     page-break-after: always;
     border-bottom: 2px dashed #ccc;
     margin: 40px 0;
     height: 2px;
+  }
 
-    @media (max-width: 480px) {
-      .header, .navbar {
-        font-size: 1em;
-        padding: 8px;
-      }
-      .container {
-        padding: 4px;
-      }
+  @media (max-width: 768px) {
+    .dashboard-content {
+      flex-direction: column;
+      gap: 8px;
     }
-  </style>
+    .container {
+      padding: 8px;
+    }
+    .header, .navbar {
+      font-size: 1.1em;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header, .navbar {
+      font-size: 1em;
+      padding: 8px;
+    }
+    .container {
+      padding: 4px;
+    }
+  }
+</style>
+
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
