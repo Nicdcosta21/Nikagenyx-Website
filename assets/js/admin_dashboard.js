@@ -1233,20 +1233,24 @@ function updatePDFPreview() {
 
 function initTinyMCE() {
   if (typeof tinymce === "undefined") return;
-  tinymce.init({
-  selector: '#letterBody',
-  height: 300,
-  menubar: false,
-  plugins: 'lists link table',
-  toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-  setup: function (editor) {
-    editor.on('input', updatePDFPreview);
-  }
-});
+  const textarea = document.getElementById('letterBody');
+  if (!textarea) return;
 
+  tinymce.init({
+    selector: '#letterBody',
+    height: 300,
+    menubar: false,
+    plugins: 'lists link table',
+    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+    setup: function (editor) {
+      editor.on('input', updatePDFPreview);
+      editor.on('change', updatePDFPreview);
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTinyMCE();
   const generateBtn = document.getElementById("generatePDFLetter");
   if (generateBtn) {
     generateBtn.addEventListener("click", generatePDFLetters);
