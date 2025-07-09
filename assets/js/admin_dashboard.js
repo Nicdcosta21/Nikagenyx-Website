@@ -1009,6 +1009,10 @@ document.getElementById("generatePDFLetter").addEventListener("click", async () 
     });
   }
 });
+function openPDFLetterModal() {
+  document.getElementById("pdfLetterModal").classList.remove("hidden");
+  updatePDFPreview();
+}
 
 // Simple merge for {{field}} with support for undefined fields
 function mergeTemplate(template, emp) {
