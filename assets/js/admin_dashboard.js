@@ -1051,29 +1051,37 @@ async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
+  // Get HTML from TinyMCE
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
   const font = "Arial";
-  const fontSize = 14;
+  const fontSize = 13; // Good for A4
 
-  // A4 size at 96dpi
-  const pageWidthPx = 794;
-  const pageHeightPx = 1123;
+  // Use jsPDF in "pt" units for A4 compatibility
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4'
+  });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Content margins
-  const sideMargin = 48; // pixels
-  const headerHeight = 110; // actual header image px
-  const footerHeight = 80;  // actual footer image px
+  // Header/footer image heights (in pt)
+  const headerHeight = 90;  // Adjust to your real image height in pt (1 pt = 1.333 px)
+  const footerHeight = 60;  // Adjust to your real image height in pt
 
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
   const headerImg = await loadImageAsDataURL(headerURL);
   const footerImg = await loadImageAsDataURL(footerURL);
 
+  // Fetch employees
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
   for (const emp of selectedEmployees) {
+    // Merge fields in HTML
     const personalizedHTML = rawHTML
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1087,20 +1095,21 @@ async function generatePDFLetters() {
       .replace(/{{base_salary}}/gi, emp.base_salary || "")
       .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
 
+    // Container for rendering
     const container = document.createElement("div");
-    container.style.width = pageWidthPx + "px";
-    container.style.minHeight = pageHeightPx + "px";
+    container.style.width = pageWidth + "pt";
+    container.style.minHeight = pageHeight + "pt";
     container.style.background = "#fff";
     container.style.fontFamily = font;
-    container.style.fontSize = fontSize + "px";
+    container.style.fontSize = fontSize + "pt";
     container.innerHTML = `
       <style>
-        body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}px !important; }
+        body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}pt !important; }
         h1, h2 { font-weight: bold; }
-        p { margin: 0 0 12px 0; }
-        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 200px; height: 18px; vertical-align: bottom;}
+        p { margin: 0 0 12pt 0; }
+        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 160pt; height: 16pt; vertical-align: bottom;}
       </style>
-      <div id="pdfContent" style="padding: ${headerHeight + 20}px ${sideMargin}px ${footerHeight + 20}px ${sideMargin}px; line-height:1.6; color: #000;">
+      <div id="pdfContent" style="padding: ${headerHeight + 32}pt 48pt ${footerHeight + 32}pt 48pt; line-height:1.5; color: #000;">
         ${personalizedHTML}
       </div>
     `;
@@ -1108,21 +1117,18 @@ async function generatePDFLetters() {
     container.style.left = "-9999px";
     document.body.appendChild(container);
 
-    const { jsPDF } = window.jspdf;
+    // Create a new jsPDF for each letter!
     const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "px",
-      format: [pageWidthPx, pageHeightPx]
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
     await doc.html(container, {
-      margin: [headerHeight + 20, sideMargin, footerHeight + 20, sideMargin],
+      margin: [headerHeight + 32, 48, footerHeight + 32, 48],
       autoPaging: "text",
       html2canvas: {
-        scale: 1,
+        scale: 1.15,
         useCORS: true,
         backgroundColor: "#fff"
       },
@@ -1130,14 +1136,15 @@ async function generatePDFLetters() {
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
+          // Draw header and footer at correct size!
           doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
           doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-          doc.setFontSize(10);
+          doc.setFontSize(9);
           doc.setTextColor(150);
           doc.text(
             "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
             pageWidth / 2,
-            pageHeight - 12,
+            pageHeight - 14,
             { align: "center" }
           );
         }
@@ -1151,6 +1158,7 @@ async function generatePDFLetters() {
   }
   closePDFLetterModal();
 }
+
 // Utility to fetch image as Data URL
 async function loadImageAsDataURL(url) {
   const res = await fetch(url);
@@ -1161,7 +1169,6 @@ async function loadImageAsDataURL(url) {
     reader.readAsDataURL(blob);
   });
 }
-
 async function getImageDimensions(imgUrl, maxWidth = 600) {
   return new Promise(resolve => {
     const img = new Image();
