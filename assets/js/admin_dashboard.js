@@ -1084,9 +1084,12 @@ function updatePDFPreview() {
     .then(res => res.json())
     .then(({ employees }) => {
       const emp = employees.find(e => selectedIds.includes(e.emp_id));
-      if (!emp) return;
+      if (!emp) {
+        preview.innerHTML = "(Employee not found)";
+        return;
+      }
 
-      // Replace merge tags
+      // Replace merge tags with values
       const merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1097,30 +1100,28 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.employment_role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
-        .replace(/{{base_salary}}/gi, emp.base_salary || "");
+        .replace(/{{base_salary}}/gi, emp.base_salary || "")
+        .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break">--- Page Break ---</div>');
 
-      // Replace PAGEBREAK markers with divs that simulate a visual page break
-      const paginated = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
 
-      // Final HTML preview
+      // Set preview HTML
       preview.innerHTML = `
         <div style="text-align:center; padding-bottom: 10px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="max-width:100%; height:auto;" />
         </div>
-        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
-          ${paginated}
+        <div style="padding: 30px; font-family: ${document.getElementById("pdfFont")?.value || 'Arial'}; font-size: ${document.getElementById("pdfFontSize")?.value || 12}px; color: #000; line-height: 1.6;">
+          ${merged}
         </div>
-        <div style="text-align:center; padding-top: 10px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
+        <div style="text-align:center; padding-top: 20px;">
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="max-width:100%; height:auto;" />
         </div>
       `;
     })
     .catch(err => {
-      console.error("❌ updatePDFPreview error:", err);
-      preview.innerHTML = "(Error loading preview)";
+      console.error("❌ Error in preview:", err);
+      preview.innerHTML = "(Preview failed to load)";
     });
 }
-
 
 
 function initTinyMCE() {
