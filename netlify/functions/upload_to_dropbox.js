@@ -10,6 +10,13 @@ exports.handler = async (event) => {
   return new Promise((resolve, reject) => {
     let fileBuffer = null;
     let fileName = null;
+    let docName = "document"; // default if not passed
+
+    busboy.on('field', (name, val) => {
+      if (name === 'doc_name') {
+        docName = val.toLowerCase().trim();
+      }
+    });
 
     busboy.on('file', (_, file, info) => {
       fileName = info.filename;
@@ -22,7 +29,6 @@ exports.handler = async (event) => {
 
     busboy.on('finish', async () => {
       try {
-        // Upload to Dropbox
         const uploadRes = await fetch('https://content.dropboxapi.com/2/files/upload', {
           method: 'POST',
           headers: {
@@ -40,7 +46,6 @@ exports.handler = async (event) => {
 
         const uploadData = await uploadRes.json();
 
-        // Create a shareable link
         const linkRes = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
           method: 'POST',
           headers: {
@@ -55,7 +60,7 @@ exports.handler = async (event) => {
 
         resolve({
           statusCode: 200,
-          body: JSON.stringify({ url: directLink, name: fileName })
+          body: JSON.stringify({ url: directLink, name: docName })
         });
       } catch (err) {
         reject({ statusCode: 500, body: JSON.stringify({ error: err.message }) });
