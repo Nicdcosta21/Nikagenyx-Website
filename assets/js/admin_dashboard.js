@@ -976,7 +976,8 @@ async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
-  const raw = tinymce.get("letterBody")?.getContent() || "";
+  let raw = tinymce.get("letterBody")?.getContent() || "";
+
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
