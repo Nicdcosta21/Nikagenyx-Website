@@ -986,8 +986,6 @@ function getSelectedEmployeeIds() {
   return Array.from(document.querySelectorAll('input[name="emp_checkbox"]:checked'))
     .map(cb => cb.dataset.empId);
 }
-
-
 async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
@@ -995,6 +993,10 @@ async function generatePDFLetters() {
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
   const font = document.getElementById("pdfFont")?.value || "helvetica";
   const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || 12);
+
+  // Fixed header/footer heights (in points for A4 @ 72dpi): ~80px header, ~60px footer
+  const headerHeight = 80; // px
+  const footerHeight = 60; // px
 
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
@@ -1021,9 +1023,16 @@ async function generatePDFLetters() {
 
     // Create container for jsPDF.html() rendering
     const container = document.createElement("div");
-    container.style.width = "800px";
+    container.style.width = "595px"; // A4 width in pt
+    container.style.minHeight = "842px"; // A4 height in pt
+    container.style.background = "#fff";
+    container.style.fontFamily = font;
+    container.style.fontSize = fontSize + "px";
     container.innerHTML = `
-      <div id="pdfContent" style="font-family:${font}; font-size:${fontSize}px; padding: 60px 40px; line-height:1.6; color: #000;">
+      <style>
+        body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}px !important; }
+      </style>
+      <div id="pdfContent" style="padding: ${headerHeight + 20}px 40px ${footerHeight + 20}px 40px; line-height:1.6; color: #000;">
         ${personalizedHTML}
       </div>
     `;
@@ -1035,8 +1044,13 @@ async function generatePDFLetters() {
     const pageHeight = doc.internal.pageSize.getHeight();
 
     await doc.html(container, {
-      margin: [90, 40, 90, 40],
+      margin: [headerHeight + 20, 40, footerHeight + 20, 40], // top, left, bottom, right
       autoPaging: 'text',
+      html2canvas: {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: "#fff"
+      },
       callback: function (doc) {
         const totalPages = doc.internal.getNumberOfPages();
 
@@ -1044,15 +1058,20 @@ async function generatePDFLetters() {
           doc.setPage(i);
 
           // Header Image (top)
-          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, pageWidth * 0.71);
+          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
 
           // Footer Image (bottom)
-          doc.addImage(footerImg, "PNG", 0, pageHeight - (pageWidth * 0.71), pageWidth, pageWidth * 0.71);
+          doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
 
           // Footer copyright text
           doc.setFontSize(8);
           doc.setTextColor(150);
-          doc.text("© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.", pageWidth / 2, pageHeight - 15, { align: "center" });
+          doc.text(
+            "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
+            pageWidth / 2,
+            pageHeight - 15,
+            { align: "center" }
+          );
         }
 
         const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
