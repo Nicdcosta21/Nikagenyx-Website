@@ -29,11 +29,11 @@ exports.handler = async (event) => {
 
     return new Promise((resolve) => {
       const form = new IncomingForm({
-        maxFileSize: 1024 * 1024,          // 1MB per file
+        maxFileSize: 1024 * 1024, // 1MB per file
         maxTotalFileSize: 5 * 1024 * 1024, // Total up to 5MB
         allowEmptyFiles: true,
         minFileSize: 0,
-        multiples: false,
+        multiples: true
       });
 
       form.parse(req, async (err, fields, files) => {
@@ -45,7 +45,6 @@ exports.handler = async (event) => {
           });
         }
 
-        // Normalize fields
         const unwrap = (obj) => {
           const out = {};
           for (const key in obj) {
@@ -65,6 +64,7 @@ exports.handler = async (event) => {
         const role = normalize(f.role);
         const new_pin = normalize(f.new_pin);
         const email = normalize(f.email);
+        const documents = f.documents ? JSON.parse(f.documents) : [];
 
         if (!emp_id) {
           return resolve({
@@ -81,10 +81,6 @@ exports.handler = async (event) => {
         }
 
         try {
-          // Skip file updates if nothing was uploaded
-          const hasUploaded = (file) =>
-            file && file.originalFilename && file.size > 0;
-
           const updateQuery = `
             UPDATE employees SET
               phone = CASE WHEN $1 = '' THEN phone ELSE $1 END,
@@ -92,15 +88,23 @@ exports.handler = async (event) => {
               department = CASE WHEN $3 = '' THEN department ELSE $3 END,
               role = CASE WHEN $4 = '' THEN role ELSE $4 END,
               pin = CASE WHEN $5 = '' THEN pin ELSE $5 END,
-              email = CASE WHEN $6 = '' THEN email ELSE $6 END
-            WHERE emp_id = $7
+              email = CASE WHEN $6 = '' THEN email ELSE $6 END,
+              documents = CASE WHEN $7::jsonb IS NULL THEN documents ELSE $7::jsonb END
+            WHERE emp_id = $8
           `;
 
-          const values = [phone, dob, department, role, new_pin, email, emp_id];
-          await pool.query(updateQuery, values);
+          const values = [
+            phone,
+            dob,
+            department,
+            role,
+            new_pin,
+            email,
+            documents.length > 0 ? JSON.stringify(documents) : null,
+            emp_id
+          ];
 
-          // Optional: You could handle uploaded files here (store to DB or cloud)
-          // Only if `hasUploaded(files.pan)` or similar
+          await pool.query(updateQuery, values);
 
           return resolve({
             statusCode: 200,
