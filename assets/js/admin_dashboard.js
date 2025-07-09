@@ -973,62 +973,23 @@ function getSelectedEmployeeIds() {
 
 
 async function generatePDFLetters() {
-  const { jsPDF } = window.jspdf;
-
-  // ✅ Safely get the TinyMCE editor content
-  const editor = tinymce.get("letterBody");
-  if (!editor) {
-    alert("Editor not ready. Please try again.");
-    return;
-  }
-
-  const letterContent = editor.getContent({ format: "text" })
-    .replace(/\u00A0/g, " ")
-    .replace(/[^\x00-\x7F]/g, "")
-    .trim();
-
-  // ✅ Validate letter content
-  if (!letterContent) {
-    alert("Please enter letter content.");
-    return;
-  }
-
-  // ✅ Safely get font settings
-  const fontSelect = document.getElementById("pdfFont");
-  const fontSizeSelect = document.getElementById("pdfFontSize");
-  const font = fontSelect?.value || "helvetica";
-  const fontSize = parseInt(fontSizeSelect?.value || "12");
-
-  // ✅ Validate selected employees
   const selectedIds = getSelectedEmployeeIds();
-  if (!selectedIds.length) {
-    alert("Please select employees.");
-    return;
-  }
+  if (!selectedIds.length) return alert("Please select employees.");
+
+  const raw = tinymce.get("letterBody")?.getContent() || "";
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
-  // ✅ Load header/footer images
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
+
   const headerImage = await loadImageAsDataURL(headerURL);
   const footerImage = await loadImageAsDataURL(footerURL);
 
   for (const emp of selectedEmployees) {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFont(font, "normal");
-    doc.setFontSize(fontSize);
-    doc.setTextColor(0, 0, 0);
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    const maxTextWidth = pageWidth - margin * 2;
-
-    // ✅ Replace merge fields in letter body
-    const personalized = letterContent
+    const personalized = raw
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
       .replace(/{{email}}/gi, emp.email || "")
@@ -1038,29 +999,42 @@ async function generatePDFLetters() {
       .replace(/{{role}}/gi, emp.employment_role || "")
       .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
       .replace(/{{joining_date}}/gi, emp.joining_date || "")
-      .replace(/{{base_salary}}/gi, emp.base_salary || "");
+      .replace(/{{base_salary}}/gi, emp.base_salary || "")
+    .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always; height: 0;"></div>');
 
-    const lines = doc.splitTextToSize(personalized, maxTextWidth);
-    doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
+    const container = document.createElement("div");
+    container.style.width = "800px";
+    container.style.background = "#fff";
+    container.innerHTML = `
+      <div style="text-align:center;">
+        <img src="${headerImage}" style="width:100%; max-height:100px;" />
+      </div>
+      <div style="padding: 40px; font-size: 14px; line-height: 1.6; color: #000;">
+        ${personalized}
+      </div>
+      <div style="text-align:center;">
+        <img src="${footerImage}" style="width:100%; max-height:80px;" />
+        <div style="font-size:12px; color:#888;">© 2025 Nikagenyx Vision Tech Private Limited</div>
+      </div>
+    `;
+    document.body.appendChild(container);
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
 
-    let y = 140;
-    const lineHeight = fontSize + 6;
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
 
-    for (let i = 0; i < lines.length; i++) {
-      if (y + lineHeight > pageHeight - 80) {
-        doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70);
-        doc.addPage();
-        doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
-        y = 140;
-      }
-      doc.text(lines[i], margin, y);
-      y += lineHeight;
-    }
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "px",
+      format: [canvas.width, canvas.height]
+    });
 
-    doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70);
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.employment_role || emp.role}.pdf`;
+    pdf.save(filename);
 
-    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.role}.pdf`;
-    doc.save(filename);
+    document.body.removeChild(container);
   }
 
   closePDFLetterModal();
@@ -1075,6 +1049,7 @@ async function loadImageAsDataURL(url) {
     reader.readAsDataURL(blob);
   });
 }
+
 function updatePDFPreview() {
   const preview = document.getElementById("pdfPreview");
 
@@ -1103,7 +1078,8 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
-        .replace(/{{base_salary}}/gi, emp.base_salary || "");
+        .replace(/{{base_salary}}/gi, emp.base_salary || "")
+      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always; height: 0;"></div>');
 
       // ✅ Replace page break marker with visual separator
       merged = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
