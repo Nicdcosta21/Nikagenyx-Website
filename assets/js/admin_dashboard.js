@@ -1051,37 +1051,37 @@ async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
-  // Get HTML from TinyMCE
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
   const font = "Arial";
-  const fontSize = 13; // Good for A4
+  const fontSize = 13;
 
-  // Use jsPDF in "pt" units for A4 compatibility
+  // jsPDF: Use "pt" units and "a4" for maximum compatibility.
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'pt',
-    format: 'a4'
+    orientation: "portrait",
+    unit: "pt",
+    format: "a4"
   });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();   // ≈595.28pt
+  const pageHeight = doc.internal.pageSize.getHeight(); // ≈841.89pt
 
-  // Header/footer image heights (in pt)
-  const headerHeight = 90;  // Adjust to your real image height in pt (1 pt = 1.333 px)
-  const footerHeight = 60;  // Adjust to your real image height in pt
+  // These should match your HEADER/FOOTER image's true height in points.
+  // 1 pt = 1.333px. If your image is 120px tall, height in pt ≈ 90pt.
+  const headerHeight = 90;
+  const footerHeight = 60;
+  const sideMargin = 48; // pt
 
+  // Use RAW image URLs from your repo (DO NOT use /blob/ URLs, use /raw/)
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
   const headerImg = await loadImageAsDataURL(headerURL);
   const footerImg = await loadImageAsDataURL(footerURL);
 
-  // Fetch employees
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
   for (const emp of selectedEmployees) {
-    // Merge fields in HTML
     const personalizedHTML = rawHTML
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1100,16 +1100,14 @@ async function generatePDFLetters() {
     container.style.width = pageWidth + "pt";
     container.style.minHeight = pageHeight + "pt";
     container.style.background = "#fff";
-    container.style.fontFamily = font;
-    container.style.fontSize = fontSize + "pt";
     container.innerHTML = `
       <style>
         body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}pt !important; }
         h1, h2 { font-weight: bold; }
-        p { margin: 0 0 12pt 0; }
-        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 160pt; height: 16pt; vertical-align: bottom;}
+        p { margin: 0 0 10pt 0; }
+        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 120pt; height: 14pt; vertical-align: bottom;}
       </style>
-      <div id="pdfContent" style="padding: ${headerHeight + 32}pt 48pt ${footerHeight + 32}pt 48pt; line-height:1.5; color: #000;">
+      <div id="pdfContent" style="padding: ${headerHeight + 16}pt ${sideMargin}pt ${footerHeight + 16}pt ${sideMargin}pt; line-height:1.5; color: #000;">
         ${personalizedHTML}
       </div>
     `;
@@ -1117,18 +1115,18 @@ async function generatePDFLetters() {
     container.style.left = "-9999px";
     document.body.appendChild(container);
 
-    // Create a new jsPDF for each letter!
+    // Create a new jsPDF doc for each letter
     const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4'
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
     });
 
     await doc.html(container, {
-      margin: [headerHeight + 32, 48, footerHeight + 32, 48],
+      margin: [headerHeight + 16, sideMargin, footerHeight + 16, sideMargin],
       autoPaging: "text",
       html2canvas: {
-        scale: 1.15,
+        scale: 1.33, // Best for pt units, sharp rendering
         useCORS: true,
         backgroundColor: "#fff"
       },
@@ -1136,8 +1134,9 @@ async function generatePDFLetters() {
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
-          // Draw header and footer at correct size!
+          // Header: draw at full width, and at the top
           doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
+          // Footer: draw at bottom
           doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
           doc.setFontSize(9);
           doc.setTextColor(150);
@@ -1169,6 +1168,7 @@ async function loadImageAsDataURL(url) {
     reader.readAsDataURL(blob);
   });
 }
+
 async function getImageDimensions(imgUrl, maxWidth = 600) {
   return new Promise(resolve => {
     const img = new Image();
