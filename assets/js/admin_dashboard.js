@@ -1051,21 +1051,18 @@ async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
-  // Get HTML content from TinyMCE editor
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
   const font = "Arial";
-  const fontSize = 14; // matches Word better
+  const fontSize = 14;
 
-  // True A4 size at 96dpi
+  // A4 size at 96dpi
   const pageWidthPx = 794;
   const pageHeightPx = 1123;
 
-  // Margins (1 inch = 96px)
-  const margin = 96;
-
-  // Set your header/footer image heights
-  const headerHeight = 110; // px (adjust to your actual image)
-  const footerHeight = 80;  // px
+  // Content margins
+  const sideMargin = 48; // pixels
+  const headerHeight = 110; // actual header image px
+  const footerHeight = 80;  // actual footer image px
 
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
@@ -1077,7 +1074,6 @@ async function generatePDFLetters() {
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
   for (const emp of selectedEmployees) {
-    // Merge fields in the HTML from TinyMCE
     const personalizedHTML = rawHTML
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1091,7 +1087,6 @@ async function generatePDFLetters() {
       .replace(/{{base_salary}}/gi, emp.base_salary || "")
       .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
 
-    // Create a container for jsPDF.html() rendering
     const container = document.createElement("div");
     container.style.width = pageWidthPx + "px";
     container.style.minHeight = pageHeightPx + "px";
@@ -1105,7 +1100,7 @@ async function generatePDFLetters() {
         p { margin: 0 0 12px 0; }
         .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 200px; height: 18px; vertical-align: bottom;}
       </style>
-      <div id="pdfContent" style="padding: ${headerHeight + margin}px ${margin}px ${footerHeight + margin}px ${margin}px; line-height:1.6; color: #000;">
+      <div id="pdfContent" style="padding: ${headerHeight + 20}px ${sideMargin}px ${footerHeight + 20}px ${sideMargin}px; line-height:1.6; color: #000;">
         ${personalizedHTML}
       </div>
     `;
@@ -1124,7 +1119,7 @@ async function generatePDFLetters() {
     const pageHeight = doc.internal.pageSize.getHeight();
 
     await doc.html(container, {
-      margin: [headerHeight + margin, margin, footerHeight + margin, margin],
+      margin: [headerHeight + 20, sideMargin, footerHeight + 20, sideMargin],
       autoPaging: "text",
       html2canvas: {
         scale: 1,
@@ -1156,7 +1151,6 @@ async function generatePDFLetters() {
   }
   closePDFLetterModal();
 }
-
 // Utility to fetch image as Data URL
 async function loadImageAsDataURL(url) {
   const res = await fetch(url);
