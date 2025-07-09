@@ -939,6 +939,15 @@ document.getElementById("generatePDFLetter").addEventListener("click", async () 
   const headerHeight = 120; // px/pt
   const footerHeight = 80;  // px/pt
 
+  // Define a default template for PDF letter generation
+const bodyTemplate = `
+  <p>Dear {{name}},</p>
+  <p>Employee ID: {{emp_id}}</p>
+  <p>Welcome to the {{department}} team as a {{employment_role}}!</p>
+  <p>Your joining date: {{joining_date}}</p>
+  <p>Best regards,<br>HR Team</p>
+`;
+
   for (const emp of selectedEmployees) {
     // Use mergeTemplate for all fields
     const personalizedBody = mergeTemplate(bodyTemplate, emp);
