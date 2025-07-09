@@ -981,10 +981,8 @@ async function generatePDFLetters() {
 
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
-  const headerData = await loadImageAsDataURL(headerURL);
-  const footerData = await loadImageAsDataURL(footerURL);
-  const headerDim = await getImageDimensions(headerURL, 600);
-  const footerDim = await getImageDimensions(footerURL, 600);
+  const headerImg = await loadImageAsDataURL(headerURL);
+  const footerImg = await loadImageAsDataURL(footerURL);
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
@@ -1002,33 +1000,51 @@ async function generatePDFLetters() {
       .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
       .replace(/{{joining_date}}/gi, emp.joining_date || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "")
-      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after:always;"></div>');
+      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
 
+    // Create container for jsPDF.html() rendering
     const container = document.createElement("div");
     container.style.width = "800px";
     container.innerHTML = `
-      <div style="text-align:center; margin-bottom: 20px;">
-        <img src="${headerData}" style="width:100%; max-width:${headerDim.width}px; height:auto;" />
-      </div>
-      <div style="padding: 30px; font-family: ${font}; font-size: ${fontSize}px; color: #000; line-height: 1.6;">
+      <div id="pdfContent" style="font-family:${font}; font-size:${fontSize}px; padding: 60px 40px; line-height:1.6; color: #000;">
         ${personalizedHTML}
       </div>
-      <div style="text-align:center; margin-top: 40px;">
-        <img src="${footerData}" style="width:100%; max-width:${footerDim.width}px; height:auto;" />
-      </div>
     `;
-
     document.body.appendChild(container);
 
-    const pdf = new window.jspdf.jsPDF("p", "pt", "a4");
-    await pdf.html(container, {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("p", "pt", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    await doc.html(container, {
+      margin: [90, 40, 90, 40],
+      autoPaging: 'text',
       callback: function (doc) {
-        const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_letter.pdf`;
+        const totalPages = doc.internal.getNumberOfPages();
+
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+
+          // Header Image (top)
+          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, pageWidth * 0.71);
+
+          // Footer Image (bottom)
+          doc.addImage(footerImg, "PNG", 0, pageHeight - (pageWidth * 0.71), pageWidth, pageWidth * 0.71);
+
+          // Footer copyright text
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text("© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.", pageWidth / 2, pageHeight - 15, { align: "center" });
+        }
+
+        const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
+        const cleanRole = emp.employment_role?.trim().replace(/\s+/g, "_").replace(/[^\w()_]/g, "") || "Role";
+        const filename = `${cleanName}_${emp.emp_id}_${cleanRole}.pdf`;
+
         doc.save(filename);
         container.remove();
-      },
-      margin: [20, 20, 20, 20],
-      autoPaging: "text"
+      }
     });
   }
 
@@ -1084,13 +1100,10 @@ function updatePDFPreview() {
     .then(res => res.json())
     .then(({ employees }) => {
       const emp = employees.find(e => selectedIds.includes(e.emp_id));
-      if (!emp) {
-        preview.innerHTML = "(Employee not found)";
-        return;
-      }
+      if (!emp) return;
 
-      // Replace merge tags with values
-      const merged = raw
+      // Replace merge tags
+      let merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
         .replace(/{{email}}/gi, emp.email || "")
@@ -1100,26 +1113,23 @@ function updatePDFPreview() {
         .replace(/{{role}}/gi, emp.employment_role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
-        .replace(/{{base_salary}}/gi, emp.base_salary || "")
-        .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break">--- Page Break ---</div>');
+        .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
+      // Replace <!-- PAGEBREAK --> with visual separator
+      const paginated = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
 
-      // Set preview HTML
+      // Final preview
       preview.innerHTML = `
         <div style="text-align:center; padding-bottom: 10px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="max-width:100%; height:auto;" />
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
         </div>
-        <div style="padding: 30px; font-family: ${document.getElementById("pdfFont")?.value || 'Arial'}; font-size: ${document.getElementById("pdfFontSize")?.value || 12}px; color: #000; line-height: 1.6;">
-          ${merged}
+        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
+          ${paginated}
         </div>
-        <div style="text-align:center; padding-top: 20px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="max-width:100%; height:auto;" />
+        <div style="text-align:center; padding-top: 10px;">
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
         </div>
       `;
-    })
-    .catch(err => {
-      console.error("❌ Error in preview:", err);
-      preview.innerHTML = "(Preview failed to load)";
     });
 }
 
