@@ -33,15 +33,12 @@
     gap: 16px;
   }
 
-.page-break {
-  display: block;
-  height: 40px;
-  margin: 40px 0;
-  border-top: 2px dashed #aaa;
-  text-align: center;
-  color: #888;
-  font-style: italic;
-}
+  .page-break {
+    page-break-after: always;
+    border-bottom: 2px dashed #ccc;
+    margin: 40px 30px;
+    height: 0;
+  }
 
 
   @media (max-width: 768px) {
