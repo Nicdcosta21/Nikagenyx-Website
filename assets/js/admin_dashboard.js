@@ -608,7 +608,7 @@ window.printModalContent = function() {
       <body>
         <h2>${empId}</h2>
         ${modalContent}
-        <script>window.print(); window.close();</script>
+        <script>window.print();</script>
       </body>
     </html>
   `);
