@@ -30,6 +30,14 @@ async function getEmployeeEmails(empIds) {
 const header_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
 const footer_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
 
+// Helper to normalize line endings and convert to HTML linebreaks
+function normalizeForHtml(str) {
+  return (str || "")
+    .replace(/\r\n/g, "\n") // CRLF to LF
+    .replace(/\r/g, "\n")   // CR to LF
+    .replace(/\n/g, "<br/>"); // LF to <br/>
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
@@ -141,7 +149,7 @@ exports.handler = async (event) => {
                     </ul>
                     <br/>
                     <p style="font-size: 16px; line-height: 1.6;">
-                      ${body.replace(/\n/g, "<br/>")}
+                      ${normalizeForHtml(body)}
                     </p>
                     <p style="margin-top: 30px; font-size: 16px;">
                       Best regards,<br/>
@@ -154,11 +162,11 @@ exports.handler = async (event) => {
                     </p>
                   </div>
                   <div style="text-align:center; background-color:#0f0e2c;">
-  <img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
-  <div style="color:#ccc; font-size:12px; margin-top:8px;">
-    © 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
-  </div>
-</div>
+                    <img src="${footer_url}" alt="Footer" style="max-width:100%; height:auto;" />
+                    <div style="color:#ccc; font-size:12px; margin-top:8px;">
+                      © 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
+                    </div>
+                  </div>
                 </div>
               </div>
             `,
