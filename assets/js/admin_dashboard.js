@@ -641,38 +641,67 @@ window.exportModalToPDF = function() {
   `);
 };
 
-window.exportCSV = async function() {
+window.exportCSV = async function () {
   try {
     const res = await fetch("/.netlify/functions/get_employees");
     const { employees } = await res.json();
 
-    const csvContent = [
-      ['ID', 'Name', 'Email', 'Phone', 'DOB', 'Role', 'Department', 'Base Salary'].join(','),
-      ...employees.map(emp => [
+    // Fetch full profile for each employee
+    const employeeDetails = await Promise.all(
+      employees.map(async (emp) => {
+        const profileRes = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`);
+        if (!profileRes.ok) throw new Error(`Failed to fetch profile for ${emp.emp_id}`);
+        const profile = await profileRes.json();
+        return { ...emp, ...profile };
+      })
+    );
+
+    // CSV Header
+    const headers = [
+      'ID', 'Name', 'Email', 'Phone', 'DOB', 'Department', 'Role',
+      'Reporting Manager', 'Joining Date', 'Base Salary', 'Total Pay', 'Total Hours', 'Document Names'
+    ];
+
+    const csvRows = employeeDetails.map(emp => {
+      const dob = emp.dob ? new Date(emp.dob).toLocaleDateString('en-GB') : '';
+      const joining = emp.joining_date ? new Date(emp.joining_date).toLocaleDateString('en-GB') : '';
+      const totalPay = emp.total_pay ? `₹${Number(emp.total_pay).toLocaleString('en-IN')}` : '';
+      const docs = (emp.documents || []).map(doc => doc.name || 'Document').join('; ');
+
+      return [
         emp.emp_id,
-        emp.name,
+        emp.name || '',
         emp.email || '',
         emp.phone || '',
-        emp.dob ? formatDate(emp.dob) : '',
-        emp.employment_role || '',
+        dob,
         emp.department || '',
-        emp.base_salary || ''
-      ].join(','))
-    ].join('\n');
+        emp.employment_role || '',
+        emp.reporting_manager || '',
+        joining,
+        emp.base_salary || '',
+        totalPay,
+        emp.total_hours || '',
+        docs || ''
+      ].map(val => `"${val}"`).join(',');
+    });
 
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+
+    // Trigger download
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `employees_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `employees_full_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    window.URL.revokeObjectURL(url);
-    showToast('✅ CSV exported successfully');
+    URL.revokeObjectURL(url);
+    showToast('✅ Full employee CSV exported');
   } catch (error) {
     console.error('Export failed:', error);
     showToast('❌ Export failed');
   }
 };
+
 
 // --- Bulk Selection Checkbox Logic ---
 
