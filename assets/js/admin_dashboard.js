@@ -907,7 +907,6 @@ document.getElementById("generatePDFLetter").addEventListener("click", async () 
     return;
   }
 
-  const bodyTemplate = document.getElementById("pdfLetterBody").value;
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
@@ -973,6 +972,7 @@ function getSelectedEmployeeIds() {
 
 
 async function generatePDFLetters() {
+  const { jsPDF } = window.jspdf;
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
