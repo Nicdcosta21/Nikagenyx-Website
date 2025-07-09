@@ -1044,12 +1044,19 @@ async function generatePDFLetters() {
 
   // Get HTML content from TinyMCE editor
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
-  const font = document.getElementById("pdfFont")?.value || "Arial";
-  const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || 12);
+  const font = "Arial";
+  const fontSize = 14; // matches Word better
 
-  // Use your actual header/footer image heights in px
-  const headerHeight = 120;
-  const footerHeight = 80;
+  // True A4 size at 96dpi
+  const pageWidthPx = 794;
+  const pageHeightPx = 1123;
+
+  // Margins (1 inch = 96px)
+  const margin = 96;
+
+  // Set your header/footer image heights
+  const headerHeight = 110; // px (adjust to your actual image)
+  const footerHeight = 80;  // px
 
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
@@ -1075,22 +1082,21 @@ async function generatePDFLetters() {
       .replace(/{{base_salary}}/gi, emp.base_salary || "")
       .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
 
-    // 794px is A4 width at 96dpi, 1123px is A4 height
+    // Create a container for jsPDF.html() rendering
     const container = document.createElement("div");
-    container.style.width = "794px";
-    container.style.minHeight = "1123px";
+    container.style.width = pageWidthPx + "px";
+    container.style.minHeight = pageHeightPx + "px";
     container.style.background = "#fff";
     container.style.fontFamily = font;
     container.style.fontSize = fontSize + "px";
     container.innerHTML = `
       <style>
-        h1 { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 24px; }
-        h2, h3 { font-weight: bold; margin-top: 18px; margin-bottom: 8px; }
-        p { font-size: ${fontSize}px; margin: 0 0 10px 0; }
-        b, strong { font-weight: bold; }
-        ul, ol { margin: 0 0 10px 24px; }
+        body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}px !important; }
+        h1, h2 { font-weight: bold; }
+        p { margin: 0 0 12px 0; }
+        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 200px; height: 18px; vertical-align: bottom;}
       </style>
-      <div id="pdfContent" style="padding: ${headerHeight + 24}px 60px ${footerHeight + 24}px 60px; line-height:1.6; color: #000;">
+      <div id="pdfContent" style="padding: ${headerHeight + margin}px ${margin}px ${footerHeight + margin}px ${margin}px; line-height:1.6; color: #000;">
         ${personalizedHTML}
       </div>
     `;
@@ -1102,14 +1108,14 @@ async function generatePDFLetters() {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "px",
-      format: [794, 1123]
+      format: [pageWidthPx, pageHeightPx]
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
     await doc.html(container, {
-      margin: [headerHeight + 24, 60, footerHeight + 24, 60],
+      margin: [headerHeight + margin, margin, footerHeight + margin, margin],
       autoPaging: "text",
       html2canvas: {
         scale: 1,
@@ -1122,7 +1128,7 @@ async function generatePDFLetters() {
           doc.setPage(i);
           doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
           doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.setTextColor(150);
           doc.text(
             "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
