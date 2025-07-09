@@ -1,3 +1,4 @@
+<!-- Save this as update_profile.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Update Profile - Nikagenyx</title>
   <script src="/assets/js/auth-gate.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Questrial', sans-serif; }
@@ -20,10 +20,8 @@
 
         <label>Email Address</label>
         <input type="email" name="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-       class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"
-       placeholder="example@example.com (optional)">
-
-
+          class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"
+          placeholder="example@example.com (optional)">
 
         <label>Phone Number</label>
         <input type="text" name="phone" pattern="[0-9]{10}" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600"/>
@@ -65,9 +63,8 @@
         <input type="file" name="passport" accept=".pdf,.jpg,.jpeg,.png" onchange="validateSize(this)"/>
 
         <div class="mt-2">
-  <a href="#" onclick="openAddressModal()" class="text-blue-400 underline text-sm">Add / Update Address</a>
-</div>
-
+          <a href="#" onclick="openAddressModal()" class="text-blue-400 underline text-sm">Add / Update Address</a>
+        </div>
 
         <div class="flex justify-between mt-6">
           <button type="submit" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Save Changes</button>
@@ -81,218 +78,189 @@
     &copy; 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
   </footer>
 
-<script>
-const rolesByDept = {
-  "Tech Team": [
-    "Frontend Developer (Jr. Developer)",
-    "Backend Developer (Jr. Developer)",
-    "Full Stack Developer / Mobile App Developer (Sr. Developer)",
-    "QA Engineer (Sr. Developer)",
-    "White labelling (UI/UX Designer)",
-    "DevOps Engineer (Infrastructure Engineer)",
-    "Data Analyst",
-    "Cybersecurity & Risk Analyst",
-    "IT Systems Administrator",
-    "IT Support Specialist"
-  ],
-  "Admin Team": [ 
-    "Human Resources Manager",
-    "Chief Executive Officer",
-    "Finance & Accounts Officer",
-    "Managing Director (MD)",
-    "Regulatory Compliance Officer",
-    "Client Relations Consultant",
-    "Administrative Coordinator",
-    "Customer Success Executive"
-  ]
-};
+  <!-- Role mapping & file validation -->
+  <script>
+    const rolesByDept = {
+      "Tech Team": [
+        "Frontend Developer (Jr. Developer)",
+        "Backend Developer (Jr. Developer)",
+        "Full Stack Developer / Mobile App Developer (Sr. Developer)",
+        "QA Engineer (Sr. Developer)",
+        "White labelling (UI/UX Designer)",
+        "DevOps Engineer (Infrastructure Engineer)",
+        "Data Analyst",
+        "Cybersecurity & Risk Analyst",
+        "IT Systems Administrator",
+        "IT Support Specialist"
+      ],
+      "Admin Team": [
+        "Human Resources Manager",
+        "Chief Executive Officer",
+        "Finance & Accounts Officer",
+        "Managing Director (MD)",
+        "Regulatory Compliance Officer",
+        "Client Relations Consultant",
+        "Administrative Coordinator",
+        "Customer Success Executive"
+      ]
+    };
 
-document.getElementById("department").addEventListener("change", function () {
-  const roleSelect = document.getElementById("role");
-  const selectedDept = this.value;
-  roleSelect.innerHTML = '<option value="">Select Role</option>';
-  if (rolesByDept[selectedDept]) {
-    rolesByDept[selectedDept].forEach(role => {
-      const option = document.createElement("option");
-      option.value = role;
-      option.textContent = role;
-      roleSelect.appendChild(option);
-    });
-  }
-});
-
-function validateSize(input) {
-  const maxKB = 1024;
-  if (input.files[0] && input.files[0].size > maxKB * 1024) {
-    alert("File size should not exceed 1MB.");
-    input.value = "";
-  }
-}
-
-document.getElementById("profileForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-  const formData = new FormData(this);
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-  if (session?.emp_id) formData.append("emp_id", session.emp_id);
-
-  try {
-    const res = await fetch("/.netlify/functions/update_profile", {
-      method: "POST",
-      body: formData,
+    document.getElementById("department").addEventListener("change", function () {
+      const roleSelect = document.getElementById("role");
+      const selectedDept = this.value;
+      roleSelect.innerHTML = '<option value="">Select Role</option>';
+      if (rolesByDept[selectedDept]) {
+        rolesByDept[selectedDept].forEach(role => {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = role;
+          roleSelect.appendChild(option);
+        });
+      }
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("Server error response:", errText);
-      alert("Server error updating profile.");
-      return;
+    function validateSize(input) {
+      const maxKB = 1024;
+      if (input.files[0] && input.files[0].size > maxKB * 1024) {
+        alert("File size should not exceed 1MB.");
+        input.value = "";
+      }
     }
 
-    const contentType = res.headers.get("content-type");
-    const result = contentType && contentType.includes("application/json") ? await res.json() : {};
-    alert(result.message || "Profile updated successfully");
-    location.reload(); // reload page on success
-  } catch (err) {
-    alert("Error updating profile");
-    console.error(err);
-  }
-});
+    function cancelUpdate() {
+      const session = JSON.parse(localStorage.getItem("emp_session"));
+      const redirectTo = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
+      window.location.href = redirectTo;
+    }
 
-function cancelUpdate() {
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-  const redirectTo = session?.role === "admin" ? "admin_dashboard.html" : "employee_dashboard.html";
-  window.location.href = redirectTo;
-}
+    function openAddressModal() {
+      document.getElementById("addressModal").classList.remove("hidden");
+    }
 
-function openAddressModal() {
-  document.getElementById("addressModal").classList.remove("hidden");
-}
+    function closeAddressModal() {
+      document.getElementById("addressModal").classList.add("hidden");
+    }
 
-function closeAddressModal() {
-  document.getElementById("addressModal").classList.add("hidden");
-}
+    function populateStates() {
+      const country = document.querySelector("select[name='country']").value;
+      const stateSelect = document.querySelector("select[name='state']");
+      const districtSelect = document.querySelector("select[name='district']");
+      stateSelect.innerHTML = `<option value="">Select State</option>`;
+      districtSelect.innerHTML = `<option value="">Select District</option>`;
 
-function populateStates() {
-  const country = document.querySelector("select[name='country']").value;
-  const stateSelect = document.querySelector("select[name='state']");
-  const districtSelect = document.querySelector("select[name='district']");
-  stateSelect.innerHTML = `<option value="">Select State</option>`;
-  districtSelect.innerHTML = `<option value="">Select District</option>`;
+      const statesByCountry = {
+        India: ["Maharashtra", "Goa", "Karnataka", "Delhi"],
+        UK: ["England", "Scotland", "Wales", "Northern Ireland"],
+        USA: ["California", "New York", "Texas", "Florida"]
+      };
 
-  const statesByCountry = {
-    India: ["Maharashtra", "Goa", "Karnataka", "Delhi"],
-    UK: ["England", "Scotland", "Wales", "Northern Ireland"],
-    USA: ["California", "New York", "Texas", "Florida"]
-  };
+      (statesByCountry[country] || []).forEach(state => {
+        const opt = document.createElement("option");
+        opt.value = state;
+        opt.textContent = state;
+        stateSelect.appendChild(opt);
+      });
+    }
 
-  (statesByCountry[country] || []).forEach(state => {
-    const opt = document.createElement("option");
-    opt.value = state;
-    opt.textContent = state;
-    stateSelect.appendChild(opt);
-  });
-}
+    function populateDistricts() {
+      const state = document.querySelector("select[name='state']").value;
+      const districtSelect = document.querySelector("select[name='district']");
+      districtSelect.innerHTML = `<option value="">Select District</option>`;
 
-function populateDistricts() {
-  const state = document.querySelector("select[name='state']").value;
-  const districtSelect = document.querySelector("select[name='district']");
-  districtSelect.innerHTML = `<option value="">Select District</option>`;
+      const districtsByState = {
+        Maharashtra: ["Mumbai", "Pune", "Nagpur"],
+        Goa: ["North Goa", "South Goa"],
+        Karnataka: ["Bengaluru", "Mysore"],
+        Delhi: ["North Delhi", "South Delhi"],
+        California: ["Los Angeles", "San Diego"],
+        Texas: ["Dallas", "Houston"],
+        England: ["London", "Manchester"]
+      };
 
-  const districtsByState = {
-    Maharashtra: ["Mumbai", "Pune", "Nagpur"],
-    Goa: ["North Goa", "South Goa"],
-    Karnataka: ["Bengaluru", "Mysore"],
-    Delhi: ["North Delhi", "South Delhi"],
-    California: ["Los Angeles", "San Diego"],
-    Texas: ["Dallas", "Houston"],
-    England: ["London", "Manchester"]
-  };
+      (districtsByState[state] || []).forEach(dist => {
+        const opt = document.createElement("option");
+        opt.value = dist;
+        opt.textContent = dist;
+        districtSelect.appendChild(opt);
+      });
+    }
 
-  (districtsByState[state] || []).forEach(dist => {
-    const opt = document.createElement("option");
-    opt.value = dist;
-    opt.textContent = dist;
-    districtSelect.appendChild(opt);
-  });
-}
+    function submitAddress(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        line1: form.line1.value,
+        line2: form.line2.value,
+        line3: form.line3.value,
+        country: form.country.value,
+        state: form.state.value,
+        district: form.district.value,
+        pincode: form.pincode.value
+      };
 
-function submitAddress(e) {
-  e.preventDefault();
-  const form = e.target;
-  const data = {
-    line1: form.line1.value,
-    line2: form.line2.value,
-    line3: form.line3.value,
-    country: form.country.value,
-    state: form.state.value,
-    district: form.district.value,
-    pincode: form.pincode.value
-  };
+      const session = JSON.parse(localStorage.getItem("emp_session"));
+      if (!session?.emp_id) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
 
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-  if (!session?.emp_id) {
-    alert("Session expired. Please log in again.");
-    return;
-  }
+      data.emp_id = session.emp_id;
 
-  data.emp_id = session.emp_id;
+      fetch("/.netlify/functions/update_address", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      .then(res => res.json())
+      .then(result => {
+        alert(result.message || "✅ Address updated");
+        closeAddressModal();
+      })
+      .catch(err => {
+        console.error("Address update failed:", err);
+        alert("❌ Failed to update address.");
+      });
+    }
+  </script>
 
-  fetch("/.netlify/functions/update_address", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  })
-  .then(res => res.json())
-  .then(result => {
-    alert(result.message || "✅ Address updated");
-    closeAddressModal();
-  })
-  .catch(err => {
-    console.error("Address update failed:", err);
-    alert("❌ Failed to update address.");
-  });
-}
+  <script src="/assets/js/employee_upload_handler.js"></script>
 
+  <div id="addressModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white text-black p-6 rounded shadow-lg max-w-md w-full">
+      <h2 class="text-lg font-bold mb-4">Enter Address Details</h2>
+      <form id="addressForm" onsubmit="submitAddress(event)">
+        <label class="block mb-2 text-sm font-semibold">Address Line 1 *</label>
+        <input type="text" name="line1" class="w-full mb-2 px-2 py-1 border" required>
 
-  
-</script>
-<div id="addressModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-  <div class="bg-white text-black p-6 rounded shadow-lg max-w-md w-full">
-    <h2 class="text-lg font-bold mb-4">Enter Address Details</h2>
-    <form id="addressForm" onsubmit="submitAddress(event)">
-      <label class="block mb-2 text-sm font-semibold">Address Line 1 *</label>
-      <input type="text" name="line1" class="w-full mb-2 px-2 py-1 border" required>
+        <label class="block mb-2 text-sm font-semibold">Address Line 2 *</label>
+        <input type="text" name="line2" class="w-full mb-2 px-2 py-1 border" required>
 
-      <label class="block mb-2 text-sm font-semibold">Address Line 2 *</label>
-      <input type="text" name="line2" class="w-full mb-2 px-2 py-1 border" required>
+        <label class="block mb-2 text-sm font-semibold">Address Line 3</label>
+        <input type="text" name="line3" class="w-full mb-2 px-2 py-1 border">
 
-      <label class="block mb-2 text-sm font-semibold">Address Line 3</label>
-      <input type="text" name="line3" class="w-full mb-2 px-2 py-1 border">
+        <label class="block mb-2 text-sm font-semibold">Country *</label>
+        <select name="country" class="w-full mb-2 px-2 py-1 border" onchange="populateStates()" required>
+          <option value="">Select Country</option>
+          <option value="India">India</option>
+          <option value="UK">United Kingdom</option>
+          <option value="USA">United States</option>
+        </select>
 
-      <label class="block mb-2 text-sm font-semibold">Country *</label>
-      <select name="country" class="w-full mb-2 px-2 py-1 border" onchange="populateStates()" required>
-        <option value="">Select Country</option>
-        <option value="India">India</option>
-        <option value="UK">United Kingdom</option>
-        <option value="USA">United States</option>
-      </select>
+        <label class="block mb-2 text-sm font-semibold">State *</label>
+        <select name="state" class="w-full mb-2 px-2 py-1 border" onchange="populateDistricts()" required></select>
 
-      <label class="block mb-2 text-sm font-semibold">State *</label>
-      <select name="state" class="w-full mb-2 px-2 py-1 border" onchange="populateDistricts()" required></select>
+        <label class="block mb-2 text-sm font-semibold">District *</label>
+        <select name="district" class="w-full mb-2 px-2 py-1 border" required></select>
 
-      <label class="block mb-2 text-sm font-semibold">District *</label>
-      <select name="district" class="w-full mb-2 px-2 py-1 border" required></select>
+        <label class="block mb-2 text-sm font-semibold">PIN Code *</label>
+        <input type="text" name="pincode" class="w-full mb-4 px-2 py-1 border" required pattern="[0-9]{4,10}" title="Enter a valid PIN code">
 
-      <label class="block mb-2 text-sm font-semibold">PIN Code *</label>
-      <input type="text" name="pincode" class="w-full mb-4 px-2 py-1 border" required pattern="[0-9]{4,10}" title="Enter a valid PIN code">
-
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="closeAddressModal()" class="bg-gray-500 text-white px-3 py-1 rounded">Cancel</button>
-        <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">Save Address</button>
-      </div>
-    </form>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeAddressModal()" class="bg-gray-500 text-white px-3 py-1 rounded">Cancel</button>
+          <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">Save Address</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
-
 </body>
 </html>
