@@ -93,16 +93,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await fetchEmployees(currentUser);
 
   // ✅ Initialize TinyMCE *after* updatePDFPreview is defined
-  tinymce.init({
-    selector: '#letterBody',
-    height: 300,
-    menubar: false,
-    plugins: 'lists link table',
-    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-    setup: function (editor) {
-      editor.on('input', updatePDFPreview);
-    }
-  });
+ initTinyMCE();
+
 });
 
 function logout() {
@@ -1109,4 +1101,17 @@ function updatePDFPreview() {
     });
 }
 
+function initTinyMCE() {
+  if (typeof tinymce === "undefined") return;
+  tinymce.init({
+    selector: '#letterBody',
+    height: 300,
+    menubar: false,
+    plugins: 'lists link table',
+    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+    setup: function (editor) {
+      editor.on('input', updatePDFPreview);
+    }
+  });
+}
 
