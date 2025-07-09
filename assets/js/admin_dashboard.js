@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("p_phone").textContent = currentUser.phone || "-";
   document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
   document.getElementById("p_dept").textContent = currentUser.department || "-";
-  document.getElementById("p_role").textContent = currentUser.role || "-";
+  document.getElementById("p_role").textContent = currentUser.employee_role || "-";
 
   // ✅ Search logic
   const searchInput = document.getElementById("search");
@@ -472,7 +472,7 @@ async function submitEdit(empId, modal, row, uploadedFileUrl = null) {
       row.querySelector('[data-field="email"]').textContent = email || "-";
       row.querySelector('[data-field="phone"]').textContent = phone || "-";
       row.querySelector('[data-field="department"]').textContent = department || "-";
-      row.querySelector('[data-field="role"]').textContent = role || "-";
+      row.querySelector('[data-field="employment_role"]').textContent = role || "-";
     }
     modal.remove();
     setTimeout(() => location.reload(), 800);
@@ -533,7 +533,7 @@ window.showEmployeeDetails = async function(empId) {
       <p><strong>Phone:</strong> ${data.phone || '-'}</p>
       <p><strong>DOB:</strong> ${formattedDOB}</p>
       <p><strong>Department:</strong> ${data.department || '-'}</p>
-      <p><strong>Role:</strong> ${data.role || '-'}</p>
+      <p><strong>Role:</strong> ${data.employment_role || '-'}</p>
       <p><strong>Reporting Manager:</strong> ${data.reporting_manager || '-'}</p>
       <p><strong>Joining Date:</strong> ${formattedJoinDate}</p>
       <p><strong>Total Pay:</strong> ${
@@ -654,7 +654,7 @@ window.exportCSV = async function() {
         emp.email || '',
         emp.phone || '',
         emp.dob ? formatDate(emp.dob) : '',
-        emp.role || '',
+        emp.employment_role || '',
         emp.department || '',
         emp.base_salary || ''
       ].join(','))
