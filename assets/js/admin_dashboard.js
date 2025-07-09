@@ -1096,9 +1096,20 @@ function updatePDFPreview() {
         <div style="text-align:center; padding-bottom: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
         </div>
-        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
-          ${merged}
-        </div>
+        const paginated = merged.replace(/<!--PAGEBREAK-->/g, '<div class="page-break"></div>');
+
+preview.innerHTML = `
+  <div style="text-align:center; padding-bottom: 10px;">
+    <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
+  </div>
+  <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
+    ${paginated}
+  </div>
+  <div style="text-align:center; padding-top: 10px;">
+    <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
+  </div>
+`;
+
         <div style="text-align:center; padding-top: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
         </div>
