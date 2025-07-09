@@ -973,24 +973,40 @@ function getSelectedEmployeeIds() {
 
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
+
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
-  let raw = tinymce.get("letterBody")?.getContent() || "";
+  const raw = tinymce.get("letterBody")?.getContent({ format: "text" })
+    .replace(/\u00A0/g, " ")
+    .replace(/[^\x00-\x7F]/g, "")
+    .trim();
 
+  const font = document.getElementById("pdfFont").value || "helvetica";
+  const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
-  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
-  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
-
-  const headerImage = await loadImageAsDataURL(headerURL);
-  const footerImage = await loadImageAsDataURL(footerURL);
+  const headerImage = await loadImageAsDataURL("/assets/HEADER.png");
+  const footerImage = await loadImageAsDataURL("/assets/FOOTER.png");
 
   for (const emp of selectedEmployees) {
-    const personalized = raw
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.setFont(font);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(0, 0, 0);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxTextWidth = pageWidth - margin * 2;
+    const headerHeight = 80;
+    const footerHeight = 70;
+    const startY = headerHeight + 40;
+
+    const content = raw
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
       .replace(/{{email}}/gi, emp.email || "")
@@ -998,48 +1014,38 @@ async function generatePDFLetters() {
       .replace(/{{dob}}/gi, emp.dob || "")
       .replace(/{{department}}/gi, emp.department || "")
       .replace(/{{role}}/gi, emp.employment_role || "")
-      .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
-      .replace(/{{joining_date}}/gi, emp.joining_date || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "")
-    .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always; height: 0;"></div>');
+      .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
+      .replace(/{{joining_date}}/gi, emp.joining_date || "");
 
-    const container = document.createElement("div");
-    container.style.width = "800px";
-    container.style.background = "#fff";
-    container.innerHTML = `
-      <div style="text-align:center;">
-        <img src="${headerImage}" style="width:100%; max-height:100px;" />
-      </div>
-      <div style="padding: 40px; font-size: 14px; line-height: 1.6; color: #000;">
-        ${personalized}
-      </div>
-      <div style="text-align:center;">
-        <img src="${footerImage}" style="width:100%; max-height:80px;" />
-        <div style="font-size:12px; color:#888;">© 2025 Nikagenyx Vision Tech Private Limited</div>
-      </div>
-    `;
-    document.body.appendChild(container);
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
+    const lines = doc.splitTextToSize(content, maxTextWidth);
+    let y = startY;
 
-    const canvas = await html2canvas(container, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
+    // First page header
+    doc.addImage(headerImage, "PNG", 0, 0, pageWidth, headerHeight);
 
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "px",
-      format: [canvas.width, canvas.height]
-    });
+    const lineHeight = fontSize + 6;
+    for (const line of lines) {
+      if (y + lineHeight > pageHeight - footerHeight) {
+        doc.addImage(footerImage, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
+        doc.addPage();
+        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, headerHeight);
+        y = startY;
+      }
+      doc.text(line, margin, y);
+      y += lineHeight;
+    }
 
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.employment_role || emp.role}.pdf`;
-    pdf.save(filename);
+    // Final footer
+    doc.addImage(footerImage, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
 
-    document.body.removeChild(container);
+    const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.employment_role || emp.role || "Letter"}.pdf`;
+    doc.save(filename);
   }
 
   closePDFLetterModal();
 }
+
 
 async function loadImageAsDataURL(url) {
   const res = await fetch(url);
@@ -1076,7 +1082,7 @@ function updatePDFPreview() {
         .replace(/{{phone}}/gi, emp.phone || "")
         .replace(/{{dob}}/gi, emp.dob || "")
         .replace(/{{department}}/gi, emp.department || "")
-        .replace(/{{role}}/gi, emp.employee_role || "")
+        .replace(/{{role}}/gi, emp.employment_role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "")
