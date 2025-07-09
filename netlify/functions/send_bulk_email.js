@@ -135,17 +135,7 @@ exports.handler = async (event) => {
                   </div>
                   <div style="padding: 30px 40px; font-family: Arial, sans-serif;">
                     <p style="font-size: 18px;">Dear ${emp.name || "-"},</p>
-                    <p style="font-size: 16px;">Here is your employee record as of today:</p>
-                    <ul style="font-size: 15px; line-height: 1.7; padding-left: 0; list-style: none;">
-                      <li><b>Employee ID:</b> ${emp.emp_id || "-"}</li>
-                      <li><b>Name:</b> ${emp.name || "-"}</li>
-                      <li><b>Email:</b> ${emp.email || "-"}</li>
-                      <li><b>Phone:</b> ${emp.phone || "-"}</li>
-                      <li><b>Date of Birth:</b> ${formattedDob}</li>
-                      <li><b>Department:</b> ${emp.department || "-"}</li>
-                      <li><b>Role:</b> ${emp.role || "-"}</li>
-                      <li><b>Base Salary:</b> ${emp.base_salary || "-"}</li>
-                    </ul>
+                    
                     <br/>
                     <div style="font-size: 16px; line-height: 1.6;">
                       ${normalizeForHtml(body)}
