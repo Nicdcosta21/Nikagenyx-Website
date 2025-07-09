@@ -974,25 +974,43 @@ function getSelectedEmployeeIds() {
 
 async function generatePDFLetters() {
   const { jsPDF } = window.jspdf;
- const letterContent = tinymce.get("letterBody")?.getContent({ format: "text" })
-  .replace(/\u00A0/g, " ")
-  .replace(/[^\x00-\x7F]/g, "")
-  .trim();
 
-;
-  const font = document.getElementById("pdfFont").value || "helvetica";
-  const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
+  // ✅ Safely get the TinyMCE editor content
+  const editor = tinymce.get("letterBody");
+  if (!editor) {
+    alert("Editor not ready. Please try again.");
+    return;
+  }
 
-  if (!letterContent) return alert("Please enter letter content.");
-  
+  const letterContent = editor.getContent({ format: "text" })
+    .replace(/\u00A0/g, " ")
+    .replace(/[^\x00-\x7F]/g, "")
+    .trim();
+
+  // ✅ Validate letter content
+  if (!letterContent) {
+    alert("Please enter letter content.");
+    return;
+  }
+
+  // ✅ Safely get font settings
+  const fontSelect = document.getElementById("pdfFont");
+  const fontSizeSelect = document.getElementById("pdfFontSize");
+  const font = fontSelect?.value || "helvetica";
+  const fontSize = parseInt(fontSizeSelect?.value || "12");
+
+  // ✅ Validate selected employees
   const selectedIds = getSelectedEmployeeIds();
-  if (!selectedIds.length) return alert("Please select employees.");
+  if (!selectedIds.length) {
+    alert("Please select employees.");
+    return;
+  }
 
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
-  // Load header/footer once
+  // ✅ Load header/footer images
   const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
   const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
   const headerImage = await loadImageAsDataURL(headerURL);
@@ -1009,7 +1027,7 @@ async function generatePDFLetters() {
     const margin = 40;
     const maxTextWidth = pageWidth - margin * 2;
 
-    // Replace merge fields
+    // ✅ Replace merge fields in letter body
     const personalized = letterContent
       .replace(/{{name}}/gi, emp.name || "")
       .replace(/{{emp_id}}/gi, emp.emp_id || "")
@@ -1017,19 +1035,18 @@ async function generatePDFLetters() {
       .replace(/{{phone}}/gi, emp.phone || "")
       .replace(/{{dob}}/gi, emp.dob || "")
       .replace(/{{department}}/gi, emp.department || "")
-      .replace(/{{role}}/gi, emp.role || "")
+      .replace(/{{role}}/gi, emp.employment_role || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-    // Split long content
-const lines = doc.splitTextToSize(personalized, maxTextWidth);
+    const lines = doc.splitTextToSize(personalized, maxTextWidth);
     doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
-    
-    let y = 140; // Start after header
-    let lineHeight = fontSize + 6;
+
+    let y = 140;
+    const lineHeight = fontSize + 6;
 
     for (let i = 0; i < lines.length; i++) {
       if (y + lineHeight > pageHeight - 80) {
-        doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70); // Footer on current page
+        doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70);
         doc.addPage();
         doc.addImage(headerImage, 'PNG', 0, 0, pageWidth, 100);
         y = 140;
@@ -1038,7 +1055,6 @@ const lines = doc.splitTextToSize(personalized, maxTextWidth);
       y += lineHeight;
     }
 
-    // Final page footer
     doc.addImage(footerImage, 'PNG', 0, pageHeight - 70, pageWidth, 70);
 
     const filename = `${emp.name?.replace(/\s+/g, "_")}_${emp.emp_id}_${emp.role}.pdf`;
@@ -1104,14 +1120,21 @@ function updatePDFPreview() {
 function initTinyMCE() {
   if (typeof tinymce === "undefined") return;
   tinymce.init({
-    selector: '#letterBody',
-    height: 300,
-    menubar: false,
-    plugins: 'lists link table',
-    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-    setup: function (editor) {
-      editor.on('input', updatePDFPreview);
-    }
-  });
+  selector: '#letterBody',
+  height: 300,
+  menubar: false,
+  plugins: 'lists link table',
+  toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+  setup: function (editor) {
+    editor.on('input', updatePDFPreview);
+  }
+});
+
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const generateBtn = document.getElementById("generatePDFLetter");
+  if (generateBtn) {
+    generateBtn.addEventListener("click", generatePDFLetters);
+  }
+});
