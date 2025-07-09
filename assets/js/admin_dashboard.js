@@ -924,60 +924,107 @@ document.getElementById("generatePDFLetter").addEventListener("click", async () 
     return;
   }
 
-
+  // Fetch all employees
   const res = await fetch("/.netlify/functions/get_employees");
   const { employees } = await res.json();
   const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
 
+  // Header/footer image URLs and sizes
+  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
+  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
+  const headerImg = await loadImageAsDataURL(headerURL);
+  const footerImg = await loadImageAsDataURL(footerURL);
+
+  // These heights must match your header/footer image heights in px/pt
+  const headerHeight = 120; // px/pt
+  const footerHeight = 80;  // px/pt
+
   for (const emp of selectedEmployees) {
+    // Use mergeTemplate for all fields
     const personalizedBody = mergeTemplate(bodyTemplate, emp);
 
+    // Container for jsPDF.html rendering
     const container = document.createElement("div");
-    container.style.width = "600px";
+    container.style.width = "595pt"; // A4 width
+    container.style.minHeight = "842pt"; // A4 height
     container.style.background = "#fff";
-    container.style.padding = "0";
+    container.style.fontFamily = "Arial, Helvetica, sans-serif";
+    container.style.fontSize = "12pt";
+
+    // Use semantic HTML, not <br>-inserted text!
     container.innerHTML = `
-      <div style="text-align:center;">
-        <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%;" />
-      </div>
-      <div style="padding: 40px;">
-        ${personalizedBody.replace(/\n/g, "<br>")}
-      </div>
-      <div style="text-align:center;">
-        <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%;" />
-        <div style="font-size:12px; color:#888; margin-top:8px;">
-          © 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.
-        </div>
+      <div id="pdfContent" style="padding: ${headerHeight + 24}px 48px ${footerHeight + 24}px 48px; line-height:1.5; color: #000;">
+        ${personalizedBody}
       </div>
     `;
     container.style.position = "fixed";
     container.style.left = "-9999px";
     document.body.appendChild(container);
 
-    const canvas = await html2canvas(container, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new window.jspdf.jsPDF({
+    // Create jsPDF A4, pt units
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
       orientation: 'portrait',
-      unit: 'px',
-      format: [canvas.width, canvas.height]
+      unit: 'pt',
+      format: 'a4'
     });
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-    pdf.save(`${emp.emp_id}_letter.pdf`);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    document.body.removeChild(container);
+    await doc.html(container, {
+      margin: [headerHeight + 24, 48, footerHeight + 24, 48], // [top, left, bottom, right]
+      autoPaging: 'text',
+      html2canvas: {
+        scale: 1.25,
+        useCORS: true,
+        backgroundColor: "#fff"
+      },
+      callback: function (doc) {
+        const totalPages = doc.internal.getNumberOfPages();
+
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          // Header (full width)
+          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
+          // Footer (full width)
+          doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
+          // Footer copyright text
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(
+            "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
+            pageWidth / 2,
+            pageHeight - 12,
+            { align: "center" }
+          );
+        }
+
+        const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
+        const cleanRole = emp.employment_role?.trim().replace(/\s+/g, "_").replace(/[^\w()_]/g, "") || "Role";
+        const filename = `${cleanName}_${emp.emp_id}_${cleanRole}.pdf`;
+
+        doc.save(filename);
+        container.remove();
+      }
+    });
   }
 });
 
+// Simple merge for {{field}} with support for undefined fields
 function mergeTemplate(template, emp) {
   return template.replace(/{{(.*?)}}/g, (_, key) => emp[key.trim()] ?? "");
 }
 
-function openPDFLetterModal() {
-  document.getElementById("pdfLetterModal").classList.remove("hidden");
-  updatePDFPreview();
+// Utility: Fetch image as DataURL
+async function loadImageAsDataURL(url) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
 }
-
-
 function closePDFLetterModal() {
   document.getElementById("pdfLetterModal").classList.add("hidden");
 }
