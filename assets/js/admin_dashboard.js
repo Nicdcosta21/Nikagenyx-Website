@@ -1076,7 +1076,7 @@ function updatePDFPreview() {
         .replace(/{{phone}}/gi, emp.phone || "")
         .replace(/{{dob}}/gi, emp.dob || "")
         .replace(/{{department}}/gi, emp.department || "")
-        .replace(/{{role}}/gi, emp.role || "")
+        .replace(/{{role}}/gi, emp.employee_role || "")
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "")
