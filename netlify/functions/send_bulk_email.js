@@ -33,9 +33,9 @@ const footer_url = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Webs
 // Helper to normalize line endings and convert to HTML linebreaks
 function normalizeForHtml(str) {
   return (str || "")
-    .replace(/\r\n/g, "\n") // CRLF to LF
-    .replace(/\r/g, "\n")   // CR to LF
-    .replace(/\n/g, "<br/>"); // LF to <br/>
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\n/g, "<br/>");
 }
 
 exports.handler = async (event) => {
@@ -74,7 +74,6 @@ exports.handler = async (event) => {
 
       try {
         const from = "n.dcosta@nikagenyx.com";
-        // Always use "Nik D'Costa" as sender
         const fromName = "Nik D'Costa";
         const smtpPass = fields.smtp_password?.[0];
         const subject = fields.subject?.[0];
@@ -148,9 +147,10 @@ exports.handler = async (event) => {
                       <li><b>Base Salary:</b> ${emp.base_salary || "-"}</li>
                     </ul>
                     <br/>
-                    <p style="font-size: 16px; line-height: 1.6;">
+                    <div style="font-size: 16px; line-height: 1.6;">
                       ${normalizeForHtml(body)}
-                    </p>
+                    </div>
+                    <br/>
                     <p style="margin-top: 30px; font-size: 16px;">
                       Best regards,<br/>
                       <strong>${fromName}</strong><br/>
