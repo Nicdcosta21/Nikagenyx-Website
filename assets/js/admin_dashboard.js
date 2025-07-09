@@ -1036,6 +1036,8 @@ async function generatePDFLetters() {
       .replace(/{{dob}}/gi, emp.dob || "")
       .replace(/{{department}}/gi, emp.department || "")
       .replace(/{{role}}/gi, emp.employment_role || "")
+      .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
+      .replace(/{{joining_date}}/gi, emp.joining_date || "")
       .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
     const lines = doc.splitTextToSize(personalized, maxTextWidth);
@@ -1073,9 +1075,7 @@ async function loadImageAsDataURL(url) {
     reader.readAsDataURL(blob);
   });
 }
-
 function updatePDFPreview() {
- 
   const preview = document.getElementById("pdfPreview");
 
   const selectedIds = getSelectedEmployeeIds();
@@ -1084,7 +1084,6 @@ function updatePDFPreview() {
     return;
   }
 
-  // Get content from TinyMCE safely
   const raw = tinymce.get("letterBody")?.getContent() || "";
 
   fetch("/.netlify/functions/get_employees")
@@ -1094,7 +1093,7 @@ function updatePDFPreview() {
       if (!emp) return;
 
       // Replace merge tags
-      const merged = raw
+      let merged = raw
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
         .replace(/{{email}}/gi, emp.email || "")
@@ -1102,20 +1101,28 @@ function updatePDFPreview() {
         .replace(/{{dob}}/gi, emp.dob || "")
         .replace(/{{department}}/gi, emp.department || "")
         .replace(/{{role}}/gi, emp.role || "")
+        .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
+        .replace(/{{joining_date}}/gi, emp.joining_date || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-      // Final preview with header + content + footer
+      // ✅ Replace page break marker with visual separator
+      merged = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
+
+      // Final preview
       preview.innerHTML = `
         <div style="text-align:center; padding-bottom: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
         </div>
-        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">${merged}</div>
+        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
+          ${merged}
+        </div>
         <div style="text-align:center; padding-top: 10px;">
           <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
         </div>
       `;
     });
 }
+
 
 function initTinyMCE() {
   if (typeof tinymce === "undefined") return;
