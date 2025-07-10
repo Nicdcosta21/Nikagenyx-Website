@@ -351,6 +351,7 @@
 <!-- Enhanced PDF generation scripts -->
 <script src="/assets/js/pdf_generator.js"></script>
 <script src="/assets/js/letter_templates.js"></script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Safety checks for functions
@@ -368,10 +369,19 @@
     if (typeof generateEnhancedPDFLetters === 'function') {
       window.generatePDFLetters = generateEnhancedPDFLetters;
       
+      // IMPORTANT: Add this line to prevent duplicate handlers
+      window.useEnhancedPDFGenerator = true;
+      
       // Connect loading button to our enhanced generator
       const generateBtn = document.getElementById('generatePDFLetter');
       if (generateBtn) {
-        generateBtn.onclick = generateEnhancedPDFLetters;
+        // Use direct assignment instead of adding event listener
+        generateBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("PDF generation started from button");
+          generateEnhancedPDFLetters();
+        };
       }
     }
     
