@@ -184,26 +184,29 @@ async function generateEnhancedPDFLetters() {
         .replace(/<!-- pagebreak -->/gi, '<div style="page-break-after: always;"></div>');
       
       // Create HTML container for content
-      const container = document.createElement("div");
-      container.style.width = `${contentWidth}mm`;
-      container.style.fontFamily = fontFamily;
-      container.style.fontSize = `${fontSize}pt`;
-      
-      // Add styles for the content
-      container.innerHTML = `
-        <style>
-          body { font-family: ${fontFamily}, Arial, sans-serif; font-size: ${fontSize}pt; line-height: 1.5; }
-          table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
-          table td, table th { border: 1px solid #ccc; padding: 5pt; }
-          p { margin: 0 0 8pt 0; }
-          h1, h2, h3, h4, h5, h6 { margin: 12pt 0 8pt 0; }
-          ul, ol { margin: 0 0 8pt 0; padding-left: 20pt; }
-          .page-break { page-break-after: always; break-after: page; }
-        </style>
-        <div id="pdf-content">
-          ${personalizedHTML}
-        </div>
-      `;
+      // Create HTML container for content
+const container = document.createElement("div");
+container.style.width = `${contentWidth}mm`;
+container.style.fontFamily = fontFamily;
+container.style.fontSize = `${fontSize}pt`;
+container.style.color = "#000000"; // Add explicit text color
+container.style.backgroundColor = "#ffffff"; // Add explicit background color
+
+// Add styles for the content
+container.innerHTML = `
+  <style>
+    body { font-family: ${fontFamily}, Arial, sans-serif; font-size: ${fontSize}pt; line-height: 1.5; color: #000000; background-color: #ffffff; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+    table td, table th { border: 1px solid #ccc; padding: 5pt; color: #000000; }
+    p { margin: 0 0 8pt 0; color: #000000; }
+    h1, h2, h3, h4, h5, h6 { margin: 12pt 0 8pt 0; color: #000000; }
+    ul, ol { margin: 0 0 8pt 0; padding-left: 20pt; color: #000000; }
+    .page-break { page-break-after: always; break-after: page; }
+  </style>
+  <div id="pdf-content" style="color: #000000; background-color: #ffffff;">
+    ${personalizedHTML}
+  </div>
+`;
       
       // Add the container to the document body temporarily
       container.style.position = "fixed";
@@ -223,57 +226,61 @@ async function generateEnhancedPDFLetters() {
         
         // Convert HTML to PDF
         await doc.html(container, {
-          callback: function(pdf) {
-            const pageCount = pdf.internal.getNumberOfPages();
-            
-            // Add header and footer to each page
-            for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-              pdf.setPage(pageNum);
-              
-              // Add header to every page except the first (already added)
-              if (pageNum > 1) {
-                pdf.addImage(
-                  headerImage, 
-                  "PNG", 
-                  0, 
-                  0, 
-                  pageWidth, 
-                  topMargin - 5
-                );
-              }
-              
-              // Add footer to every page
-              pdf.addImage(
-                footerImage, 
-                "PNG", 
-                0, 
-                pageHeight - bottomMargin, 
-                pageWidth, 
-                bottomMargin - 2
-              );
-              
-              // Add page number
-              pdf.setFontSize(8);
-              pdf.setTextColor(100);
-              pdf.text(
-                `Page ${pageNum} of ${pageCount}`, 
-                pageWidth - sideMargin, 
-                pageHeight - 5, 
-                { align: "right" }
-              );
-            }
-          },
-          x: sideMargin,
-          y: topMargin,
-          width: contentWidth,
-          autoPaging: "text",
-          margin: [topMargin, sideMargin, bottomMargin, sideMargin],
-          html2canvas: {
-            scale: 2, // Higher quality
-            useCORS: true,
-            letterRendering: true
-          }
-        });
+  callback: function(pdf) {
+    const pageCount = pdf.internal.getNumberOfPages();
+    
+    // Add header and footer to each page
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      pdf.setPage(pageNum);
+      
+      // Add header to every page except the first (already added)
+      if (pageNum > 1) {
+        pdf.addImage(
+          headerImage, 
+          "PNG", 
+          0, 
+          0, 
+          pageWidth, 
+          topMargin - 5
+        );
+      }
+      
+      // Add footer to every page
+      pdf.addImage(
+        footerImage, 
+        "PNG", 
+        0, 
+        pageHeight - bottomMargin, 
+        pageWidth, 
+        bottomMargin - 2
+      );
+      
+      // Add page number
+      pdf.setFontSize(8);
+      pdf.setTextColor(100);
+      pdf.text(
+        `Page ${pageNum} of ${pageCount}`, 
+        pageWidth - sideMargin, 
+        pageHeight - 5, 
+        { align: "right" }
+      );
+    }
+  },
+  x: sideMargin,
+  y: topMargin,
+  width: contentWidth,
+  autoPaging: "text",
+  margin: [topMargin, sideMargin, bottomMargin, sideMargin],
+  html2canvas: {
+    scale: 2, // Higher quality
+    useCORS: true,
+    letterRendering: true,
+    backgroundColor: "#FFFFFF", // Force white background
+    logging: true, // Enable logging for troubleshooting
+    allowTaint: true, // Try this if images aren't showing
+    foreignObjectRendering: false // Try setting to false if content is black
+  }
+});
         
         // Generate filename based on employee data
         const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
@@ -411,6 +418,7 @@ function updateEnhancedPDFPreview() {
 }
 
 // Clean up Word-specific styling issues
+// Clean up Word-specific styling issues
 function cleanupWordContent(html) {
   if (!html) return '';
   
@@ -422,8 +430,14 @@ function cleanupWordContent(html) {
     // Additional cleanups as needed
     .replace(/<!\[if !supportLists\]>[\s\S]*?<!\[endif\]>/g, '') // Remove list supports
     .replace(/style="[^"]*mso-[^"]*"/g, '') // Remove MSO specific styles
+    .replace(/style="[^"]*color:\s*black[^"]*"/g, 'style="color: #000000;"') // Fix black color explicitly
+    .replace(/style="[^"]*background:\s*black[^"]*"/g, 'style="background-color: #ffffff;"') // Fix black background
     .replace(/<!--StartFragment-->|<!--EndFragment-->/g, '') // Remove fragments
-    .replace(/<span\s+style="[^"]*font-family:[^"]*Wingdings[^"]*"[^>]*>.<\/span>/g, '•'); // Replace wingdings bullets
+    .replace(/<span\s+style="[^"]*font-family:[^"]*Wingdings[^"]*"[^>]*>.<\/span>/g, '•') // Replace wingdings bullets
+    .replace(/color:\s*window/g, 'color: #000000') // Fix window color
+    .replace(/color:\s*windowtext/g, 'color: #000000') // Fix windowtext color
+    .replace(/background:\s*window/g, 'background-color: #FFFFFF') // Fix window background
+    .replace(/<span[^>]*>([\s\S]*?)<\/span>/g, '$1'); // Remove unnecessary spans
 }
 
 // Export functions for global use
