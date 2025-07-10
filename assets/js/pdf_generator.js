@@ -3,7 +3,13 @@
  * Preserves formatting from Word documents and properly applies letterhead
  */
 
+// Helper function to get consistent image paths
+function getImagePath(imageName) {
+  // Try the local path first
+  return `/assets/${imageName}`;
+}
 
+// Helper function to load images with fallback
 async function loadImageWithFallback(imageName) {
   try {
     // Try local path first
@@ -13,12 +19,6 @@ async function loadImageWithFallback(imageName) {
     // If local fails, try GitHub path
     return await loadImageAsDataURL(`https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/${imageName}`);
   }
-}
-
-// Helper to get the right image path
-function getImagePath(imageName) {
-  // Try the local path first, if that doesn't work use GitHub
-  return `/assets/${imageName}`;
 }
 
 // Initialize TinyMCE with better MS Word paste support
@@ -55,7 +55,9 @@ function initEnhancedTinyMCE() {
     `,
     setup: function(editor) {
       editor.on('input change paste', function() {
-        updateEnhancedPDFPreview(); // Use the enhanced preview function
+        if (typeof updateEnhancedPDFPreview === 'function') {
+          updateEnhancedPDFPreview();
+        }
       });
     }
   });
@@ -72,6 +74,7 @@ async function generateEnhancedPDFLetters() {
   // Show loading indicator
   const pdfLoading = document.getElementById("pdfLoading");
   const pdfStatus = document.getElementById("pdfStatus");
+  
   if (pdfLoading) pdfLoading.style.display = "block";
   if (pdfStatus) pdfStatus.textContent = `Preparing PDFs for ${selectedIds.length} employee(s)...`;
   
@@ -103,20 +106,18 @@ async function generateEnhancedPDFLetters() {
     
     const employeeDetails = await Promise.all(employeeDetailsPromises);
     
-    // Load header and footer images - try both relative and absolute paths
+    // Load header and footer images
     let headerImage, footerImage;
-    try {
-      headerImage = await loadImageWithFallback("HEADER.png");
-
-    } catch (err) {
-      headerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png");
-    }
     
     try {
+      headerImage = await loadImageWithFallback("HEADER.png");
       footerImage = await loadImageWithFallback("FOOTER.png");
-
     } catch (err) {
-      footerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png");
+      console.error("Failed to load letterhead images:", err);
+      showToast("Failed to load letterhead images. Please try again.", "error");
+      
+      if (pdfLoading) pdfLoading.style.display = "none";
+      return;
     }
     
     // Process each employee
@@ -168,6 +169,9 @@ async function generateEnhancedPDFLetters() {
         const regex = new RegExp(`{{${field}}}`, "gi");
         personalizedHTML = personalizedHTML.replace(regex, formattedValue);
       });
+      
+      // Handle role special case (some templates use role instead of employment_role)
+      personalizedHTML = personalizedHTML.replace(/{{role}}/gi, emp.employment_role || "");
       
       // Format dates nicely if applicable
       personalizedHTML = personalizedHTML.replace(/\d{4}-\d{2}-\d{2}/g, function(date) {
@@ -370,6 +374,9 @@ function updateEnhancedPDFPreview() {
             personalizedContent = personalizedContent.replace(regex, formattedValue);
           });
           
+          // Handle role special case (some templates use role instead of employment_role)
+          personalizedContent = personalizedContent.replace(/{{role}}/gi, emp.employment_role || "");
+          
           // Handle page breaks for preview (both formats)
           personalizedContent = personalizedContent
             .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>')
@@ -379,7 +386,7 @@ function updateEnhancedPDFPreview() {
           preview.innerHTML = `
             <div class="letterhead-preview">
               <div class="header-preview mb-4">
-                <img src="/assets/HEADER.png" alt="Nikagenyx Header" style="width:100%; height:auto; max-height:80px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png'">
+                <img src="${getImagePath("HEADER.png")}" alt="Nikagenyx Header" style="width:100%; height:auto; max-height:80px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png'">
               </div>
               
               <div class="content-preview min-h-[200px]">
@@ -387,7 +394,7 @@ function updateEnhancedPDFPreview() {
               </div>
               
               <div class="footer-preview mt-4">
-                <img src="/assets/FOOTER.png" alt="Nikagenyx Footer" style="width:100%; height:auto; max-height:60px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png'">
+                <img src="${getImagePath("FOOTER.png")}" alt="Nikagenyx Footer" style="width:100%; height:auto; max-height:60px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png'">
               </div>
             </div>
           `;
@@ -419,7 +426,9 @@ function cleanupWordContent(html) {
     .replace(/<span\s+style="[^"]*font-family:[^"]*Wingdings[^"]*"[^>]*>.<\/span>/g, '•'); // Replace wingdings bullets
 }
 
-// Make functions available everywhere
+// Export functions for global use
+window.initEnhancedTinyMCE = initEnhancedTinyMCE;
 window.updateEnhancedPDFPreview = updateEnhancedPDFPreview;
 window.generateEnhancedPDFLetters = generateEnhancedPDFLetters;
 window.loadImageWithFallback = loadImageWithFallback;
+window.getImagePath = getImagePath;
