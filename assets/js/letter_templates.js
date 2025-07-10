@@ -123,7 +123,7 @@ const LETTER_TEMPLATES = {
 <p>Nikagenyx Vision Tech Private Limited</p>`,
 
   // UPDATED Employment Agreement Template
-  employment_agreement: `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT – FULL-TIME</h1>
+  employment_agreement: `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT</h1>
 
 <p style="text-align:justify;">This Employment Agreement ("Agreement") is made and entered into on this ${new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'})} day, by and between:</p>
 
