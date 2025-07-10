@@ -3,6 +3,10 @@
  * Preserves formatting from Word documents and properly applies letterhead
  */
 
+// Prevent duplicate PDF generation
+window.pdfGenerationInProgress = false;
+window.pdfGenerationCalled = false;
+
 // Helper function to get consistent image paths
 function getImagePath(imageName) {
   // Try the local path first
@@ -56,53 +60,19 @@ function initEnhancedTinyMCE() {
     setup: function(editor) {
       editor.on('input change paste', function() {
         if (typeof updateEnhancedPDFPreview === 'function') {
-          updateEnhancedPDFPreview();
+          setTimeout(updateEnhancedPDFPreview, 100);
         }
       });
     }
   });
 }
 
-// Helper function to extract text and formatting from HTML
-function extractFormattedText(element) {
-  const blocks = [];
+// Create a direct-to-PDF approach without using HTML conversion
+async function generateDirectPDF(emp, personalizedHTML, headerImage, footerImage) {
+  // Generate unique timestamp for filename to identify duplicates
+  const timestamp = new Date().toISOString().replace(/[-:.]/g, "").substring(0, 14);
+  console.log(`Generating PDF at ${timestamp} for ${emp.name}`);
   
-  function processNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      if (node.textContent.trim()) {
-        const parentStyles = getComputedStyle(node.parentElement);
-        blocks.push({
-          type: 'text',
-          text: node.textContent.trim(),
-          size: parseInt(parentStyles.fontSize) || 12,
-          bold: parentStyles.fontWeight >= 600
-        });
-      }
-    } 
-    else if (node.nodeType === Node.ELEMENT_NODE) {
-      // Check for page breaks
-      if (node.nodeName === 'DIV' && 
-          (node.style.pageBreakAfter === 'always' || node.style.breakAfter === 'page')) {
-        blocks.push({ type: 'pagebreak' });
-      }
-      
-      // Process children
-      for (const child of node.childNodes) {
-        processNode(child);
-      }
-    }
-  }
-  
-  for (const child of element.childNodes) {
-    processNode(child);
-  }
-  
-  return blocks;
-}
-
-// Create a fallback PDF generation method that uses direct text rendering
-async function generateSimplePDF(emp, personalizedHTML, headerImage, footerImage) {
-  console.log("Using fallback simple PDF generation");
   const { jsPDF } = window.jspdf;
   
   // Create PDF with A4 dimensions
@@ -122,62 +92,78 @@ async function generateSimplePDF(emp, personalizedHTML, headerImage, footerImage
   // Add header to first page
   doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
   
-  // Set font and color
-  doc.setFont("helvetica");
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
+  // Parse the HTML content
+  const parser = new DOMParser();
+  const htmlDoc = parser.parseFromString(personalizedHTML, 'text/html');
   
-  // Get the HTML content by creating a temporary div
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = personalizedHTML;
+  // Extract all paragraphs, headings, lists and tables
+  const elements = htmlDoc.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, ul, ol, li, table');
   
-  // Extract all text nodes and their formatting
-  const textBlocks = extractFormattedText(tempDiv);
-  
-  // Start position
+  // Current Y position
   let y = topMargin + 10;
   
-  // Add text blocks to PDF
-  for (let block of textBlocks) {
-    if (block.type === 'text') {
-      // Add text
-      doc.setFontSize(block.size || 12);
-      doc.setTextColor(0, 0, 0);
-      
-      if (block.bold) doc.setFont("helvetica", "bold");
-      else doc.setFont("helvetica", "normal");
-      
-      // Split text to fit width
-      const lines = doc.splitTextToSize(block.text, pageWidth - (2 * sideMargin));
-      
-      // Check if we need to add a new page
-      if (y + (lines.length * 7) > pageHeight - bottomMargin) {
-        doc.addPage();
-        
-        // Add header to new page
-        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-        
-        // Add footer to new page
-        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-        
-        y = topMargin + 10;
-      }
-      
-      // Add the text
-      doc.text(lines, sideMargin, y);
-      y += (lines.length * 7) + 5;
-    }
-    else if (block.type === 'pagebreak') {
+  // Process each element
+  for (let element of elements) {
+    const nodeName = element.nodeName.toLowerCase();
+    let fontSize = 12;
+    let isBold = false;
+    let text = element.textContent.trim();
+    
+    // Skip empty elements
+    if (!text) continue;
+    
+    // Check for page breaks
+    if ((element.style && (element.style.pageBreakAfter === 'always' || element.style.breakAfter === 'page')) ||
+        (element.className && element.className.includes('page-break'))) {
       doc.addPage();
-      
-      // Add header to new page
       doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-      
-      // Add footer to new page
       doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-      
+      y = topMargin + 10;
+      continue;
+    }
+    
+    // Set text style based on element type
+    if (nodeName === 'h1') {
+      fontSize = 20;
+      isBold = true;
+    } else if (nodeName === 'h2') {
+      fontSize = 18;
+      isBold = true;
+    } else if (nodeName === 'h3') {
+      fontSize = 16;
+      isBold = true;
+    } else if (nodeName.match(/^h[4-6]$/)) {
+      fontSize = 14;
+      isBold = true;
+    } else if (nodeName === 'li') {
+      text = `• ${text}`;
+    }
+    
+    // Apply text formatting
+    doc.setFontSize(fontSize);
+    if (isBold) {
+      doc.setFont("helvetica", "bold");
+    } else {
+      doc.setFont("helvetica", "normal");
+    }
+    
+    // Always ensure text is black
+    doc.setTextColor(0, 0, 0);
+    
+    // Split text to fit width
+    const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+    
+    // Check if we need to add a new page
+    if (y + (lines.length * (fontSize/2 + 2)) > pageHeight - bottomMargin) {
+      doc.addPage();
+      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
       y = topMargin + 10;
     }
+    
+    // Add the text
+    doc.text(lines, sideMargin, y);
+    y += (lines.length * (fontSize/2 + 2)) + 5;
   }
   
   // Add footer to all pages
@@ -192,10 +178,9 @@ async function generateSimplePDF(emp, personalizedHTML, headerImage, footerImage
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - sideMargin, pageHeight - 5, { align: 'right' });
   }
   
-  // Generate filename
+  // Generate filename with timestamp to ensure uniqueness
   const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
-  const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
-  const filename = `${cleanName}_${emp.emp_id}_${date}.pdf`;
+  const filename = `${cleanName}_${emp.emp_id}_${timestamp}.pdf`;
   
   // Save the PDF
   doc.save(filename);
@@ -203,10 +188,28 @@ async function generateSimplePDF(emp, personalizedHTML, headerImage, footerImage
 
 // Generate PDF with proper A4 dimensions and letterhead
 async function generateEnhancedPDFLetters() {
-  console.log("PDF generation started");
+  console.log("PDF generation function called");
+  
+  // Prevent multiple executions
+  if (window.pdfGenerationCalled === true) {
+    console.warn("PDF generation already in progress - preventing duplicate call");
+    return;
+  }
+  
+  // Set flags to prevent multiple executions
+  window.pdfGenerationCalled = true;
+  window.pdfGenerationInProgress = true;
+  
+  console.log("PDF generation started - locked to prevent duplicates");
+
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) {
     showToast("Please select employees first.", "error");
+    // Reset flag if no PDFs will be generated
+    setTimeout(() => {
+      window.pdfGenerationCalled = false;
+      window.pdfGenerationInProgress = false;
+    }, 500);
     return;
   }
 
@@ -253,6 +256,11 @@ async function generateEnhancedPDFLetters() {
       showToast("Failed to load letterhead images. Please try again.", "error");
       
       if (pdfLoading) pdfLoading.style.display = "none";
+      // Reset the flags
+      setTimeout(() => {
+        window.pdfGenerationCalled = false;
+        window.pdfGenerationInProgress = false;
+      }, 500);
       return;
     }
     
@@ -293,18 +301,26 @@ async function generateEnhancedPDFLetters() {
         return formatDate(date);
       });
       
-      // IMPORTANT: Use the simpler, more reliable method directly
-      await generateSimplePDF(emp, personalizedHTML, headerImage, footerImage);
+      // Use the direct PDF generation method for reliable output
+      await generateDirectPDF(emp, personalizedHTML, headerImage, footerImage);
     }
     
     showToast(`Successfully generated ${employeeDetails.length} PDF(s)!`);
-    if (pdfLoading) pdfLoading.style.display = "none";
-    closePDFLetterModal();
   } catch (error) {
     console.error("PDF Generation Error:", error);
     if (pdfStatus) pdfStatus.textContent = "Error: " + error.message;
     showToast("Error generating PDFs. See console for details.", "error");
+  } finally {
+    // Always clean up
     if (pdfLoading) pdfLoading.style.display = "none";
+    closePDFLetterModal();
+    
+    // Reset the flags with a small delay to prevent double-clicks
+    setTimeout(() => {
+      window.pdfGenerationCalled = false;
+      window.pdfGenerationInProgress = false;
+      console.log("PDF generation unlocked");
+    }, 1000);
   }
 }
 
@@ -398,7 +414,7 @@ function updateEnhancedPDFPreview() {
                 <img src="${getImagePath("HEADER.png")}" alt="Nikagenyx Header" style="width:100%; height:auto; max-height:80px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png'">
               </div>
               
-              <div class="content-preview min-h-[200px]">
+              <div class="content-preview min-h-[200px] text-black">
                 ${personalizedContent}
               </div>
               
