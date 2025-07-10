@@ -1,14 +1,126 @@
-// admin_dashboard.js (Fully Corrected Version)
+/**
+ * Nikagenyx Admin Dashboard
+ * Complete corrected version with fixed PDF generation
+ */
+
+// =====================================================
+// INITIALIZATION & CORE FUNCTIONS
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // Session check
+  const session = localStorage.getItem("emp_session");
+  if (!session) {
+    window.location.href = "/employee_portal.html";
+    return;
+  }
+
+  const currentUser = JSON.parse(session);
+  
+  // Initialize UI components
+  await loadPayrollMode();
+  initProfileSection(currentUser);
+  initSearchFunctionality();
+  await fetchEmployees(currentUser);
+  initTinyMCE();
+  
+  // Setup event listeners for bulk actions
+  setupBulkActionListeners();
+});
+
+function initProfileSection(currentUser) {
+  document.getElementById("p_name").textContent = currentUser.name || "-";
+  document.getElementById("p_phone").textContent = currentUser.phone || "-";
+  document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
+  document.getElementById("p_dept").textContent = currentUser.department || "-";
+  document.getElementById("p_role").textContent = currentUser.employment_role || "-";
+}
+
+function initSearchFunctionality() {
+  const searchInput = document.getElementById("search");
+  if (searchInput) {
+    searchInput.addEventListener("input", function() {
+      const searchTerm = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#employeeTable tr");
+      
+      rows.forEach(row => {
+        const empId = row.cells[1]?.textContent.toLowerCase() || "";
+        const empName = row.cells[2]?.textContent.toLowerCase() || "";
+        const match = empId.includes(searchTerm) || empName.includes(searchTerm);
+        row.style.display = match ? "" : "none";
+      });
+    });
+  }
+}
+
+function setupBulkActionListeners() {
+  // Select all checkbox
+  const selectAll = document.getElementById("selectAllCheckbox");
+  if (selectAll) {
+    selectAll.addEventListener("change", (e) => toggleSelectAll(e.target));
+  }
+  
+  // Bulk email button
+  const bulkEmailBtn = document.getElementById("openBulkEmailBtn");
+  if (bulkEmailBtn) {
+    bulkEmailBtn.addEventListener("click", openEmailModal);
+  }
+  
+  // PDF Letter button
+  const pdfLetterBtn = document.getElementById("openPDFLetterBtn");
+  if (pdfLetterBtn) {
+    pdfLetterBtn.addEventListener("click", openPDFLetterModal);
+  }
+  
+  // Generate PDF button
+  const generateBtn = document.getElementById("generatePDFLetter");
+  if (generateBtn) {
+    generateBtn.addEventListener("click", generatePDFLetters);
+  }
+}
+
+function logout() {
+  localStorage.removeItem("emp_session");
+  window.location.href = "employee_portal.html";
+}
+
+function showToast(msg, type = "success") {
+  const toast = document.createElement("div");
+  const bgColor = type === "success" ? "bg-green-600" : "bg-red-600";
+  toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-2 rounded shadow-lg z-50`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function formatDate(date) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d)) return date;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+// =====================================================
+// EMPLOYEE DATA MANAGEMENT
+// =====================================================
 
 async function fetchEmployees(currentUser) {
   console.log("🔍 fetchEmployees triggered");
   try {
     const res = await fetch("/.netlify/functions/get_employees", { credentials: "include" });
-    if (!res.ok) return console.warn("❌ get_employees failed:", res.status);
+    if (!res.ok) {
+      console.warn("❌ get_employees failed:", res.status);
+      return;
+    }
 
     const data = await res.json();
     const employees = data.employees;
     const tbody = document.getElementById("employeeTable");
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
 
     employees.forEach(emp => {
@@ -16,10 +128,10 @@ async function fetchEmployees(currentUser) {
       tr.className = "border-b border-gray-700";
 
       tr.innerHTML = `
-<td class="p-2 border"><input type="checkbox" class="employeeCheckbox" name="emp_checkbox" data-emp-id="${emp.emp_id}" value="${emp.emp_id}" /></td>
+        <td class="p-2 border"><input type="checkbox" class="employeeCheckbox" name="employeeCheckbox" data-emp-id="${emp.emp_id}" value="${emp.emp_id}" /></td>
         <td class="p-2 border text-blue-400 underline cursor-pointer" onclick="showEmployeeDetails('${emp.emp_id}')">${emp.emp_id}</td>
         <td class="p-2 border wrap">${emp.name}</td>
-        <td class="p-2 border">${emp.phone}</td>
+        <td class="p-2 border">${emp.phone || "-"}</td>
         <td class="p-2 border">${formatDate(emp.dob)}</td>
         <td class="p-2 border">
           <span class="font-medium">${emp.privilege === "admin" ? "Admin" : "User"}</span>
@@ -47,127 +159,53 @@ async function fetchEmployees(currentUser) {
     });
   } catch (err) {
     console.error("Error loading employees:", err);
-    showToast("Failed to load employee data.");
-  }
-}
-
-// If table not visible check here
-
-window.fetchEmployees = fetchEmployees;
-console.log("✅ fetchEmployees is ready globally");
-
-document.addEventListener("DOMContentLoaded", async () => {
-  // ✅ Session check must be inside the function
-  const session = localStorage.getItem("emp_session");
-  if (!session) {
-    window.location.href = "/employee_portal.html";
-    return;
-  }
-
-  const currentUser = JSON.parse(session);
-  await loadPayrollMode();
-
-  // ✅ Fill Admin Profile Section
-  document.getElementById("p_name").textContent = currentUser.name || "-";
-  document.getElementById("p_phone").textContent = currentUser.phone || "-";
-  document.getElementById("p_dob").textContent = formatDate(currentUser.dob);
-  document.getElementById("p_dept").textContent = currentUser.department || "-";
-  document.getElementById("p_role").textContent = currentUser.employee_role || "-";
-
-  // ✅ Search logic
-  const searchInput = document.getElementById("search");
-  if (searchInput) {
-    searchInput.addEventListener("input", function () {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll("#employeeTable tr");
-      rows.forEach(row => {
-        const empId = row.cells[1]?.textContent.toLowerCase() || "";
-        const empName = row.cells[2]?.textContent.toLowerCase() || "";
-        const match = empId.includes(searchTerm) || empName.includes(searchTerm);
-        row.style.display = match ? "" : "none";
-      });
-    });
-  }
-
-  // ✅ Initialize employee table
-  await fetchEmployees(currentUser);
-
-  // ✅ Initialize TinyMCE *after* updatePDFPreview is defined
- initTinyMCE();
-
-});
-
-function logout() {
-  localStorage.removeItem("emp_session");
-  window.location.href = "employee_portal.html";
-}
-
-function formatDate(dob) {
-  const d = new Date(dob);
-  if (isNaN(d)) return dob;
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}-${month}-${year}`;
-}
-
-function showToast(msg) {
-  const toast = document.createElement("div");
-  toast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50";
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-function filterEmployeeTable() {
-  const searchInput = document.getElementById("search");
-  if (!searchInput) return;
-  const searchTerm = searchInput.value.toLowerCase().trim();
-  const table = document.getElementById("employeeTable");
-  if (!table) return;
-  const rows = table.getElementsByTagName("tr");
-  for (let row of rows) {
-    const empId = row.cells[0]?.textContent.toLowerCase() || "";
-    const empName = row.cells[1]?.textContent.toLowerCase() || "";
-    row.style.display = empId.includes(searchTerm) || empName.includes(searchTerm) ? "" : "none";
+    showToast("Failed to load employee data.", "error");
   }
 }
 
 async function loadPayrollMode() {
-  const res = await fetch("/.netlify/functions/get_payroll_mode");
-  const data = await res.json();
-  const toggle = document.getElementById("payrollToggle");
-  const status = document.getElementById("toggleStatus");
+  try {
+    const res = await fetch("/.netlify/functions/get_payroll_mode");
+    const data = await res.json();
+    const toggle = document.getElementById("payrollToggle");
+    const status = document.getElementById("toggleStatus");
 
-  if (!toggle || !status) return;
+    if (!toggle || !status) return;
 
-  toggle.value = data.mode || "freelance";
-  status.textContent = `${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active`;
-  status.className = toggle.value === "freelance"
-    ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
-    : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
+    toggle.value = data.mode || "freelance";
+    status.textContent = `${toggle.value.charAt(0).toUpperCase() + toggle.value.slice(1)} payroll mode is active`;
+    status.className = toggle.value === "freelance"
+      ? "ml-4 px-3 py-1 rounded text-sm font-semibold bg-yellow-500 text-black"
+      : "ml-4 px-3 py-1 rounded text-sm font-semibold bg-green-600 text-white";
 
-  const confirmPayroll = document.getElementById("confirmPayroll");
-  if (confirmPayroll) {
-    confirmPayroll.onclick = async () => {
-      const selected = toggle.value;
-      if (!selected) return showToast("Please select a payroll mode first.");
+    const confirmPayroll = document.getElementById("confirmPayroll");
+    if (confirmPayroll) {
+      confirmPayroll.onclick = async () => {
+        const selected = toggle.value;
+        if (!selected) return showToast("Please select a payroll mode first.");
 
-      const res = await fetch("/.netlify/functions/set_payroll_mode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: selected })
-      });
+        try {
+          const res = await fetch("/.netlify/functions/set_payroll_mode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: selected })
+          });
 
-      const data = await res.json();
-      showToast(data.message || "Payroll mode updated");
-      loadPayrollMode();
-    };
+          const data = await res.json();
+          showToast(data.message || "Payroll mode updated");
+          await loadPayrollMode();
+        } catch (err) {
+          showToast("Failed to update payroll mode.", "error");
+        }
+      };
+    }
+  } catch (err) {
+    console.error("Failed to load payroll mode:", err);
   }
 }
 
 function setupRowListeners(tr, emp, currentUser) {
-  // --- Reset PIN Button ---
+  // Reset PIN Button
   const resetPinBtn = tr.querySelector(".reset-pin");
   if (resetPinBtn) {
     const canResetPin = (emp.failed_pin_attempts && emp.failed_pin_attempts >= 3) || emp.reset_pin_ready === true;
@@ -177,15 +215,14 @@ function setupRowListeners(tr, emp, currentUser) {
     resetPinBtn.title = canResetPin
       ? "Click to reset this employee's PIN"
       : "Reset PIN is only available after 3 failed attempts or a request from employee.";
+    
     if (canResetPin) {
       resetPinBtn.onclick = () =>
         triggerReset("reset_pin", emp.emp_id, "PIN reset by admin. Please refresh.");
-    } else {
-      resetPinBtn.onclick = null;
     }
   }
 
-  // --- Reset MFA Button ---
+  // Reset MFA Button
   const resetMfaBtn = tr.querySelector(".reset-mfa");
   if (resetMfaBtn) {
     const canResetMfa = emp.failed_mfa_attempts && emp.failed_mfa_attempts >= 3;
@@ -195,6 +232,7 @@ function setupRowListeners(tr, emp, currentUser) {
     resetMfaBtn.title = canResetMfa
       ? "Click to reset this employee's MFA"
       : "Reset MFA is only available after 3 failed attempts.";
+    
     if (canResetMfa) {
       resetMfaBtn.onclick = async () => {
         try {
@@ -203,59 +241,73 @@ function setupRowListeners(tr, emp, currentUser) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ emp_id: emp.emp_id })
           });
+          
           if (!res.ok) throw new Error(`Reset failed: ${res.status}`);
           const data = await res.json();
           showToast("MFA reset successfully. Employee can now scan QR code.");
           showMfaModal(data, emp.emp_id);
         } catch (error) {
           console.error("MFA reset error:", error);
-          showToast("Failed to reset MFA. Please try again.");
+          showToast("Failed to reset MFA. Please try again.", "error");
         }
       };
-    } else {
-      resetMfaBtn.onclick = null;
     }
   }
 
-
-
+  // Edit Button
   const editBtn = tr.querySelector(".edit");
   if (editBtn) {
     editBtn.onclick = () => showEditModal(emp, tr);
   }
 
-const deleteBtn = tr.querySelector(".delete");
-if (deleteBtn) {
-  deleteBtn.onclick = async () => {
-    if (emp.emp_id === currentUser.emp_id) return;
-    if (!confirm(`Delete ${emp.emp_id}?`)) return;
+  // Delete Button
+  const deleteBtn = tr.querySelector(".delete");
+  if (deleteBtn) {
+    deleteBtn.onclick = async () => {
+      if (emp.emp_id === currentUser.emp_id) {
+        showToast("You cannot delete your own account.", "error");
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to delete ${emp.name} (${emp.emp_id})?`)) return;
 
-    if (currentUser.emp_id !== "NGX001") {
-      const token = prompt("Enter your MFA token:");
-      if (!token) return;
+      try {
+        // For admin verification except super admin
+        if (currentUser.emp_id !== "NGX001") {
+          const token = prompt("Enter your MFA token for verification:");
+          if (!token) return;
 
-      const verify = await fetch("/.netlify/functions/verify_mfa_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admin_id: currentUser.emp_id, token })
-      });
-      const result = await verify.json();
-      if (!result.valid) return showToast("❌ MFA failed");
-    }
+          const verify = await fetch("/.netlify/functions/verify_mfa_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ admin_id: currentUser.emp_id, token })
+          });
+          
+          const result = await verify.json();
+          if (!result.valid) {
+            showToast("MFA verification failed.", "error");
+            return;
+          }
+        }
 
-    const res = await fetch("/.netlify/functions/delete_employee", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: emp.emp_id })
-    });
-    const data = await res.json();
-    tr.remove();
-    showToast(data.message || "Deleted");
-  };
-}
+        // Delete employee
+        const res = await fetch("/.netlify/functions/delete_employee", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id })
+        });
+        
+        const data = await res.json();
+        tr.remove();
+        showToast(data.message || "Employee deleted successfully");
+      } catch (err) {
+        console.error("Delete employee error:", err);
+        showToast("Failed to delete employee. Please try again.", "error");
+      }
+    };
+  }
 
-
-  // ✅ Correct privilege dropdown logic
+  // Privilege dropdown logic
   const privilegeSelect = tr.querySelector(".privilege-select");
   const confirmBtn = tr.querySelector(".confirm-privilege");
 
@@ -264,19 +316,39 @@ if (deleteBtn) {
       const newPrivilege = privilegeSelect.value;
       try {
         const res = await fetch("/.netlify/functions/update_privilege", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege }),
-  credentials: "include"
-});
-        if (!res.ok) throw new Error();
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_id: emp.emp_id, privilege: newPrivilege }),
+          credentials: "include"
+        });
+        
+        if (!res.ok) throw new Error("Failed to update privileges");
         showToast("Privileges updated successfully.");
-      } catch {
-        showToast("Failed to update privileges.");
+      } catch (err) {
+        console.error("Update privilege error:", err);
+        showToast("Failed to update privileges.", "error");
       }
     };
   }
 }
+
+function triggerReset(type, empId, message) {
+  fetch(`/.netlify/functions/${type}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ emp_id: empId })
+  })
+    .then(res => res.json())
+    .then(() => showToast(message))
+    .catch(err => {
+      console.error(`${type} failed:`, err);
+      showToast(`Failed to ${type.replace("_", " ")}. Please try again.`, "error");
+    });
+}
+
+// =====================================================
+// EMPLOYEE EDIT FUNCTIONALITY
+// =====================================================
 
 function showEditModal(emp, row) {
   fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`)
@@ -377,7 +449,6 @@ function showEditModal(emp, row) {
       dept.addEventListener("change", () => updateRoleOptions(dept.value, ""));
       updateRoleOptions(empData.department, empData.employment_role);
 
-
       modal.querySelector("#saveEditBtn").onclick = async () => {
         const fileInput = modal.querySelector("#uploadFile");
         let uploadedFileUrl = null;
@@ -394,25 +465,18 @@ function showEditModal(emp, row) {
             const result = await uploadRes.json();
             uploadedFileUrl = result.url;
           } catch (err) {
-            showToast("❌ Upload failed. Try again.");
+            showToast("Upload failed. Try again.", "error");
             return;
           }
         }
 
         submitEdit(emp.emp_id, modal, row, uploadedFileUrl);
       };
+    })
+    .catch(err => {
+      console.error("Error fetching employee profile:", err);
+      showToast("Failed to load employee profile.", "error");
     });
-}
-
-function triggerReset(type, empId, message) {
-  fetch(`/.netlify/functions/${type}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ emp_id: empId })
-  })
-    .then(res => res.json())
-    .then(() => showToast(message))
-    .catch(err => console.error(`${type} failed:`, err));
 }
 
 async function submitEdit(empId, modal, row, uploadedFileUrl = null) {
@@ -426,64 +490,79 @@ async function submitEdit(empId, modal, row, uploadedFileUrl = null) {
   const reporting_manager = parent.querySelector("#edit_reporting_manager")?.value.trim();
   const joining_date = parent.querySelector("#edit_joining_date")?.value;
 
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast("❌ Invalid email format");
-  if (phone && !/^\d{10}$/.test(phone)) return showToast("❌ Phone must be 10 digits");
-
-  const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
-  const updateData = {
-    emp_id: empId,
-    admin_id: currentUser.emp_id
-  };
-
-  if (email) updateData.email = email;
-  if (phone) updateData.phone = phone;
-  if (department) updateData.department = department;
-  if (role) updateData.employment_role = role;
-  if (base_salary) updateData.base_salary = base_salary;
-  if (reporting_manager) updateData.reporting_manager = reporting_manager;
-  if (joining_date) updateData.joining_date = joining_date;
-  if (uploadedFileUrl) updateData.new_document = uploadedFileUrl;
-
-  if (currentUser.emp_id !== "NGX001") {
-    const token = prompt("Enter MFA token to confirm changes:");
-    if (!token) return;
-
-    const verify = await fetch("/.netlify/functions/verify_mfa_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ admin_id: currentUser.emp_id, token })
-    });
-    const result = await verify.json();
-    if (!result.valid) return showToast("❌ MFA verification failed.");
-
-    updateData.token = token;
+  // Validate fields
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast("Invalid email format.", "error");
+    return;
+  }
+  
+  if (phone && !/^\d{10}$/.test(phone)) {
+    showToast("Phone must be 10 digits.", "error");
+    return;
   }
 
-  const res = await fetch("/.netlify/functions/update_employee_profile", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updateData)
-  });
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("emp_session") || "{}");
+    const updateData = {
+      emp_id: empId,
+      admin_id: currentUser.emp_id
+    };
 
-  const result = await res.json();
-  if (res.ok) {
-    showToast(result.message || "✅ Profile updated");
-    if (row) {
-      row.querySelector('[data-field="email"]').textContent = email || "-";
-      row.querySelector('[data-field="phone"]').textContent = phone || "-";
-      row.querySelector('[data-field="department"]').textContent = department || "-";
-      row.querySelector('[data-field="employment_role"]').textContent = role || "-";
+    // Only include fields that have values
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (department) updateData.department = department;
+    if (role) updateData.employment_role = role;
+    if (base_salary) updateData.base_salary = base_salary;
+    if (reporting_manager) updateData.reporting_manager = reporting_manager;
+    if (joining_date) updateData.joining_date = joining_date;
+    if (uploadedFileUrl) updateData.new_document = uploadedFileUrl;
+
+    // Admin MFA verification for changes
+    if (currentUser.emp_id !== "NGX001") {
+      const token = prompt("Enter MFA token to confirm changes:");
+      if (!token) return;
+
+      const verify = await fetch("/.netlify/functions/verify_mfa_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ admin_id: currentUser.emp_id, token })
+      });
+      
+      const result = await verify.json();
+      if (!result.valid) {
+        showToast("MFA verification failed.", "error");
+        return;
+      }
+
+      updateData.token = token;
     }
-    modal.remove();
-    setTimeout(() => location.reload(), 800);
-  } else {
-    showToast(result.message || "❌ Update failed");
-    console.error(result);
+
+    // Submit the update
+    const res = await fetch("/.netlify/functions/update_employee_profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData)
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      showToast(result.message || "Profile updated successfully");
+      modal.remove();
+      setTimeout(() => location.reload(), 800);
+    } else {
+      showToast(result.message || "Update failed", "error");
+      console.error(result);
+    }
+  } catch (err) {
+    console.error("Submit edit error:", err);
+    showToast("Failed to update employee profile.", "error");
   }
 }
 
-
-// --- Modal-related global functions ---
+// =====================================================
+// EMPLOYEE DETAILS MODAL
+// =====================================================
 
 window.showEmployeeDetails = async function(empId) {
   try {
@@ -515,93 +594,109 @@ window.showEmployeeDetails = async function(empId) {
 
     // Set the employee ID and profile image (thumbnail)
     const modalEmpId = document.getElementById('modalEmpId');
-    modalEmpId.innerHTML = `
-      <div class="flex justify-between items-start">
-        <div class="text-lg font-semibold">Employee ID: ${empId}</div>
-        ${
-          data.profile_photo_url
-            ? `<img src="${data.profile_photo_url}" alt="Profile Photo" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow ml-4" />`
-            : ''
-        }
-      </div>
-    `;
+    if (modalEmpId) {
+      modalEmpId.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div class="text-lg font-semibold">Employee ID: ${empId}</div>
+          ${
+            data.profile_photo_url
+              ? `<img src="${data.profile_photo_url}" alt="Profile Photo" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow ml-4" />`
+              : ''
+          }
+        </div>
+      `;
+    }
 
     // Fill in personal and job details
-    document.getElementById('modalDetails').innerHTML = `
-      <p><strong>Name:</strong> ${data.name || '-'}</p>
-      <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
-      <p><strong>Phone:</strong> ${data.phone || '-'}</p>
-      <p><strong>DOB:</strong> ${formattedDOB}</p>
-      <p><strong>Department:</strong> ${data.department || '-'}</p>
-      <p><strong>Role:</strong> ${data.employment_role || '-'}</p>
-      <p><strong>Reporting Manager:</strong> ${data.reporting_manager || '-'}</p>
-      <p><strong>Joining Date:</strong> ${formattedJoinDate}</p>
-      <p><strong>Total Pay:</strong> ${
-        data.total_pay && data.total_pay !== 'undefined'
-          ? `₹${Number(data.total_pay).toLocaleString('en-IN')}`
-          : '-'
-      }</p>
-      <p><strong>Total Hours:</strong> ${
-        data.total_hours && data.total_hours !== 'undefined' ? `${data.total_hours} hrs` : '0 hrs'
-      }</p>
-    `;
+    const modalDetails = document.getElementById('modalDetails');
+    if (modalDetails) {
+      modalDetails.innerHTML = `
+        <p><strong>Name:</strong> ${data.name || '-'}</p>
+        <p><strong>Email:</strong> ${data.email && data.email !== 'null' ? data.email : '-'}</p>
+        <p><strong>Phone:</strong> ${data.phone || '-'}</p>
+        <p><strong>DOB:</strong> ${formattedDOB}</p>
+        <p><strong>Department:</strong> ${data.department || '-'}</p>
+        <p><strong>Role:</strong> ${data.employment_role || '-'}</p>
+        <p><strong>Reporting Manager:</strong> ${data.reporting_manager || '-'}</p>
+        <p><strong>Joining Date:</strong> ${formattedJoinDate}</p>
+        <p><strong>Total Pay:</strong> ${
+          data.total_pay && data.total_pay !== 'undefined'
+            ? `₹${Number(data.total_pay).toLocaleString('en-IN')}`
+            : '-'
+        }</p>
+        <p><strong>Total Hours:</strong> ${
+          data.total_hours && data.total_hours !== 'undefined' ? `${data.total_hours} hrs` : '0 hrs'
+        }</p>
+      `;
+    }
 
     // Show documents
     const docList = document.getElementById("docLinks");
-    docList.innerHTML = ''; // Clear previous content
+    if (docList) {
+      docList.innerHTML = ''; // Clear previous content
 
-    let docShown = false;
+      let docShown = false;
 
-    if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
-      data.documents.forEach(doc => {
-        const fileName = decodeURIComponent(doc.url.split('/').pop());
+      if (data.documents && Array.isArray(data.documents) && data.documents.length > 0) {
+        data.documents.forEach(doc => {
+          const fileName = decodeURIComponent(doc.url.split('/').pop());
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <p class="mb-1">
+              <strong>${doc.name || 'Document'}:</strong> ${fileName} &nbsp;
+              <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View</a> |
+              <a href="${doc.url}" class="text-green-600 underline" download>Download</a>
+            </p>
+          `;
+          docList.appendChild(li);
+          docShown = true;
+        });
+      }
+
+      // Add passport photo as downloadable doc if available
+      if (data.profile_photo_url) {
         const li = document.createElement("li");
         li.innerHTML = `
-          <p class="mb-1">
-            <strong>${doc.name || 'Document'}:</strong> ${fileName} &nbsp;
-            <a href="${doc.url}" class="text-blue-600 underline" target="_blank">View</a> |
-            <a href="${doc.url}" class="text-green-600 underline" download>Download</a>
+          <p><strong>Profile Photo:</strong> 
+            <a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View</a> | 
+            <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>
           </p>
         `;
         docList.appendChild(li);
         docShown = true;
-      });
+      }
+
+      if (!docShown) {
+        docList.innerHTML = '<li>No documents uploaded</li>';
+      }
     }
 
-    // Add passport photo as downloadable doc if available
-    if (data.profile_photo_url) {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <p><strong>Profile Photo:</strong> 
-          <a href="${data.profile_photo_url}" class="text-blue-600 underline" target="_blank">View</a> | 
-          <a href="${data.profile_photo_url}" download class="text-green-600 underline">Download</a>
-        </p>
-      `;
-      docList.appendChild(li);
-      docShown = true;
+    const employeeModal = document.getElementById("employeeModal");
+    if (employeeModal) {
+      employeeModal.classList.remove("hidden");
     }
-
-    if (!docShown) {
-      docList.innerHTML = '<li>No documents uploaded</li>';
-    }
-
-    document.getElementById("employeeModal").classList.remove("hidden");
   } catch (error) {
     console.error('Error fetching employee details:', error);
-    showToast('Failed to load employee details');
+    showToast('Failed to load employee details', "error");
   }
 };
 
-
-
-window.closeModal = function () {
-  document.getElementById("employeeModal").classList.add("hidden");
+window.closeModal = function() {
+  const modal = document.getElementById("employeeModal");
+  if (modal) modal.classList.add("hidden");
 };
 
 window.printModalContent = function() {
-  const modalContent = document.getElementById("modalDetails").innerHTML;
-  const empId = document.getElementById("modalEmpId").textContent;
+  const modalContent = document.getElementById("modalDetails")?.innerHTML;
+  const empId = document.getElementById("modalEmpId")?.textContent;
+  if (!modalContent || !empId) return;
+  
   const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showToast("Please allow pop-ups to print content.", "error");
+    return;
+  }
+  
   printWindow.document.write(`
     <html>
       <head><title>Employee Details - ${empId}</title></head>
@@ -615,9 +710,16 @@ window.printModalContent = function() {
 };
 
 window.exportModalToPDF = function() {
-  const modalContent = document.getElementById("modalDetails").innerHTML;
-  const empId = document.getElementById("modalEmpId").textContent;
+  const modalContent = document.getElementById("modalDetails")?.innerHTML;
+  const empId = document.getElementById("modalEmpId")?.textContent;
+  if (!modalContent || !empId) return;
+  
   const pdfWindow = window.open('', '_blank');
+  if (!pdfWindow) {
+    showToast("Please allow pop-ups to export PDF.", "error");
+    return;
+  }
+  
   pdfWindow.document.write(`
     <html>
       <head>
@@ -641,18 +743,29 @@ window.exportModalToPDF = function() {
   `);
 };
 
-window.exportCSV = async function () {
+// =====================================================
+// EXPORT FUNCTIONALITY
+// =====================================================
+
+window.exportCSV = async function() {
   try {
     const res = await fetch("/.netlify/functions/get_employees");
+    if (!res.ok) throw new Error(`Failed to fetch employees: ${res.status}`);
+    
     const { employees } = await res.json();
 
     // Fetch full profile for each employee
     const employeeDetails = await Promise.all(
       employees.map(async (emp) => {
-        const profileRes = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`);
-        if (!profileRes.ok) throw new Error(`Failed to fetch profile for ${emp.emp_id}`);
-        const profile = await profileRes.json();
-        return { ...emp, ...profile };
+        try {
+          const profileRes = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${emp.emp_id}`);
+          if (!profileRes.ok) throw new Error(`Failed to fetch profile for ${emp.emp_id}`);
+          const profile = await profileRes.json();
+          return { ...emp, ...profile };
+        } catch (error) {
+          console.error(`Error fetching profile for ${emp.emp_id}:`, error);
+          return emp;
+        }
       })
     );
 
@@ -663,11 +776,19 @@ window.exportCSV = async function () {
     ];
 
     const csvRows = employeeDetails.map(emp => {
+      // Format dates
       const dob = emp.dob ? new Date(emp.dob).toLocaleDateString('en-GB') : '';
       const joining = emp.joining_date ? new Date(emp.joining_date).toLocaleDateString('en-GB') : '';
+      
+      // Format currency
       const totalPay = emp.total_pay ? `₹${Number(emp.total_pay).toLocaleString('en-IN')}` : '';
-      const docs = (emp.documents || []).map(doc => doc.name || 'Document').join('; ');
+      
+      // Handle documents
+      const docs = Array.isArray(emp.documents) 
+        ? emp.documents.map(doc => doc.name || 'Document').join('; ')
+        : '';
 
+      // Return CSV row with proper escaping for CSV format
       return [
         emp.emp_id,
         emp.name || '',
@@ -681,8 +802,8 @@ window.exportCSV = async function () {
         emp.base_salary || '',
         totalPay,
         emp.total_hours || '',
-        docs || ''
-      ].map(val => `"${val}"`).join(',');
+        docs
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
     });
 
     const csvContent = [headers.join(','), ...csvRows].join('\n');
@@ -695,178 +816,72 @@ window.exportCSV = async function () {
     a.download = `employees_full_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('✅ Full employee CSV exported');
+    
+    showToast('Employee data exported to CSV successfully');
   } catch (error) {
     console.error('Export failed:', error);
-    showToast('❌ Export failed');
+    showToast('Export failed. Please try again.', "error");
   }
 };
 
-
-// --- Bulk Selection Checkbox Logic ---
+// =====================================================
+// BULK SELECTION FUNCTIONALITY
+// =====================================================
 
 function toggleSelectAll(mainCheckbox) {
-  document.querySelectorAll('input[name="emp_checkbox"]').forEach(cb => {
+  document.querySelectorAll('input[name="employeeCheckbox"]').forEach(cb => {
     cb.checked = mainCheckbox.checked;
   });
 }
 
-// Keep master checkbox in sync when individual checkboxes change
 document.addEventListener('change', (e) => {
   if (e.target.classList.contains('employeeCheckbox')) {
     const all = document.querySelectorAll('.employeeCheckbox');
     const checked = document.querySelectorAll('.employeeCheckbox:checked');
-    document.getElementById('selectAllCheckbox').checked = all.length === checked.length;
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = all.length > 0 && all.length === checked.length;
+    }
   }
 });
 
-window.openEmailModal = function () {
-  const selectedCheckboxes = Array.from(document.querySelectorAll('.employeeCheckbox:checked'));
-  if (selectedCheckboxes.length === 0) {
-    showToast("Please select at least one employee.");
+function getSelectedEmployeeIds() {
+  return Array.from(document.querySelectorAll('input[name="employeeCheckbox"]:checked'))
+    .map(cb => cb.value);
+}
+
+// =====================================================
+// BULK EMAIL FUNCTIONALITY
+// =====================================================
+
+function openEmailModal() {
+  const selectedIds = getSelectedEmployeeIds();
+  if (selectedIds.length === 0) {
+    showToast("Please select at least one employee.", "error");
     return;
   }
 
-  const selectedIds = selectedCheckboxes.map(cb => cb.value);
   localStorage.setItem("selected_emp_ids", JSON.stringify(selectedIds));
 
-  const session = localStorage.getItem("emp_session");
-  if (session) {
-    const { email } = JSON.parse(session);
-    document.getElementById("emailFrom").value = email || "n.dcosta@nikagenyx.com";
+  const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
+  const bulkEmailModal = document.getElementById("bulkEmailModal");
+  const emailFromInput = document.getElementById("emailFrom");
+  
+  if (bulkEmailModal && emailFromInput) {
+    emailFromInput.value = session.email || "n.dcosta@nikagenyx.com";
+    bulkEmailModal.classList.remove("hidden");
   }
-
-  document.getElementById("bulkEmailModal").classList.remove("hidden");
-
-};
-
-window.closeEmailModal = function () {
-  document.getElementById("emailModal").classList.add("hidden");
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("bulkEmailForm");
-  if (!form) return;
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
-    if (selectedIds.length === 0) return showToast("No employees selected");
-
-    const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
-    const empId = session.emp_id;
-    let smtpPassword = session.smtp_password;
-
-    // ✅ Step 1: Get SMTP password
-    if (!smtpPassword || smtpPassword === "undefined") {
-      try {
-        const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
-        const data = await res.json();
-        if (data.smtp_password && data.smtp_password !== "undefined") {
-          smtpPassword = data.smtp_password;
-        } else {
-          smtpPassword = prompt("Enter your email password to send:");
-          if (!smtpPassword || smtpPassword.trim() === "") {
-            showToast("❌ Sending cancelled – no password entered.");
-            return;
-          }
-
-          await fetch("/.netlify/functions/save_smtp_password", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
-          });
-
-          session.smtp_password = smtpPassword;
-          localStorage.setItem("emp_session", JSON.stringify(session));
-        }
-      } catch (err) {
-        console.error("❌ Error loading SMTP password:", err);
-        showToast("❌ Could not retrieve your SMTP credentials.");
-        return;
-      }
-    }
-
-    // ✅ Step 2: Build email
-    const from = "n.dcosta@nikagenyx.com";
-    const fromName = session.name || "Nik D'Costa";
-    const subject = document.getElementById("emailSubject").value;
-    const rawBody = document.getElementById("emailBody").value;
-    const attachments = document.getElementById("emailAttachment").files;
-
-    // ✅ Only send message entered by the user (NO greeting, NO signature)
-    const formData = new FormData();
-    formData.append("from", from);
-    formData.append("from_name", fromName);
-    formData.append("smtp_password", smtpPassword);
-    formData.append("subject", subject);
-    formData.append("body", rawBody);
-    formData.append("recipients", JSON.stringify(selectedIds));
-    [...attachments].forEach(file => formData.append("attachment", file));
-
-    // ✅ Step 3: Send
-    const res = await fetch("/.netlify/functions/send_bulk_email", {
-      method: "POST",
-      body: formData,
-    });
-
-    // ✅ Response Handling
-    try {
-      const contentType = (res.headers.get("content-type") || "").toLowerCase();
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("❌ Email failed:", errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          showToast(errorJson.message || "❌ Email sending failed.");
-        } catch {
-          showToast("❌ Email sending failed.");
-        }
-        return;
-      }
-
-      const result = contentType.includes("application/json") ? await res.json() : {};
-      if (result.failed?.length) {
-        showToast(`✅ Sent with some failures: ${result.failed.join(", ")}`);
-      } else {
-        showToast(result.message || "✅ Emails sent successfully.");
-      }
-
-      document.getElementById("bulkEmailModal").classList.add("hidden");
-
-    } catch (err) {
-      console.error("❌ Exception during email send:", err);
-      showToast("❌ Unexpected error occurred.");
-    }
-  });
-});
-
-// Step 2 — Modal Control & File Preview
-function openEmailModal() {
-  const modal = document.getElementById("bulkEmailModal");
-  const fromInput = document.getElementById("emailFrom");
-  const session = JSON.parse(localStorage.getItem("emp_session"));
-
-  if (!modal || !fromInput) {
-    console.error("❌ Modal or From input not found in DOM.");
-    return;
-  }
-
-  if (session) {
-    fromInput.value = session?.email || (session?.emp_id ? `${session.emp_id}@nikagenyx.com` : "");
-  }
-
-  modal.classList.remove("hidden");
 }
 
 function closeBulkEmailModal() {
-  document.getElementById("bulkEmailModal").classList.add("hidden");
-  document.getElementById("bulkEmailForm").reset();
-  document.getElementById("filePreview").innerHTML = "";
+  const modal = document.getElementById("bulkEmailModal");
+  const form = document.getElementById("bulkEmailForm");
+  const filePreview = document.getElementById("filePreview");
+  
+  if (modal) modal.classList.add("hidden");
+  if (form) form.reset();
+  if (filePreview) filePreview.innerHTML = "";
 }
-
-document.addEventListener("DOMContentLoaded", setupAttachmentPreview);
 
 function setupAttachmentPreview() {
   const attachInput = document.getElementById("emailAttachment");
@@ -912,162 +927,188 @@ function setupAttachmentPreview() {
   }
 }
 
-if (typeof window.fetchEmployees !== "function") {
-  window.fetchEmployees = fetchEmployees;
-  console.log("✅ fetchEmployees globally exposed");
-}
+document.addEventListener("DOMContentLoaded", () => {
+  setupAttachmentPreview();
+  
+  const bulkEmailForm = document.getElementById("bulkEmailForm");
+  if (bulkEmailForm) {
+    bulkEmailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-document.getElementById("generatePDFLetter").addEventListener("click", async () => {
-  const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
-  if (selectedIds.length === 0) {
-    alert("No employees selected!");
-    return;
-  }
+      const selectedIds = JSON.parse(localStorage.getItem("selected_emp_ids") || "[]");
+      if (selectedIds.length === 0) {
+        showToast("No employees selected", "error");
+        return;
+      }
 
-  // Fetch all employees
-  const res = await fetch("/.netlify/functions/get_employees");
-  const { employees } = await res.json();
-  const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
+      const session = JSON.parse(localStorage.getItem("emp_session") || "{}");
+      const empId = session.emp_id;
+      let smtpPassword = session.smtp_password;
 
-  // Header/footer image URLs and sizes
-  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
-  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
-  const headerImg = await loadImageAsDataURL(headerURL);
-  const footerImg = await loadImageAsDataURL(footerURL);
+      // Get SMTP password if needed
+      if (!smtpPassword || smtpPassword === "undefined") {
+        try {
+          const res = await fetch(`/.netlify/functions/get_smtp_password?emp_id=${empId}`);
+          const data = await res.json();
+          if (data.smtp_password && data.smtp_password !== "undefined") {
+            smtpPassword = data.smtp_password;
+          } else {
+            smtpPassword = prompt("Enter your email password to send:");
+            if (!smtpPassword || smtpPassword.trim() === "") {
+              showToast("Sending cancelled – no password entered.", "error");
+              return;
+            }
 
-  // These heights must match your header/footer image heights in px/pt
-  const headerHeight = 120; // px/pt
-  const footerHeight = 80;  // px/pt
+            await fetch("/.netlify/functions/save_smtp_password", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emp_id: empId, smtp_password: smtpPassword }),
+            });
 
-  // Define a default template for PDF letter generation
-const bodyTemplate = `
-  <p>Dear {{name}},</p>
-  <p>Employee ID: {{emp_id}}</p>
-  <p>Welcome to the {{department}} team as a {{employment_role}}!</p>
-  <p>Your joining date: {{joining_date}}</p>
-  <p>Best regards,<br>HR Team</p>
-`;
+            session.smtp_password = smtpPassword;
+            localStorage.setItem("emp_session", JSON.stringify(session));
+          }
+        } catch (err) {
+          console.error("Error loading SMTP password:", err);
+          showToast("Could not retrieve your SMTP credentials.", "error");
+          return;
+        }
+      }
 
-  for (const emp of selectedEmployees) {
-    // Use mergeTemplate for all fields
-    const personalizedBody = mergeTemplate(bodyTemplate, emp);
+      // Build email
+      const from = "n.dcosta@nikagenyx.com";
+      const fromName = session.name || "Nik D'Costa";
+      const subject = document.getElementById("emailSubject").value;
+      const rawBody = document.getElementById("emailBody").value;
+      const attachments = document.getElementById("emailAttachment").files;
 
-    // Container for jsPDF.html rendering
-    const container = document.createElement("div");
-    container.style.width = "595pt"; // A4 width
-    container.style.minHeight = "842pt"; // A4 height
-    container.style.background = "#fff";
-    container.style.fontFamily = "Arial, Helvetica, sans-serif";
-    container.style.fontSize = "12pt";
+      const formData = new FormData();
+      formData.append("from", from);
+      formData.append("from_name", fromName);
+      formData.append("smtp_password", smtpPassword);
+      formData.append("subject", subject);
+      formData.append("body", rawBody);
+      formData.append("recipients", JSON.stringify(selectedIds));
+      
+      if (attachments && attachments.length > 0) {
+        Array.from(attachments).forEach(file => formData.append("attachment", file));
+      }
 
-    // Use semantic HTML, not <br>-inserted text!
-    container.innerHTML = `
-      <div id="pdfContent" style="padding: ${headerHeight + 24}px 48px ${footerHeight + 24}px 48px; line-height:1.5; color: #000;">
-        ${personalizedBody}
-      </div>
-    `;
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    document.body.appendChild(container);
+      // Send email
+      try {
+        const res = await fetch("/.netlify/functions/send_bulk_email", {
+          method: "POST",
+          body: formData,
+        });
 
-    // Create jsPDF A4, pt units
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4'
-    });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    await doc.html(container, {
-      margin: [headerHeight + 24, 48, footerHeight + 24, 48], // [top, left, bottom, right]
-      autoPaging: 'text',
-      html2canvas: {
-        scale: 1.25,
-        useCORS: true,
-        backgroundColor: "#fff"
-      },
-      callback: function (doc) {
-        const totalPages = doc.internal.getNumberOfPages();
-
-        for (let i = 1; i <= totalPages; i++) {
-          doc.setPage(i);
-          // Header (full width)
-          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
-          // Footer (full width)
-          doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-          // Footer copyright text
-          doc.setFontSize(8);
-          doc.setTextColor(150);
-          doc.text(
-            "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
-            pageWidth / 2,
-            pageHeight - 12,
-            { align: "center" }
-          );
+        const contentType = (res.headers.get("content-type") || "").toLowerCase();
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Email failed:", errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            showToast(errorJson.message || "Email sending failed.", "error");
+          } catch {
+            showToast("Email sending failed.", "error");
+          }
+          return;
         }
 
-        const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
-        const cleanRole = emp.employment_role?.trim().replace(/\s+/g, "_").replace(/[^\w()_]/g, "") || "Role";
-        const filename = `${cleanName}_${emp.emp_id}_${cleanRole}.pdf`;
+        const result = contentType.includes("application/json") ? await res.json() : {};
+        if (result.failed?.length) {
+          showToast(`Emails sent with some failures: ${result.failed.join(", ")}`, "error");
+        } else {
+          showToast(result.message || "Emails sent successfully");
+        }
 
-        doc.save(filename);
-        container.remove();
+        closeBulkEmailModal();
+      } catch (err) {
+        console.error("Exception during email send:", err);
+        showToast("Unexpected error occurred while sending emails.", "error");
       }
     });
   }
 });
+
+// =====================================================
+// PDF LETTER GENERATION
+// =====================================================
+
+function initTinyMCE() {
+  if (typeof tinymce === "undefined") {
+    console.warn("TinyMCE not loaded");
+    return;
+  }
+  
+  const textarea = document.getElementById('letterBody');
+  if (!textarea) return;
+
+  tinymce.init({
+    selector: '#letterBody',
+    height: 300,
+    menubar: false,
+    plugins: 'lists link table',
+    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
+    setup: function(editor) {
+      editor.on('input', updatePDFPreview);
+      editor.on('change', updatePDFPreview);
+    }
+  });
+}
+
 function openPDFLetterModal() {
-  document.getElementById("pdfLetterModal").classList.remove("hidden");
-  updatePDFPreview();
+  const selectedIds = getSelectedEmployeeIds();
+  if (selectedIds.length === 0) {
+    showToast("Please select at least one employee.", "error");
+    return;
+  }
+  
+  const modal = document.getElementById("pdfLetterModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    updatePDFPreview();
+  }
 }
 
-// Simple merge for {{field}} with support for undefined fields
-function mergeTemplate(template, emp) {
-  return template.replace(/{{(.*?)}}/g, (_, key) => emp[key.trim()] ?? "");
+function closePDFLetterModal() {
+  const modal = document.getElementById("pdfLetterModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
 }
 
-
-/**
- * Generates PDF letters that match Microsoft Word document formatting
- * For Nikagenyx Vision Tech Employment Agreements
- */
 async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
-  if (!selectedIds.length) return alert("Please select employees.");
+  if (!selectedIds.length) {
+    showToast("Please select employees.", "error");
+    return;
+  }
 
-  const rawHTML = tinymce.get("letterBody")?.getContent() || "";
-  
-  // Loading indicator
-  document.getElementById("pdfStatus").textContent = "Generating PDFs...";
-  document.getElementById("pdfLoading").style.display = "block";
-  
   try {
-    // jsPDF configuration for Word-like document (A4)
+    // Show loading indicator
+    showToast("Generating PDFs. Please wait...");
+    
+    const rawHTML = tinymce.get("letterBody")?.getContent() || "";
+    
+    // jsPDF configuration
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "pt",
-      format: "a4",
-      compress: true
+      format: "a4"
     });
     
-    // A4 page dimensions in points (1 inch = 72pt, matches Word)
-    const pageWidth = 595.28;
-    const pageHeight = 841.89;
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();   // 595.28pt
+    const pageHeight = doc.internal.pageSize.getHeight(); // 841.89pt
     
-    // Header/footer dimensions - measured from your Word document
-    const headerHeight = 80;
-    const footerHeight = 50;
+    // Header and footer dimensions
+    const headerHeight = 90;  // Height in pt
+    const footerHeight = 60;  // Height in pt
+    const sideMargin = 48;    // Left/right margin in pt
     
-    // Word-like margins (measured from your document)
-    const topMargin = headerHeight + 30;
-    const bottomMargin = footerHeight + 30;
-    const leftMargin = 72;
-    const rightMargin = 72;
-    
-    // Fetch header/footer images
+    // Load header/footer images
     const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
     const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
     
@@ -1076,19 +1117,13 @@ async function generatePDFLetters() {
       loadImageAsDataURL(footerURL)
     ]);
     
-    // Fetch employee data
+    // Get employee data
     const res = await fetch("/.netlify/functions/get_employees");
     const { employees } = await res.json();
     const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
     
-    // Format current date for document (YYYY-MM-DD)
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    
-    for (let i = 0; i < selectedEmployees.length; i++) {
-      const emp = selectedEmployees[i];
-      document.getElementById("pdfStatus").textContent = `Generating PDF ${i+1} of ${selectedEmployees.length}...`;
-      
+    // Generate PDF for each selected employee
+    for (const emp of selectedEmployees) {
       // Replace placeholders with employee data
       const personalizedHTML = rawHTML
         .replace(/{{name}}/gi, emp.name || "")
@@ -1101,216 +1136,161 @@ async function generatePDFLetters() {
         .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "")
-        .replace(/{{current_date}}/gi, formattedDate || "")
         .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
       
-      // Create temporary container for HTML rendering
+      // Create container for rendering HTML to PDF
       const container = document.createElement("div");
-      container.style.position = "absolute";
-      container.style.left = "-9999px";
-      container.style.width = `${pageWidth - leftMargin - rightMargin}pt`;
-      container.style.minHeight = "100pt"; // Minimum height to ensure content renders
-      container.style.backgroundColor = "#fff";
       
-      // Word-like styling
+      // CRITICAL FIX: Set explicit width to match PDF page width minus margins
+      container.style.width = (pageWidth - 2 * sideMargin) + "pt";
+      container.style.minHeight = "100pt";  // Just needs to be enough to render
+      container.style.background = "#fff";
+      container.style.overflow = "visible";  // IMPORTANT: Don't hide overflow
+      
+      // Add styling and content
       container.innerHTML = `
         <style>
-          /* Word-like typography */
+          * { box-sizing: border-box; }
           body, div, p, span, table, td { 
-            font-family: Arial, sans-serif !important; 
-            font-size: 12pt !important;
-            line-height: 1.3 !important;
+            font-family: Arial !important; 
+            font-size: 13pt !important; 
             color: #000 !important;
-            margin: 0;
           }
-          p { margin-bottom: 12pt; }
-          h1 { font-size: 16pt !important; margin: 14pt 0; }
-          h2 { font-size: 14pt !important; margin: 12pt 0; }
-          table { border-collapse: collapse; width: 100%; }
+          h1, h2 { font-weight: bold; }
+          p { margin: 0 0 10pt 0; }
+          table { width: 100%; border-collapse: collapse; }
           td, th { padding: 4pt; }
           .signature-line { 
             display: inline-block; 
             border-bottom: 1px solid #000; 
-            min-width: 150pt; 
-            margin-top: 24pt;
+            min-width: 120pt; 
+            height: 14pt; 
+            vertical-align: bottom;
           }
-          ul, ol { 
-            padding-left: 24pt;
-            margin-bottom: 12pt;
-          }
-          li { margin-bottom: 6pt; }
         </style>
         <div id="pdfContent">
           ${personalizedHTML}
         </div>
       `;
       
+      // Add container to document but hide it
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
       document.body.appendChild(container);
       
-      // Create a new PDF document for this employee
+      // Create PDF document for this employee
       const empDoc = new jsPDF({
         orientation: "portrait",
         unit: "pt",
-        format: "a4",
-        compress: true
+        format: "a4"
       });
       
-      // Render HTML to PDF with proper margins
+      // Render HTML to PDF
       await empDoc.html(container, {
-        // These margins account for the header/footer space
+        // CRITICAL FIX: Set the correct margins that account for header/footer
         margin: [
-          topMargin,   // top 
-          rightMargin, // right
-          bottomMargin,// bottom
-          leftMargin   // left
+          headerHeight + 16,  // Top margin including header
+          sideMargin,         // Right margin
+          footerHeight + 16,  // Bottom margin including footer
+          sideMargin          // Left margin
         ],
         autoPaging: "text",
-        width: pageWidth - leftMargin - rightMargin,
-        windowWidth: pageWidth - leftMargin - rightMargin,
+        width: pageWidth - (2 * sideMargin),  // Important: set explicit width
         html2canvas: {
-          scale: 1.5, // Higher scale for better quality
+          scale: 1.33,        // Higher scale for sharper text
           useCORS: true,
-          letterRendering: true,
-          backgroundColor: "#ffffff"
+          backgroundColor: "#fff"
         },
-        callback: function(pdf) {
-          const totalPages = pdf.internal.getNumberOfPages();
+        callback: function(doc) {
+          const totalPages = doc.internal.getNumberOfPages();
           
           // Add header and footer to each page
-          for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-            pdf.setPage(pageNum);
+          for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
             
-            // Add header image at top of page
-            pdf.addImage(
-              headerImg, 
-              'PNG', 
-              0, // x position - start at left edge
-              0, // y position - start at top edge
-              pageWidth, // width - full page width
-              headerHeight // height - as defined
-            );
+            // Add header at the top of the page
+            doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
             
-            // Add footer image at bottom of page
-            pdf.addImage(
-              footerImg, 
-              'PNG', 
-              0, // x position - start at left edge
-              pageHeight - footerHeight, // y position - place at bottom
-              pageWidth, // width - full page width
-              footerHeight // height - as defined
-            );
+            // Add footer at the bottom of the page
+            doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
             
-            // Add page number
-            pdf.setFontSize(9);
-            pdf.setTextColor(100);
-            pdf.text(
-              `Page ${pageNum} of ${totalPages}`,
-              pageWidth - rightMargin - 5,
-              pageHeight - 20,
-              { align: 'right' }
-            );
-            
-            // Add document info at bottom
-            pdf.setFontSize(8);
-            pdf.setTextColor(120);
-            pdf.text(
-              `© ${new Date().getFullYear()} Nikagenyx Vision Tech Private Limited. All rights reserved.`,
+            // Add copyright text
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text(
+              "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
               pageWidth / 2,
-              pageHeight - 8,
-              { align: 'center' }
+              pageHeight - 14,
+              { align: "center" }
             );
           }
           
-          // Generate appropriate filename
+          // Generate filename
           const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
-          const filename = `${cleanName}_${emp.emp_id}_Employment_Agreement.pdf`;
+          const cleanRole = emp.employment_role?.trim().replace(/\s+/g, "_").replace(/[^\w()_]/g, "") || "Role";
+          const filename = `${cleanName}_${emp.emp_id}_${cleanRole}.pdf`;
           
-          // Save the PDF
-          pdf.save(filename);
+          // Save PDF
+          doc.save(filename);
           
-          // Remove the temporary container
-          document.body.removeChild(container);
+          // Clean up
+          container.remove();
         }
       });
     }
     
-    document.getElementById("pdfStatus").textContent = `Successfully generated ${selectedEmployees.length} PDF(s)`;
-    setTimeout(() => {
-      document.getElementById("pdfLoading").style.display = "none";
-      closePDFLetterModal();
-    }, 1500);
-    
-  } catch (error) {
-    console.error("PDF Generation Error:", error);
-    document.getElementById("pdfStatus").textContent = `Error: ${error.message}`;
-    document.getElementById("pdfLoading").style.display = "none";
+    showToast(`Successfully generated ${selectedEmployees.length} PDF(s)`);
+    closePDFLetterModal();
+  } catch (err) {
+    console.error("PDF Generation Error:", err);
+    showToast("Error generating PDFs: " + err.message, "error");
   }
 }
 
-// Utility function to load images as data URLs
+// Utility to load images as data URLs
 async function loadImageAsDataURL(url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to load image: ${response.status}`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to load image: ${res.status}`);
     
-    const blob = await response.blob();
+    const blob = await res.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
-  } catch (error) {
-    console.error("Image loading error:", error);
-    throw error;
+  } catch (err) {
+    console.error("Image loading error:", err);
+    throw err;
   }
-}
-
-// Helper function to get selected employee IDs
-function getSelectedEmployeeIds() {
-  const checkboxes = document.querySelectorAll('input[name="employeeCheckbox"]:checked');
-  return Array.from(checkboxes).map(cb => cb.value);
-}
-
-// Function to close modal after PDF generation
-function closePDFLetterModal() {
-  const modal = document.getElementById("pdfLetterModal");
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
-async function getImageDimensions(imgUrl, maxWidth = 600) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      const ratio = img.width / img.height;
-      const width = maxWidth;
-      const height = width / ratio;
-      resolve({ width, height });
-    };
-    img.src = imgUrl;
-  });
 }
 
 function updatePDFPreview() {
   const preview = document.getElementById("pdfPreview");
+  if (!preview) return;
 
   const selectedIds = getSelectedEmployeeIds();
   if (selectedIds.length === 0) {
-    preview.innerHTML = "(Select an employee to see preview)";
+    preview.innerHTML = "<p class='text-center text-gray-500'>(Select an employee to see preview)</p>";
     return;
   }
 
-  const raw = tinymce.get("letterBody")?.getContent() || "";
+  // Get TinyMCE content
+  const rawContent = tinymce.get("letterBody")?.getContent() || "";
 
+  // Fetch employee data
   fetch("/.netlify/functions/get_employees")
     .then(res => res.json())
     .then(({ employees }) => {
       const emp = employees.find(e => selectedIds.includes(e.emp_id));
-      if (!emp) return;
+      if (!emp) {
+        preview.innerHTML = "<p class='text-center text-gray-500'>(Employee data not found)</p>";
+        return;
+      }
 
-      // Replace merge tags
-      let merged = raw
+      // Replace placeholders
+      let mergedContent = rawContent
         .replace(/{{name}}/gi, emp.name || "")
         .replace(/{{emp_id}}/gi, emp.emp_id || "")
         .replace(/{{email}}/gi, emp.email || "")
@@ -1322,47 +1302,30 @@ function updatePDFPreview() {
         .replace(/{{joining_date}}/gi, emp.joining_date || "")
         .replace(/{{base_salary}}/gi, emp.base_salary || "");
 
-      // Replace <!-- PAGEBREAK --> with visual separator
-      const paginated = merged.replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>');
+      // Replace page breaks with visual separator
+      const paginatedContent = mergedContent.replace(/<!--\s*PAGEBREAK\s*-->/gi, 
+        '<div class="my-4 border-b-2 border-dashed border-gray-400 text-center text-gray-400">[Page Break]</div>');
 
-      // Final preview
+      // Show preview with header and footer
       preview.innerHTML = `
         <div style="text-align:center; padding-bottom: 10px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" style="width:100%; max-height:80px;" />
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png" 
+               style="width:100%; max-height:80px;" alt="Header" />
         </div>
-        <div style="padding: 30px; font-size: 14px; line-height: 1.6; color: #333;">
-          ${paginated}
+        <div style="padding: 15px; font-size: 14px; line-height: 1.6; color: #333;">
+          ${paginatedContent}
         </div>
         <div style="text-align:center; padding-top: 10px;">
-          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" style="width:100%; max-height:60px;" />
+          <img src="https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png" 
+               style="width:100%; max-height:60px;" alt="Footer" />
         </div>
       `;
+    })
+    .catch(err => {
+      console.error("Error generating preview:", err);
+      preview.innerHTML = "<p class='text-center text-red-500'>Error generating preview</p>";
     });
 }
 
-
-function initTinyMCE() {
-  if (typeof tinymce === "undefined") return;
-  const textarea = document.getElementById('letterBody');
-  if (!textarea) return;
-
-  tinymce.init({
-    selector: '#letterBody',
-    height: 300,
-    menubar: false,
-    plugins: 'lists link table',
-    toolbar: 'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table',
-    setup: function (editor) {
-      editor.on('input', updatePDFPreview);
-      editor.on('change', updatePDFPreview);
-    }
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  initTinyMCE();
-  const generateBtn = document.getElementById("generatePDFLetter");
-  if (generateBtn) {
-    generateBtn.addEventListener("click", generatePDFLetters);
-  }
-});
+// Make sure fetchEmployees is available globally
+window.fetchEmployees = fetchEmployees;
