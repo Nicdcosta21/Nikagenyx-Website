@@ -25,9 +25,9 @@ const LETTER_TEMPLATES = {
 <p>&nbsp;</p>
 <p>Dear {{name}},</p>
 <p>&nbsp;</p>
-<p>We are pleased to offer you employment with <strong>Nikagenyx Vision Tech Private Limited</strong> in the position of <strong>{{role}}</strong> in our <strong>{{department}}</strong> department, reporting to <strong>{{reporting_manager}}</strong>.</p>
+<p>We are pleased to offer you employment with <strong>Nikagenyx Vision Tech Private Limited</strong> in the position of <strong>{{role}}</strong> in our <strong>{{department}}</strong> department.</p>
 <p>&nbsp;</p>
-<p>Your annual compensation will be ₹{{base_salary}}/- (Rupees [Amount in words] Only) per annum. The breakdown of your compensation package will be detailed in your appointment letter.</p>
+<p>Your annual compensation will be ₹{{base_salary}}/- per annum. The breakdown of your compensation package will be detailed in your appointment letter.</p>
 <p>&nbsp;</p>
 <p>This offer is contingent upon:</p>
 <ol>
@@ -65,7 +65,7 @@ const LETTER_TEMPLATES = {
 <p>We are pleased to confirm your appointment as <strong>{{role}}</strong> with Nikagenyx Vision Tech Private Limited effective <strong>{{joining_date}}</strong>.</p>
 <p>&nbsp;</p>
 <p><strong>1. Compensation</strong></p>
-<p>Your annual compensation package will be ₹{{base_salary}}/- (Rupees [Amount in words] Only), paid monthly.</p>
+<p>Your annual compensation package will be ₹{{base_salary}}/-, paid monthly.</p>
 <p>&nbsp;</p>
 <p><strong>2. Working Hours</strong></p>
 <p>Standard working hours are 9:00 AM to 6:00 PM, Monday to Friday.</p>
@@ -109,7 +109,7 @@ const LETTER_TEMPLATES = {
 <p>&nbsp;</p>
 <p><strong>TO WHOMSOEVER IT MAY CONCERN</strong></p>
 <p>&nbsp;</p>
-<p>This is to certify that <strong>{{name}}</strong> (Employee ID: {{emp_id}}) was employed with Nikagenyx Vision Tech Private Limited from <strong>{{joining_date}}</strong> to [Relieving Date] as <strong>{{role}}</strong> in our <strong>{{department}}</strong> department.</p>
+<p>This is to certify that <strong>{{name}}</strong> (Employee ID: {{emp_id}}) was employed with Nikagenyx Vision Tech Private Limited from <strong>{{joining_date}}</strong> to [Relieving Date] as <strong>{{role}}</strong>.</p>
 <p>&nbsp;</p>
 <p>During their tenure with us, {{name}} demonstrated exceptional skills in [Key Skills] and was responsible for [Key Responsibilities].</p>
 <p>&nbsp;</p>
@@ -126,18 +126,24 @@ const LETTER_TEMPLATES = {
 // Function to load a template into the TinyMCE editor
 function loadLetterTemplate(templateName) {
   const editor = tinymce.get('letterBody');
-  if (!editor) return false;
+  if (!editor) {
+    console.error("TinyMCE editor not found!");
+    return false;
+  }
   
   const template = LETTER_TEMPLATES[templateName];
-  if (!template) return false;
+  if (!template) {
+    console.error("Template not found:", templateName);
+    return false;
+  }
   
   editor.setContent(template);
   
-  // Make sure to update preview - this is the fix!
+  // Update the preview after loading the template
   if (typeof updateEnhancedPDFPreview === 'function') {
-    updateEnhancedPDFPreview();
+    setTimeout(updateEnhancedPDFPreview, 100);
   } else if (typeof updatePDFPreview === 'function') {
-    updatePDFPreview();
+    setTimeout(updatePDFPreview, 100);
   }
   
   return true;
@@ -153,6 +159,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (loadLetterTemplate(templateName)) {
         showToast(`Loaded ${templateName.replace('_', ' ')} template`);
+        // Double check that preview updates
+        setTimeout(function() {
+          if (typeof updateEnhancedPDFPreview === 'function') {
+            updateEnhancedPDFPreview();
+          }
+        }, 200);
       } else {
         showToast('Failed to load template', 'error');
       }
@@ -163,13 +175,17 @@ document.addEventListener('DOMContentLoaded', function() {
   const openPdfButton = document.getElementById('openPDFLetterBtn');
   if (openPdfButton) {
     openPdfButton.addEventListener('click', function() {
-      setTimeout(updateEnhancedPDFPreview, 500); // Slight delay to ensure modal is visible
+      setTimeout(function() {
+        if (typeof updateEnhancedPDFPreview === 'function') {
+          updateEnhancedPDFPreview();
+        } else if (typeof updatePDFPreview === 'function') {
+          updatePDFPreview();
+        }
+      }, 500); // Slight delay to ensure modal is visible
     });
   }
-  
-  // Replace the default PDF generation with enhanced version
-  const generateBtn = document.getElementById('generatePDFLetter');
-  if (generateBtn) {
-    generateBtn.addEventListener('click', generateEnhancedPDFLetters);
-  }
 });
+
+// Export functions for global use
+window.loadLetterTemplate = loadLetterTemplate;
+window.LETTER_TEMPLATES = LETTER_TEMPLATES;
