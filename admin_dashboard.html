@@ -370,5 +370,23 @@
 
 <!-- Main admin dashboard functionality -->
 <script src="/assets/js/admin_dashboard.js" defer></script>
+  <!-- Enhanced PDF generation scripts -->
+<script src="/assets/js/pdf_generator.js"></script>
+<script src="/assets/js/letter_templates.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Replace default TinyMCE with enhanced version
+    initEnhancedTinyMCE();
+    
+    // Replace default preview function with enhanced version
+    window.updatePDFPreview = updateEnhancedPDFPreview;
+    
+    // Make sure the generate button uses the enhanced generator
+    const generateBtn = document.getElementById('generatePDFLetter');
+    if (generateBtn) {
+      generateBtn.onclick = generateEnhancedPDFLetters;
+    }
+  });
+</script>
 </body>
 </html>
