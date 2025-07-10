@@ -224,14 +224,13 @@ const LETTER_TEMPLATES = {
   <p>Upon signing the first primary foreign client in the cruise line industry, the Company shall:</p>
   <ul>
     <li>Transition all current freelance employees to full-time payroll status with retrospective compensation.</li>
-    <li>Calculate and disburse salaries based on the accumulated working hours, applying the following rates:
-      <ul>
-        <li>Less than 5 hours/day: No pay</li>
-        <li>5 to 7 hours/day: 50% daily pay</li>
-        <li>7 to 10 hours/day: 100% daily pay</li>
-      </ul>
-    </li>
+    <li>Calculate and disburse salaries based on the accumulated working hours, applying the following rates:</li>
   </ul>
+  <!-- Remove the nested ul here and replace with plain text -->
+  <p style="margin-left:30px;">Less than 5 hours/day: No pay<br>
+  5 to 7 hours/day: 50% daily pay<br>
+  7 to 10 hours/day: 100% daily pay</p>
+  
   <p>This transition shall not apply to contracts obtained from domestic or secondary clients, which are considered developmental and are meant to build project portfolios and credibility.</p>
   <p>Employees shall be formally notified of this transition in writing, and a revised salary structure will be shared at that time.</p>
 </div>
@@ -242,23 +241,25 @@ const LETTER_TEMPLATES = {
   <p>This deferred-pay arrangement has been discussed transparently and agreed upon voluntarily by both parties, without any coercion, and in accordance with the provisions of the Indian Contract Act, 1872. Both parties understand and intend to create legally binding obligations through this Agreement.</p>
 </div>
 
-<p style="margin-top:30pt;">IN WITNESS WHEREOF, the parties hereto have executed this Agreement on the date first above written.</p>
+<div class="signature-block" style="margin-top:40pt;">
+  <p style="margin-top:30pt; margin-bottom:10pt;"><strong>IN WITNESS WHEREOF</strong>, the parties hereto have executed this Agreement on the date first above written.</p>
 
-<div style="margin-top:30pt;">
-  <p><strong>For Nikagenyx Vision Tech Private Limited</strong></p>
-  <div style="height:60pt;"></div>
-  <p>Signature: _________________________</p>
-  <p>Name: Nikolas D'Costa</p>
-  <p>Designation: Managing Director</p>
-</div>
+  <div style="margin-top:30pt;">
+    <p><strong>For Nikagenyx Vision Tech Private Limited</strong></p>
+    <div style="height:60pt;"></div>
+    <p>Signature: _________________________</p>
+    <p>Name: Nikolas D'Costa</p>
+    <p>Designation: Managing Director</p>
+  </div>
 
-<div style="margin-top:30pt;">
-  <p><strong>Employee Acknowledgement</strong></p>
-  <p>I, {{name}}, acknowledge that I have read and understood the contents of this Agreement and voluntarily accept the terms and conditions herein.</p>
-  <div style="height:40pt;"></div>
-  <p>Signature: _________________________</p>
-  <p>Date: _________________________</p>
-  <p>Place: _________________________</p>
+  <div style="margin-top:30pt; page-break-inside: avoid;">
+    <p><strong>Employee Acknowledgement</strong></p>
+    <p>I, {{name}}, acknowledge that I have read and understood the contents of this Agreement and voluntarily accept the terms and conditions herein.</p>
+    <div style="height:40pt;"></div>
+    <p>Signature: _________________________</p>
+    <p>Date: _________________________</p>
+    <p>Place: _________________________</p>
+  </div>
 </div>`
 };
 
