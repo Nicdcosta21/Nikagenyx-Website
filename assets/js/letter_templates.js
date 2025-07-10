@@ -120,11 +120,10 @@ const LETTER_TEMPLATES = {
 <p>&nbsp;</p>
 <p><strong>Nik D'Costa</strong></p>
 <p>Chief Executive Officer</p>
-<p>Nikagenyx Vision Tech Private Limited</p>`
+<p>Nikagenyx Vision Tech Private Limited</p>`,
 
-// EMPLOYMENT AGREEMENT  Template
-
-LETTER_TEMPLATES.employment_agreement = `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT</h1>
+  // EMPLOYMENT AGREEMENT Template
+  employment_agreement: `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT</h1>
 
 <p style="text-align:justify;">This EMPLOYMENT AGREEMENT ("Agreement") is made and entered into on ${new Date().toLocaleDateString('en-GB')}, by and between <strong>Nikagenyx Vision Tech Private Limited</strong>, a company incorporated under the Companies Act, 2013, having its registered office at Unit No. B-02, Navkaar 4 Building, Navsari, Gujarat 396445 (hereinafter referred to as the "Company") AND <strong>{{name}}</strong>, with Employee ID {{emp_id}} (hereinafter referred to as the "Employee").</p>
 
@@ -235,8 +234,6 @@ LETTER_TEMPLATES.employment_agreement = `<h1 style="text-align:center; font-size
     <p>{{name}} ({{emp_id}})</p>
   </div>
 </div>`
-
-  
 };
 
 // Function to load a template into the TinyMCE editor
