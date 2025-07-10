@@ -387,6 +387,22 @@
       generateBtn.onclick = generateEnhancedPDFLetters;
     }
   });
+
+</script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Replace the old functions with our new ones
+    window.updatePDFPreview = window.updateEnhancedPDFPreview;
+    window.generatePDFLetters = window.generateEnhancedPDFLetters;
+    
+    // Connect loading button to our enhanced generator
+    const generateBtn = document.getElementById('generatePDFLetter');
+    if (generateBtn) {
+      generateBtn.onclick = window.generateEnhancedPDFLetters;
+    }
+    
+    console.log("✅ PDF generator ready to use!");
+  });
 </script>
 </body>
 </html>
