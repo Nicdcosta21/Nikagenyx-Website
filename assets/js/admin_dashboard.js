@@ -1028,147 +1028,257 @@ function mergeTemplate(template, emp) {
   return template.replace(/{{(.*?)}}/g, (_, key) => emp[key.trim()] ?? "");
 }
 
-// Utility: Fetch image as DataURL
-async function loadImageAsDataURL(url) {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-}
-function closePDFLetterModal() {
-  document.getElementById("pdfLetterModal").classList.add("hidden");
-}
 
-function getSelectedEmployeeIds() {
-  return Array.from(document.querySelectorAll('input[name="emp_checkbox"]:checked'))
-    .map(cb => cb.dataset.empId);
-}
-
+/**
+ * Generates PDF letters that match Microsoft Word document formatting
+ * For Nikagenyx Vision Tech Employment Agreements
+ */
 async function generatePDFLetters() {
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) return alert("Please select employees.");
 
   const rawHTML = tinymce.get("letterBody")?.getContent() || "";
-  const font = "Arial";
-  const fontSize = 13;
-
-  // jsPDF: Use "pt" units and "a4" for maximum compatibility.
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "pt",
-    format: "a4"
-  });
-  const pageWidth = doc.internal.pageSize.getWidth();   // ≈595.28pt
-  const pageHeight = doc.internal.pageSize.getHeight(); // ≈841.89pt
-
-  // These should match your HEADER/FOOTER image's true height in points.
-  // 1 pt = 1.333px. If your image is 120px tall, height in pt ≈ 90pt.
-  const headerHeight = 90;
-  const footerHeight = 60;
-  const sideMargin = 48; // pt
-
-  // Use RAW image URLs from your repo (DO NOT use /blob/ URLs, use /raw/)
-  const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
-  const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
-  const headerImg = await loadImageAsDataURL(headerURL);
-  const footerImg = await loadImageAsDataURL(footerURL);
-
-  const res = await fetch("/.netlify/functions/get_employees");
-  const { employees } = await res.json();
-  const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
-
-  for (const emp of selectedEmployees) {
-    const personalizedHTML = rawHTML
-      .replace(/{{name}}/gi, emp.name || "")
-      .replace(/{{emp_id}}/gi, emp.emp_id || "")
-      .replace(/{{email}}/gi, emp.email || "")
-      .replace(/{{phone}}/gi, emp.phone || "")
-      .replace(/{{dob}}/gi, emp.dob || "")
-      .replace(/{{department}}/gi, emp.department || "")
-      .replace(/{{role}}/gi, emp.employment_role || "")
-      .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
-      .replace(/{{joining_date}}/gi, emp.joining_date || "")
-      .replace(/{{base_salary}}/gi, emp.base_salary || "")
-      .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
-
-    // Container for rendering
-    const container = document.createElement("div");
-    container.style.width = pageWidth + "pt";
-    container.style.minHeight = pageHeight + "pt";
-    container.style.background = "#fff";
-    container.innerHTML = `
-      <style>
-        body, div, p, span, table, td { font-family: ${font} !important; font-size: ${fontSize}pt !important; }
-        h1, h2 { font-weight: bold; }
-        p { margin: 0 0 10pt 0; }
-        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 120pt; height: 14pt; vertical-align: bottom;}
-      </style>
-      <div id="pdfContent" style="padding: ${headerHeight + 16}pt ${sideMargin}pt ${footerHeight + 16}pt ${sideMargin}pt; line-height:1.5; color: #000;">
-        ${personalizedHTML}
-      </div>
-    `;
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    document.body.appendChild(container);
-
-    // Create a new jsPDF doc for each letter
+  
+  // Loading indicator
+  document.getElementById("pdfStatus").textContent = "Generating PDFs...";
+  document.getElementById("pdfLoading").style.display = "block";
+  
+  try {
+    // jsPDF configuration for Word-like document (A4)
+    const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "pt",
-      format: "a4"
+      format: "a4",
+      compress: true
     });
-
-    await doc.html(container, {
-      margin: [headerHeight + 16, sideMargin, footerHeight + 16, sideMargin],
-      autoPaging: "text",
-      html2canvas: {
-        scale: 1.33, // Best for pt units, sharp rendering
-        useCORS: true,
-        backgroundColor: "#fff"
-      },
-      callback: function (doc) {
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-          doc.setPage(i);
-          // Header: draw at full width, and at the top
-          doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
-          // Footer: draw at bottom
-          doc.addImage(footerImg, "PNG", 0, pageHeight - footerHeight, pageWidth, footerHeight);
-          doc.setFontSize(9);
-          doc.setTextColor(150);
-          doc.text(
-            "© 2025 Nikagenyx Vision Tech Private Limited. All rights reserved.",
-            pageWidth / 2,
-            pageHeight - 14,
-            { align: "center" }
-          );
+    
+    // A4 page dimensions in points (1 inch = 72pt, matches Word)
+    const pageWidth = 595.28;
+    const pageHeight = 841.89;
+    
+    // Header/footer dimensions - measured from your Word document
+    const headerHeight = 80;
+    const footerHeight = 50;
+    
+    // Word-like margins (measured from your document)
+    const topMargin = headerHeight + 30;
+    const bottomMargin = footerHeight + 30;
+    const leftMargin = 72;
+    const rightMargin = 72;
+    
+    // Fetch header/footer images
+    const headerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png";
+    const footerURL = "https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png";
+    
+    const [headerImg, footerImg] = await Promise.all([
+      loadImageAsDataURL(headerURL),
+      loadImageAsDataURL(footerURL)
+    ]);
+    
+    // Fetch employee data
+    const res = await fetch("/.netlify/functions/get_employees");
+    const { employees } = await res.json();
+    const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.emp_id));
+    
+    // Format current date for document (YYYY-MM-DD)
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    
+    for (let i = 0; i < selectedEmployees.length; i++) {
+      const emp = selectedEmployees[i];
+      document.getElementById("pdfStatus").textContent = `Generating PDF ${i+1} of ${selectedEmployees.length}...`;
+      
+      // Replace placeholders with employee data
+      const personalizedHTML = rawHTML
+        .replace(/{{name}}/gi, emp.name || "")
+        .replace(/{{emp_id}}/gi, emp.emp_id || "")
+        .replace(/{{email}}/gi, emp.email || "")
+        .replace(/{{phone}}/gi, emp.phone || "")
+        .replace(/{{dob}}/gi, emp.dob || "")
+        .replace(/{{department}}/gi, emp.department || "")
+        .replace(/{{role}}/gi, emp.employment_role || "")
+        .replace(/{{reporting_manager}}/gi, emp.reporting_manager || "")
+        .replace(/{{joining_date}}/gi, emp.joining_date || "")
+        .replace(/{{base_salary}}/gi, emp.base_salary || "")
+        .replace(/{{current_date}}/gi, formattedDate || "")
+        .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>');
+      
+      // Create temporary container for HTML rendering
+      const container = document.createElement("div");
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      container.style.width = `${pageWidth - leftMargin - rightMargin}pt`;
+      container.style.minHeight = "100pt"; // Minimum height to ensure content renders
+      container.style.backgroundColor = "#fff";
+      
+      // Word-like styling
+      container.innerHTML = `
+        <style>
+          /* Word-like typography */
+          body, div, p, span, table, td { 
+            font-family: Arial, sans-serif !important; 
+            font-size: 12pt !important;
+            line-height: 1.3 !important;
+            color: #000 !important;
+            margin: 0;
+          }
+          p { margin-bottom: 12pt; }
+          h1 { font-size: 16pt !important; margin: 14pt 0; }
+          h2 { font-size: 14pt !important; margin: 12pt 0; }
+          table { border-collapse: collapse; width: 100%; }
+          td, th { padding: 4pt; }
+          .signature-line { 
+            display: inline-block; 
+            border-bottom: 1px solid #000; 
+            min-width: 150pt; 
+            margin-top: 24pt;
+          }
+          ul, ol { 
+            padding-left: 24pt;
+            margin-bottom: 12pt;
+          }
+          li { margin-bottom: 6pt; }
+        </style>
+        <div id="pdfContent">
+          ${personalizedHTML}
+        </div>
+      `;
+      
+      document.body.appendChild(container);
+      
+      // Create a new PDF document for this employee
+      const empDoc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+        compress: true
+      });
+      
+      // Render HTML to PDF with proper margins
+      await empDoc.html(container, {
+        // These margins account for the header/footer space
+        margin: [
+          topMargin,   // top 
+          rightMargin, // right
+          bottomMargin,// bottom
+          leftMargin   // left
+        ],
+        autoPaging: "text",
+        width: pageWidth - leftMargin - rightMargin,
+        windowWidth: pageWidth - leftMargin - rightMargin,
+        html2canvas: {
+          scale: 1.5, // Higher scale for better quality
+          useCORS: true,
+          letterRendering: true,
+          backgroundColor: "#ffffff"
+        },
+        callback: function(pdf) {
+          const totalPages = pdf.internal.getNumberOfPages();
+          
+          // Add header and footer to each page
+          for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            pdf.setPage(pageNum);
+            
+            // Add header image at top of page
+            pdf.addImage(
+              headerImg, 
+              'PNG', 
+              0, // x position - start at left edge
+              0, // y position - start at top edge
+              pageWidth, // width - full page width
+              headerHeight // height - as defined
+            );
+            
+            // Add footer image at bottom of page
+            pdf.addImage(
+              footerImg, 
+              'PNG', 
+              0, // x position - start at left edge
+              pageHeight - footerHeight, // y position - place at bottom
+              pageWidth, // width - full page width
+              footerHeight // height - as defined
+            );
+            
+            // Add page number
+            pdf.setFontSize(9);
+            pdf.setTextColor(100);
+            pdf.text(
+              `Page ${pageNum} of ${totalPages}`,
+              pageWidth - rightMargin - 5,
+              pageHeight - 20,
+              { align: 'right' }
+            );
+            
+            // Add document info at bottom
+            pdf.setFontSize(8);
+            pdf.setTextColor(120);
+            pdf.text(
+              `© ${new Date().getFullYear()} Nikagenyx Vision Tech Private Limited. All rights reserved.`,
+              pageWidth / 2,
+              pageHeight - 8,
+              { align: 'center' }
+            );
+          }
+          
+          // Generate appropriate filename
+          const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
+          const filename = `${cleanName}_${emp.emp_id}_Employment_Agreement.pdf`;
+          
+          // Save the PDF
+          pdf.save(filename);
+          
+          // Remove the temporary container
+          document.body.removeChild(container);
         }
-        const cleanName = emp.name?.trim().replace(/\s+/g, "_") || "Employee";
-        const cleanRole = emp.employment_role?.trim().replace(/\s+/g, "_").replace(/[^\w()_]/g, "") || "Role";
-        const filename = `${cleanName}_${emp.emp_id}_${cleanRole}.pdf`;
-        doc.save(filename);
-        container.remove();
-      }
-    });
+      });
+    }
+    
+    document.getElementById("pdfStatus").textContent = `Successfully generated ${selectedEmployees.length} PDF(s)`;
+    setTimeout(() => {
+      document.getElementById("pdfLoading").style.display = "none";
+      closePDFLetterModal();
+    }, 1500);
+    
+  } catch (error) {
+    console.error("PDF Generation Error:", error);
+    document.getElementById("pdfStatus").textContent = `Error: ${error.message}`;
+    document.getElementById("pdfLoading").style.display = "none";
   }
-  closePDFLetterModal();
 }
 
-// Utility to fetch image as Data URL
+// Utility function to load images as data URLs
 async function loadImageAsDataURL(url) {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to load image: ${response.status}`);
+    
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Image loading error:", error);
+    throw error;
+  }
 }
 
+// Helper function to get selected employee IDs
+function getSelectedEmployeeIds() {
+  const checkboxes = document.querySelectorAll('input[name="employeeCheckbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Function to close modal after PDF generation
+function closePDFLetterModal() {
+  const modal = document.getElementById("pdfLetterModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
 async function getImageDimensions(imgUrl, maxWidth = 600) {
   return new Promise(resolve => {
     const img = new Image();
