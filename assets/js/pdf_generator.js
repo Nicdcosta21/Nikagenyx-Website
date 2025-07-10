@@ -63,8 +63,147 @@ function initEnhancedTinyMCE() {
   });
 }
 
+// Helper function to extract text and formatting from HTML
+function extractFormattedText(element) {
+  const blocks = [];
+  
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent.trim()) {
+        const parentStyles = getComputedStyle(node.parentElement);
+        blocks.push({
+          type: 'text',
+          text: node.textContent.trim(),
+          size: parseInt(parentStyles.fontSize) || 12,
+          bold: parentStyles.fontWeight >= 600
+        });
+      }
+    } 
+    else if (node.nodeType === Node.ELEMENT_NODE) {
+      // Check for page breaks
+      if (node.nodeName === 'DIV' && 
+          (node.style.pageBreakAfter === 'always' || node.style.breakAfter === 'page')) {
+        blocks.push({ type: 'pagebreak' });
+      }
+      
+      // Process children
+      for (const child of node.childNodes) {
+        processNode(child);
+      }
+    }
+  }
+  
+  for (const child of element.childNodes) {
+    processNode(child);
+  }
+  
+  return blocks;
+}
+
+// Create a fallback PDF generation method that uses direct text rendering
+async function generateSimplePDF(emp, personalizedHTML, headerImage, footerImage) {
+  console.log("Using fallback simple PDF generation");
+  const { jsPDF } = window.jspdf;
+  
+  // Create PDF with A4 dimensions
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+  
+  // A4 dimensions
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const topMargin = 40;
+  const bottomMargin = 30;
+  const sideMargin = 20;
+  
+  // Add header to first page
+  doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+  
+  // Set font and color
+  doc.setFont("helvetica");
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(12);
+  
+  // Get the HTML content by creating a temporary div
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = personalizedHTML;
+  
+  // Extract all text nodes and their formatting
+  const textBlocks = extractFormattedText(tempDiv);
+  
+  // Start position
+  let y = topMargin + 10;
+  
+  // Add text blocks to PDF
+  for (let block of textBlocks) {
+    if (block.type === 'text') {
+      // Add text
+      doc.setFontSize(block.size || 12);
+      doc.setTextColor(0, 0, 0);
+      
+      if (block.bold) doc.setFont("helvetica", "bold");
+      else doc.setFont("helvetica", "normal");
+      
+      // Split text to fit width
+      const lines = doc.splitTextToSize(block.text, pageWidth - (2 * sideMargin));
+      
+      // Check if we need to add a new page
+      if (y + (lines.length * 7) > pageHeight - bottomMargin) {
+        doc.addPage();
+        
+        // Add header to new page
+        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+        
+        // Add footer to new page
+        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+        
+        y = topMargin + 10;
+      }
+      
+      // Add the text
+      doc.text(lines, sideMargin, y);
+      y += (lines.length * 7) + 5;
+    }
+    else if (block.type === 'pagebreak') {
+      doc.addPage();
+      
+      // Add header to new page
+      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+      
+      // Add footer to new page
+      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+      
+      y = topMargin + 10;
+    }
+  }
+  
+  // Add footer to all pages
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+    
+    // Add page numbers
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - sideMargin, pageHeight - 5, { align: 'right' });
+  }
+  
+  // Generate filename
+  const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
+  const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+  const filename = `${cleanName}_${emp.emp_id}_${date}.pdf`;
+  
+  // Save the PDF
+  doc.save(filename);
+}
+
 // Generate PDF with proper A4 dimensions and letterhead
 async function generateEnhancedPDFLetters() {
+  console.log("PDF generation started");
   const selectedIds = getSelectedEmployeeIds();
   if (!selectedIds.length) {
     showToast("Please select employees first.", "error");
@@ -88,9 +227,6 @@ async function generateEnhancedPDFLetters() {
     // Get font settings
     const fontFamily = document.getElementById("pdfFont")?.value || "helvetica";
     const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || "12");
-    
-    // Configure jsPDF for A4 size (210mm × 297mm = 595.28pt × 841.89pt)
-    const { jsPDF } = window.jspdf;
     
     // Get employee data
     const res = await fetch("/.netlify/functions/get_employees");
@@ -129,27 +265,6 @@ async function generateEnhancedPDFLetters() {
         pdfStatus.textContent = `Generating PDF ${i + 1} of ${employeeDetails.length} for ${emp.name}...`;
       }
       
-      // Create new PDF document with A4 dimensions
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-        putOnlyUsedFonts: true,
-        compress: true
-      });
-      
-      // A4 dimensions in mm
-      const pageWidth = 210;
-      const pageHeight = 297;
-      
-      // Margins in mm
-      const topMargin = 40; // Space for header
-      const bottomMargin = 30; // Space for footer
-      const sideMargin = 20;
-      
-      // Content width
-      const contentWidth = pageWidth - (2 * sideMargin);
-      
       // Personalize content by replacing variables
       let personalizedHTML = rawHTML;
       
@@ -178,121 +293,8 @@ async function generateEnhancedPDFLetters() {
         return formatDate(date);
       });
       
-      // Handle page breaks properly - ensure this works for both formats
-      personalizedHTML = personalizedHTML
-        .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>')
-        .replace(/<!-- pagebreak -->/gi, '<div style="page-break-after: always;"></div>');
-      
-      // Create HTML container for content
-      // Create HTML container for content
-const container = document.createElement("div");
-container.style.width = `${contentWidth}mm`;
-container.style.fontFamily = fontFamily;
-container.style.fontSize = `${fontSize}pt`;
-container.style.color = "#000000"; // Add explicit text color
-container.style.backgroundColor = "#ffffff"; // Add explicit background color
-
-// Add styles for the content
-container.innerHTML = `
-  <style>
-    body { font-family: ${fontFamily}, Arial, sans-serif; font-size: ${fontSize}pt; line-height: 1.5; color: #000000; background-color: #ffffff; }
-    table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
-    table td, table th { border: 1px solid #ccc; padding: 5pt; color: #000000; }
-    p { margin: 0 0 8pt 0; color: #000000; }
-    h1, h2, h3, h4, h5, h6 { margin: 12pt 0 8pt 0; color: #000000; }
-    ul, ol { margin: 0 0 8pt 0; padding-left: 20pt; color: #000000; }
-    .page-break { page-break-after: always; break-after: page; }
-  </style>
-  <div id="pdf-content" style="color: #000000; background-color: #ffffff;">
-    ${personalizedHTML}
-  </div>
-`;
-      
-      // Add the container to the document body temporarily
-      container.style.position = "fixed";
-      container.style.left = "-9999px";
-      document.body.appendChild(container);
-      
-      try {
-        // Add header image to first page
-        doc.addImage(
-          headerImage, 
-          "PNG", 
-          0, 
-          0, 
-          pageWidth, 
-          topMargin - 5
-        );
-        
-        // Convert HTML to PDF
-        await doc.html(container, {
-  callback: function(pdf) {
-    const pageCount = pdf.internal.getNumberOfPages();
-    
-    // Add header and footer to each page
-    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      pdf.setPage(pageNum);
-      
-      // Add header to every page except the first (already added)
-      if (pageNum > 1) {
-        pdf.addImage(
-          headerImage, 
-          "PNG", 
-          0, 
-          0, 
-          pageWidth, 
-          topMargin - 5
-        );
-      }
-      
-      // Add footer to every page
-      pdf.addImage(
-        footerImage, 
-        "PNG", 
-        0, 
-        pageHeight - bottomMargin, 
-        pageWidth, 
-        bottomMargin - 2
-      );
-      
-      // Add page number
-      pdf.setFontSize(8);
-      pdf.setTextColor(100);
-      pdf.text(
-        `Page ${pageNum} of ${pageCount}`, 
-        pageWidth - sideMargin, 
-        pageHeight - 5, 
-        { align: "right" }
-      );
-    }
-  },
-  x: sideMargin,
-  y: topMargin,
-  width: contentWidth,
-  autoPaging: "text",
-  margin: [topMargin, sideMargin, bottomMargin, sideMargin],
-  html2canvas: {
-    scale: 2, // Higher quality
-    useCORS: true,
-    letterRendering: true,
-    backgroundColor: "#FFFFFF", // Force white background
-    logging: true, // Enable logging for troubleshooting
-    allowTaint: true, // Try this if images aren't showing
-    foreignObjectRendering: false // Try setting to false if content is black
-  }
-});
-        
-        // Generate filename based on employee data
-        const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
-        const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
-        const filename = `${cleanName}_${emp.emp_id}_${date}.pdf`;
-        
-        // Save the PDF
-        doc.save(filename);
-      } finally {
-        // Clean up
-        container.remove();
-      }
+      // IMPORTANT: Use the simpler, more reliable method directly
+      await generateSimplePDF(emp, personalizedHTML, headerImage, footerImage);
     }
     
     showToast(`Successfully generated ${employeeDetails.length} PDF(s)!`);
@@ -417,7 +419,6 @@ function updateEnhancedPDFPreview() {
     });
 }
 
-// Clean up Word-specific styling issues
 // Clean up Word-specific styling issues
 function cleanupWordContent(html) {
   if (!html) return '';
