@@ -132,7 +132,14 @@ function loadLetterTemplate(templateName) {
   if (!template) return false;
   
   editor.setContent(template);
-  updateEnhancedPDFPreview();
+  
+  // Make sure to update preview - this is the fix!
+  if (typeof updateEnhancedPDFPreview === 'function') {
+    updateEnhancedPDFPreview();
+  } else if (typeof updatePDFPreview === 'function') {
+    updatePDFPreview();
+  }
+  
   return true;
 }
 
