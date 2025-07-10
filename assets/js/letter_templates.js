@@ -122,117 +122,150 @@ const LETTER_TEMPLATES = {
 <p>Chief Executive Officer</p>
 <p>Nikagenyx Vision Tech Private Limited</p>`,
 
-  // EMPLOYMENT AGREEMENT Template
-  employment_agreement: `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT</h1>
+  // UPDATED Employment Agreement Template
+  employment_agreement: `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT – FULL-TIME</h1>
 
-<p style="text-align:justify;">This EMPLOYMENT AGREEMENT ("Agreement") is made and entered into on ${new Date().toLocaleDateString('en-GB')}, by and between <strong>Nikagenyx Vision Tech Private Limited</strong>, a company incorporated under the Companies Act, 2013, having its registered office at Unit No. B-02, Navkaar 4 Building, Navsari, Gujarat 396445 (hereinafter referred to as the "Company") AND <strong>{{name}}</strong>, with Employee ID {{emp_id}} (hereinafter referred to as the "Employee").</p>
+<p style="text-align:justify;">This Employment Agreement ("Agreement") is made and entered into on this ${new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'})} day, by and between:</p>
 
-<p style="text-align:center; font-weight:bold; margin-top:15pt;">TERMS AND CONDITIONS OF EMPLOYMENT</p>
+<p style="text-align:justify;"><strong>Nikagenyx Vision Tech Private Limited</strong>, a company incorporated under the Companies Act, 2013, with its registered office in Pune, Maharashtra (hereinafter referred to as the "Company"),</p>
+
+<p style="text-align:center; font-weight:bold;">AND</p>
+
+<p style="text-align:justify;"><strong>{{name}}</strong> (Employee ID: {{emp_id}}) (hereinafter referred to as the "Employee").</p>
 
 <ol style="text-align:justify;">
   <li>
     <strong>APPOINTMENT</strong>
-    <p>The Company hereby employs the Employee, and the Employee hereby accepts employment with the Company, as <strong>{{role}}</strong> in the <strong>{{department}}</strong> of the Company, upon the terms and conditions set forth herein.</p>
+    <p>The Employee is hereby appointed to the position of <strong>{{role}}</strong> in the <strong>{{department}}</strong> of the Company and shall report to <strong>{{reporting_manager}}</strong> or such other person as may be designated from time to time.</p>
   </li>
 
   <li>
-    <strong>COMMENCEMENT AND TERM</strong>
-    <p>The employment under this Agreement shall commence on {{joining_date}} and shall continue until terminated pursuant to the terms of this Agreement.</p>
+    <strong>COMMENCEMENT AND PROBATION</strong>
+    <p>The employment shall commence on <strong>{{joining_date}}</strong>. The first sixty (60) days of employment shall constitute a probationary period during which the Employee's performance and conduct shall be assessed.</p>
   </li>
 
   <li>
-    <strong>PROBATION</strong>
-    <p>The first 90 days of employment shall constitute a probationary period. During this period, the Company may terminate the employment without notice. After successful completion of the probation period, the Employee shall be confirmed in writing.</p>
+    <strong>LOCATION AND WORKING MODE</strong>
+    <p>The Employee shall perform their duties remotely unless otherwise agreed in writing. Official travel, if any, will be approved in advance and reimbursed as per the Company's policy.</p>
   </li>
 
   <li>
-    <strong>DUTIES AND RESPONSIBILITIES</strong>
-    <p>The Employee shall perform all duties and accept all responsibilities incidental to the position or as may be assigned from time to time. The Employee agrees to devote full professional time, attention, and energies to the business of the Company during the term of this Agreement.</p>
+    <strong>COMPENSATION AND SALARY</strong>
+    <p>The Employee shall be entitled to a gross monthly salary of INR <strong>{{base_salary}}</strong>, payable in accordance with the Company's standard payroll schedule. All statutory deductions and applicable taxes shall be made in accordance with applicable laws.</p>
   </li>
 
   <li>
-    <strong>COMPENSATION</strong>
-    <p>In consideration of the services to be rendered by the Employee, the Company shall pay the Employee a gross annual salary of INR {{base_salary}}/- (Indian Rupees Only), payable in equal monthly installments, subject to statutory deductions and withholdings.</p>
+    <strong>BONUS AND INCENTIVES</strong>
+    <p>The Employee may be eligible for performance-based bonuses and incentive programs as determined by the Company from time to time.</p>
   </li>
 
   <!-- PAGEBREAK -->
 
   <li>
-    <strong>WORK LOCATION AND HOURS</strong>
-    <p>The Employee shall primarily work remotely, but may be required to work at the Company's office or client locations as needed. Standard working hours shall be 9:00 AM to 6:00 PM, Monday through Friday, with a 60-minute break for lunch. The Employee may be required to work additional hours based on business needs.</p>
+    <strong>WORK HOURS AND ATTENDANCE</strong>
+    <p>
+      <ul>
+        <li>Less than 5 hours: Absent (no pay)</li>
+        <li>5 to 7 hours: Half-Day (50% pay)</li>
+        <li>7 to 10 hours: Full-Day (100% pay)</li>
+      </ul>
+      The maximum work limit is 10 hours per day. Two days off per week shall be granted. Indian public holidays shall be treated as paid holidays.
+    </p>
   </li>
 
   <li>
-    <strong>LEAVE ENTITLEMENT</strong>
-    <p>The Employee shall be entitled to the following leave benefits:</p>
-    <ul>
-      <li>Casual Leave: 12 days per annum</li>
-      <li>Sick Leave: 7 days per annum</li>
-      <li>National and Festival Holidays: As per Company policy</li>
-    </ul>
-    <p>Leave cannot be encashed or carried forward to the next year except as per Company policy.</p>
+    <strong>LEAVE</strong>
+    <p>The Employee shall be entitled to two (2) days of paid leave per month, subject to prior approval and proper justification. Leave applications must be submitted in advance through the designated channel. In addition, the Employee is entitled to six (6) paid sick leave days per calendar year. Sick leave may require submission of a valid medical certificate if requested by the Company. Up to five (5) last-moment or emergency leaves (without prior notice) will be permitted in a calendar year. Any additional unnotified absences may result in deduction of salary or disciplinary review.</p>
   </li>
 
   <li>
-    <strong>CONFIDENTIAL INFORMATION</strong>
-    <p>The Employee acknowledges that during the course of employment, the Employee will have access to confidential and proprietary information of the Company. The Employee agrees to maintain the confidentiality of such information during and after the term of employment.</p>
+    <strong>CONDUCT AND CONFIDENTIALITY</strong>
+    <p>The Employee shall maintain professional conduct and ensure confidentiality of all proprietary data and internal communications. Breach of confidentiality shall result in disciplinary action or termination.</p>
   </li>
 
   <li>
     <strong>INTELLECTUAL PROPERTY</strong>
-    <p>Any invention, improvement, concept, discovery, work of authorship or other intellectual property, whether or not patentable or copyrightable, developed by the Employee during the term of employment that relates to the Company's business shall be the sole and exclusive property of the Company.</p>
+    <p>All inventions, developments, work products, designs, documents, software, or other materials created during the course of employment shall be the exclusive property of the Company.</p>
   </li>
 
   <li>
-    <strong>NON-COMPETITION AND NON-SOLICITATION</strong>
-    <p>During the term of employment and for a period of one year thereafter, the Employee shall not:</p>
-    <ul>
-      <li>Engage in any business that competes with the Company</li>
-      <li>Solicit or attempt to solicit any employee or customer of the Company</li>
-      <li>Interfere with any business relationship of the Company</li>
-    </ul>
+    <strong>OUTSIDE WORK RESTRICTION</strong>
+    <p>The Employee shall not undertake any freelance, part-time, or full-time work for any third party during the term of employment without the express written permission of the Company.</p>
+  </li>
+
+  <li>
+    <strong>DATA SECURITY AND COMPANY PROPERTY</strong>
+    <p>The Employee shall:
+      <ul>
+        <li>Not share, distribute, or misuse Company data, systems, tools, or software.</li>
+        <li>Treat any unauthorized distribution or duplication as piracy.</li>
+        <li>Be financially liable for any damage or theft involving Company property or data.</li>
+        <li>Acknowledge that all work output and data remain under Company ownership and copyright.</li>
+      </ul>
+    </p>
   </li>
 
   <!-- PAGEBREAK -->
 
   <li>
     <strong>TERMINATION</strong>
-    <p>This Agreement may be terminated:</p>
-    <ul>
-      <li>By the Company, with cause, effective immediately upon written notice to the Employee</li>
-      <li>By the Company, without cause, upon 30 days' written notice to the Employee</li>
-      <li>By the Employee, upon 30 days' written notice to the Company</li>
-    </ul>
+    <p>This Agreement may be terminated by either party with thirty (30) days' written notice. The Company reserves the right to terminate employment without notice in case of gross misconduct, fraud, negligence, or breach of policy.</p>
   </li>
 
   <li>
-    <strong>GOVERNING LAW</strong>
-    <p>This Agreement shall be governed by and construed in accordance with the laws of India. Any dispute arising out of or in connection with this Agreement shall be referred to arbitration in accordance with the Arbitration and Conciliation Act, 1996.</p>
+    <strong>GOVERNING LAW AND JURISDICTION</strong>
+    <p>This Agreement shall be governed by and construed in accordance with the laws of India. The courts of Pune, Maharashtra shall have exclusive jurisdiction over any disputes.</p>
   </li>
 
   <li>
-    <strong>ENTIRE AGREEMENT</strong>
-    <p>This Agreement constitutes the entire understanding between the parties and supersedes all prior agreements, understandings, or negotiations.</p>
+    <strong>TRANSITION FROM FREELANCE MODE TO FULL-TIME PAYROLL</strong>
+    <p>Until the Company secures its first primary international contract in the cruise line industry, all employment under this Agreement shall operate in freelance mode. In this mode:
+      <ul>
+        <li>Employees shall continue to log working hours through the Company's designated systems.</li>
+        <li>All worked hours will be recorded and stored securely for future payroll processing.</li>
+        <li>No immediate monthly salary disbursals will be made during this freelance phase.</li>
+      </ul>
+    </p>
+    <p>Upon signing the first primary foreign client in the cruise line industry, the Company shall:
+      <ul>
+        <li>Transition all current freelance employees to full-time payroll status with retrospective compensation.</li>
+        <li>Calculate and disburse salaries based on the accumulated working hours, applying the following rates:
+          <ul>
+            <li>Less than 5 hours/day: No pay</li>
+            <li>5 to 7 hours/day: 50% daily pay</li>
+            <li>7 to 10 hours/day: 100% daily pay</li>
+          </ul>
+        </li>
+      </ul>
+    </p>
+    <p>This transition shall not apply to contracts obtained from domestic or secondary clients, which are considered developmental and are meant to build project portfolios and credibility.</p>
+    <p>Employees shall be formally notified of this transition in writing, and a revised salary structure will be shared at that time.</p>
+  </li>
+
+  <li>
+    <strong>ACKNOWLEDGEMENT OF DEFERRED COMPENSATION</strong>
+    <p>The Employee acknowledges that the Company is currently in a pre-revenue, startup phase, and that this employment arrangement is made between close associates under mutual understanding. It is further agreed that the Employee's salary shall accrue based on hours worked, as recorded in the Company's designated system, and shall be payable retrospectively upon commencement of full-time payroll, as described in Clause 14.</p>
+    <p>This deferred-pay arrangement has been discussed transparently and agreed upon voluntarily by both parties, without any coercion, and in accordance with the provisions of the Indian Contract Act, 1872. Both parties understand and intend to create legally binding obligations through this Agreement.</p>
   </li>
 </ol>
 
-<p style="margin-top:20pt;">IN WITNESS WHEREOF, the parties hereto have executed this Agreement as of the date first written above.</p>
+<p style="margin-top:30pt;">IN WITNESS WHEREOF, the parties hereto have executed this Agreement on the date first above written.</p>
 
-<div style="display:flex; justify-content:space-between; margin-top:40pt;">
-  <div style="width:45%;">
-    <p><strong>For Nikagenyx Vision Tech Private Limited</strong></p>
-    <div style="height:60pt;"></div>
-    <p>____________________________</p>
-    <p>Nik D'Costa</p>
-    <p>Chief Executive Officer</p>
-  </div>
-  
-  <div style="width:45%;">
-    <p><strong>Employee</strong></p>
-    <div style="height:60pt;"></div>
-    <p>____________________________</p>
-    <p>{{name}} ({{emp_id}})</p>
-  </div>
+<div style="margin-top:30pt;">
+  <p><strong>For Nikagenyx Vision Tech Private Limited</strong></p>
+  <div style="height:60pt;"></div>
+  <p>Signature: _________________________</p>
+  <p>Name: Nikolas D'Costa</p>
+  <p>Designation: Managing Director</p>
+</div>
+
+<div style="margin-top:30pt;">
+  <p><strong>Employee Acknowledgement</strong></p>
+  <p>I, {{name}}, acknowledge that I have read and understood the contents of this Agreement and voluntarily accept the terms and conditions herein.</p>
+  <div style="height:40pt;"></div>
+  <p>Signature: _________________________</p>
+  <p>Date: _________________________</p>
+  <p>Place: _________________________</p>
 </div>`
 };
 
