@@ -8,63 +8,93 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tiny.cloud/1/h7nzdh35qst8uns29had9zm5ynvjk5er6ke4syuggvgueoni/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-  }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
 
-  .header, .navbar {
-    width: 100%;
-    box-sizing: border-box;
-  }
+    .header, .navbar {
+      width: 100%;
+      box-sizing: border-box;
+    }
 
-  .container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 16px;
-  }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 16px;
+    }
 
-  .dashboard-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .page-break {
-    page-break-after: always;
-    border-bottom: 2px dashed #ccc;
-    margin: 40px 30px;
-    height: 0;
-  }
-
-
-  @media (max-width: 768px) {
     .dashboard-content {
-      flex-direction: column;
-      gap: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .container {
-      padding: 8px;
-    }
-    .header, .navbar {
-      font-size: 1.1em;
-    }
-  }
 
-  @media (max-width: 480px) {
-    .header, .navbar {
-      font-size: 1em;
-      padding: 8px;
+    .page-break {
+      page-break-after: always;
+      border-bottom: 2px dashed #ccc;
+      margin: 40px 30px;
+      height: 0;
     }
-    .container {
-      padding: 4px;
-    }
-  }
-</style>
 
+    /* PDF preview styles */
+    #pdfPreview {
+      background-color: white;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      overflow-y: auto;
+      color: black;
+    }
+
+    #pdfPreview img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Loading indicator */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-content {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .container {
+        padding: 8px;
+      }
+      .header, .navbar {
+        font-size: 1.1em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header, .navbar {
+        font-size: 1em;
+        padding: 8px;
+      }
+      .container {
+        padding: 4px;
+      }
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -81,132 +111,144 @@
   <h1 class="text-3xl font-bold mb-4">Admin Dashboard</h1>
   <p class="mb-4 text-gray-300">Welcome, <span id="adminName">Admin</span> 👋</p>
 
-<!-- 🔍 Search, 📤 Export, 📧 Email, 📄 Generate PDF Buttons -->
-<div class="flex flex-wrap gap-4 mb-4">
-  <input
-    id="search"
-    type="text"
-    placeholder="Search by name or ID"
-    class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3"
-  />
+  <!-- 🔍 Search, 📤 Export, 📧 Email, 📄 Generate PDF Buttons -->
+  <div class="flex flex-wrap gap-4 mb-4">
+    <input
+      id="search"
+      type="text"
+      placeholder="Search by name or ID"
+      class="p-2 bg-gray-800 border border-gray-600 rounded w-full md:w-1/3"
+    />
 
-  <button
-    onclick="exportCSV()"
-    class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-  >
-    Export CSV
-  </button>
+    <button
+      onclick="exportCSV()"
+      class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+    >
+      <i class="fas fa-file-export mr-1"></i> Export CSV
+    </button>
 
-  <button
-    onclick="openEmailModal()"
-    class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700"
-  >
-    Send Email
-  </button>
+    <button
+      id="openBulkEmailBtn"
+      onclick="openEmailModal()"
+      class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-700"
+    >
+      <i class="fas fa-envelope mr-1"></i> Send Email
+    </button>
 
-  <button
-    onclick="openPDFLetterModal()"
-    class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded text-white"
-  >
-    Generate PDF Letters
-  </button>
-</div>
-
-<!-- 📄 Compose Letter Modal -->
-<div id="pdfLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-  <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg">
-    <h2 class="text-xl font-bold mb-4 text-black">✉️ Compose Letter</h2>
-
-    <!-- 🖋 Font Settings -->
-    <div class="flex justify-between items-center mb-2 gap-4">
-      <label class="text-sm text-black">
-        Font:
-        <select id="pdfFont" class="ml-2 border px-2 py-1 rounded text-sm">
-          <option value="helvetica" selected>Helvetica</option>
-          <option value="times">Times</option>
-          <option value="courier">Courier</option>
-        </select>
-      </label>
-
-      <label class="text-sm text-black">
-        Size:
-        <select id="pdfFontSize" class="ml-2 border px-2 py-1 rounded text-sm">
-          <option value="10">10</option>
-          <option value="12" selected>12</option>
-          <option value="14">14</option>
-          <option value="16">16</option>
-          <option value="18">18</option>
-        </select>
-      </label>
-    </div>
-
-    <!-- 📝 Rich Text Editor -->
-    <textarea id="letterBody"></textarea>
-
-    
-    <!-- 👀 Live Preview -->
-    <label class="text-sm font-semibold mt-4 block">PDF Preview:</label>
-    <div id="pdfPreview" class="bg-white p-6 border rounded h-72 overflow-y-auto text-black shadow-inner text-sm"></div>
-
-    <!-- ✅ Action Buttons -->
-    <div class="flex justify-end mt-4 gap-4">
-      <button onclick="closePDFLetterModal()" class="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
-<button id="generatePDFLetter" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Export Letters</button>
-    </div>
+    <button
+      id="openPDFLetterBtn"
+      onclick="openPDFLetterModal()"
+      class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded text-white"
+    >
+      <i class="fas fa-file-pdf mr-1"></i> Generate PDF Letters
+    </button>
   </div>
-</div>
-<!-- 📧 Bulk Email Modal -->
-<div id="bulkEmailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-  <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg relative text-black">
-    <h2 class="text-xl font-bold mb-4">📧 Compose Email</h2>
 
-    <form id="bulkEmailForm">
-      <!-- From (auto-filled) -->
-      <label class="block mb-2 text-sm">From:</label>
-      <input id="emailFrom" type="email" class="w-full border px-3 py-2 rounded mb-4 bg-gray-100" disabled />
+  <!-- 📄 Compose Letter Modal -->
+  <div id="pdfLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4 text-black">✉️ Compose Letter</h2>
 
-      <!-- Subject -->
-      <label class="block mb-2 text-sm">Subject:</label>
-      <input id="emailSubject" type="text" class="w-full border px-3 py-2 rounded mb-4" required />
+      <!-- 🖋 Font Settings -->
+      <div class="flex justify-between items-center mb-2 gap-4">
+        <label class="text-sm text-black">
+          Font:
+          <select id="pdfFont" class="ml-2 border px-2 py-1 rounded text-sm">
+            <option value="helvetica" selected>Helvetica</option>
+            <option value="times">Times</option>
+            <option value="courier">Courier</option>
+          </select>
+        </label>
 
-      <!-- Body -->
-      <label class="block mb-2 text-sm">Message:</label>
-      <textarea id="emailBody" rows="5" class="w-full border px-3 py-2 rounded mb-4" required></textarea>
-
-      <!-- Attachments -->
-      <label class="block mb-2 text-sm">Attachments:</label>
-      <input id="emailAttachment" type="file" multiple class="mb-2" />
-      <ul id="filePreview" class="space-y-1 text-sm text-gray-800 mb-4"></ul>
-
-      <!-- Action Buttons -->
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" onclick="closeBulkEmailModal()" class="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Send Email</button>
+        <label class="text-sm text-black">
+          Size:
+          <select id="pdfFontSize" class="ml-2 border px-2 py-1 rounded text-sm">
+            <option value="10">10</option>
+            <option value="12" selected>12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+          </select>
+        </label>
       </div>
-    </form>
-  </div>
-</div>
 
-<!-- Employee Table -->
-<div class="overflow-x-auto mb-10">
-  <table class="min-w-max table-auto bg-gray-800 border border-gray-700">
-    <thead class="bg-gray-700">
-      <tr>
-        <th class="p-2 border">
-          <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" />
-        </th>
-        <th class="p-2 border">ID</th>
-        <th class="p-2 border">Name</th>         
-        <th class="p-2 border">Phone</th>
-        <th class="p-2 border">DOB</th>
-        <th class="p-2 border">Privileges</th>
-        <th class="p-2 border">Department</th>
-        <th class="p-2 border min-w-[240px]">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="employeeTable" class="text-center text-sm"></tbody>
-  </table>
-</div>
+      <!-- 📝 Rich Text Editor -->
+      <textarea id="letterBody"></textarea>
+
+      <!-- 👀 Live Preview -->
+      <label class="text-sm font-semibold mt-4 block text-black">PDF Preview:</label>
+      <div id="pdfPreview" class="bg-white p-6 border rounded h-72 overflow-y-auto text-black shadow-inner text-sm"></div>
+
+      <!-- ✅ Action Buttons -->
+      <div class="flex justify-end mt-4 gap-4">
+        <button onclick="closePDFLetterModal()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+        <button id="generatePDFLetter" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          <i class="fas fa-file-export mr-1"></i> Export Letters
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📧 Bulk Email Modal -->
+  <div id="bulkEmailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-lg relative text-black max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4">📧 Compose Email</h2>
+
+      <form id="bulkEmailForm">
+        <!-- From (auto-filled) -->
+        <label class="block mb-2 text-sm">From:</label>
+        <input id="emailFrom" type="email" class="w-full border px-3 py-2 rounded mb-4 bg-gray-100" readonly />
+
+        <!-- Subject -->
+        <label class="block mb-2 text-sm">Subject:</label>
+        <input id="emailSubject" type="text" class="w-full border px-3 py-2 rounded mb-4" required />
+
+        <!-- Body -->
+        <label class="block mb-2 text-sm">Message:</label>
+        <textarea id="emailBody" rows="5" class="w-full border px-3 py-2 rounded mb-4" required></textarea>
+
+        <!-- Attachments -->
+        <label class="block mb-2 text-sm">Attachments:</label>
+        <input id="emailAttachment" type="file" multiple class="mb-2" />
+        <ul id="filePreview" class="space-y-1 text-sm text-gray-800 mb-4"></ul>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3 mt-4">
+          <button type="button" onclick="closeBulkEmailModal()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+            <i class="fas fa-paper-plane mr-1"></i> Send Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div id="pdfLoading" style="display: none; text-align: center; margin: 20px 0;">
+    <div class="loading-spinner"></div>
+    <p id="pdfStatus">Generating PDFs...</p>
+  </div>
+
+  <!-- Employee Table -->
+  <div class="overflow-x-auto mb-10">
+    <table class="min-w-max table-auto bg-gray-800 border border-gray-700">
+      <thead class="bg-gray-700">
+        <tr>
+          <th class="p-2 border">
+            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" />
+          </th>
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Name</th>         
+          <th class="p-2 border">Phone</th>
+          <th class="p-2 border">DOB</th>
+          <th class="p-2 border">Privileges</th>
+          <th class="p-2 border">Department</th>
+          <th class="p-2 border min-w-[240px]">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="employeeTable" class="text-center text-sm"></tbody>
+    </table>
+  </div>
 
   <div class="my-4 bg-gray-800 p-4 rounded border border-gray-600 flex items-center gap-4">
     <label for="payrollToggle" class="text-white text-sm">Payroll Mode:</label>
@@ -258,8 +300,24 @@
   </div>
 </div>
 
+<!-- This script will load and show the admin's name -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const session = localStorage.getItem('emp_session');
+    if (session) {
+      try {
+        const userData = JSON.parse(session);
+        if (userData.name) {
+          document.getElementById('adminName').textContent = userData.name;
+        }
+      } catch (e) {
+        console.error('Error parsing session data:', e);
+      }
+    }
+  });
+</script>
+
+<!-- Main admin dashboard functionality -->
 <script src="/assets/js/admin_dashboard.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
