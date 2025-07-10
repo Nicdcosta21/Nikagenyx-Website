@@ -67,7 +67,7 @@ function initEnhancedTinyMCE() {
   });
 }
 
-// Improved PDF generation with professional layout
+// Professional PDF generation with precise formatting
 async function generateProfessionalPDF(emp, personalizedHTML, headerImage, footerImage) {
   console.log(`Generating professional PDF for ${emp.name}`);
   
@@ -80,25 +80,20 @@ async function generateProfessionalPDF(emp, personalizedHTML, headerImage, foote
     format: "a4"
   });
   
-  // A4 dimensions
+  // A4 dimensions and margins
   const pageWidth = 210;
   const pageHeight = 297;
-  const topMargin = 40;
-  const bottomMargin = 30;
+  const topMargin = 40;   // Space for header
+  const bottomMargin = 30; // Space for footer
   const sideMargin = 20;
   
-  // Layout configuration
-  const lineHeight = 7;
-  const paragraphSpacing = 4; 
-  const headingSpacing = 7;
-  const sectionSpacing = 10;
-  const listItemIndent = 5;
-  
-  // Font sizes
+  // Content styling
   const titleFontSize = 14;
-  const headingFontSize = 12;
+  const sectionTitleFontSize = 12;
   const normalFontSize = 11;
-  const smallFontSize = 10;
+  const lineHeight = 6;
+  const paragraphSpacing = 6;
+  const sectionSpacing = 10;
   
   // Add header to first page
   doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
@@ -107,106 +102,210 @@ async function generateProfessionalPDF(emp, personalizedHTML, headerImage, foote
   const parser = new DOMParser();
   const htmlDoc = parser.parseFromString(personalizedHTML, 'text/html');
   
-  // Current position
-  let y = topMargin + 8;
+  // Track our current position
+  let y = topMargin + 10;
   let currentPage = 1;
   
-  // Process the document title if it exists (usually an H1)
-  const titleElement = htmlDoc.querySelector('h1');
-  if (titleElement && titleElement.textContent.trim()) {
-    // Add document title with centered bold text
+  // Get all section divs and title
+  const title = htmlDoc.querySelector('h1');
+  const sections = htmlDoc.querySelectorAll('div.section, h1');
+  
+  // Process title if it exists
+  if (title) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(titleFontSize);
     doc.setTextColor(0, 0, 0);
     
-    const titleText = titleElement.textContent.trim();
+    const titleText = title.textContent.trim();
     const titleLines = doc.splitTextToSize(titleText, pageWidth - (2 * sideMargin));
     
-    // Center align the title
+    // Center the title
     for (let i = 0; i < titleLines.length; i++) {
       doc.text(titleLines[i], pageWidth / 2, y, { align: 'center' });
       y += lineHeight;
     }
     
     // Add extra space after title
-    y += headingSpacing;
+    y += paragraphSpacing * 2;
+    
+    // Process the intro paragraphs before the sections
+    let currentElement = title.nextElementSibling;
+    while (currentElement && !currentElement.classList.contains('section')) {
+      if (currentElement.tagName.toLowerCase() === 'p') {
+        doc.setFont("helvetica", currentElement.querySelector('strong') ? "bold" : "normal");
+        doc.setFontSize(normalFontSize);
+        
+        const text = currentElement.textContent.trim();
+        const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+        
+        // Check if we need a new page
+        if (y + (lines.length * lineHeight) > pageHeight - bottomMargin) {
+          doc.addPage();
+          currentPage++;
+          doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+          doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+          y = topMargin + 10;
+        }
+        
+        doc.text(lines, sideMargin, y);
+        y += (lines.length * lineHeight) + paragraphSpacing;
+      }
+      currentElement = currentElement.nextElementSibling;
+    }
   }
   
-  // Extract sections and their content
-  const sections = extractDocumentSections(htmlDoc);
-  
   // Process each section
-  for (const section of sections) {
-    // Check for page break before processing heading
-    if (section.heading && (y > pageHeight - bottomMargin - 100)) {
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    if (section.tagName.toLowerCase() === 'h1') continue; // Skip title, already processed
+    
+    // Check for page breaks before section titles
+    if (section.previousElementSibling && section.previousElementSibling.classList.contains('page-break')) {
       doc.addPage();
       currentPage++;
       doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
       doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-      y = topMargin + 8;
+      y = topMargin + 10;
     }
     
-    // Process section heading if it exists
-    if (section.heading) {
+    // Check if we need a new page for a new section (if near bottom of page)
+    if (y > pageHeight - bottomMargin - 50) {
+      doc.addPage();
+      currentPage++;
+      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+      y = topMargin + 10;
+    }
+    
+    // Process section title
+    const sectionTitle = section.querySelector('.section-title');
+    if (sectionTitle) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(headingFontSize);
-      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(sectionTitleFontSize);
       
-      const headingLines = doc.splitTextToSize(section.heading, pageWidth - (2 * sideMargin));
-      doc.text(headingLines, sideMargin, y);
-      y += (headingLines.length * lineHeight) + paragraphSpacing;
+      const titleText = sectionTitle.textContent.trim();
+      const titleLines = doc.splitTextToSize(titleText, pageWidth - (2 * sideMargin));
+      
+      doc.text(titleLines, sideMargin, y);
+      y += (titleLines.length * lineHeight) + (paragraphSpacing/2);
     }
     
-    // Process paragraphs and list items in this section
-    for (const item of section.content) {
-      if (item === "<!-- PAGEBREAK -->") {
-        // Insert explicit page break
-        doc.addPage();
-        currentPage++;
-        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-        y = topMargin + 8;
-        continue;
+    // Process paragraphs and lists in this section
+    const contentElements = section.querySelectorAll('p, ul, ol');
+    
+    for (const element of contentElements) {
+      const tagName = element.tagName.toLowerCase();
+      
+      // Process paragraphs
+      if (tagName === 'p') {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(normalFontSize);
+        
+        const text = element.textContent.trim();
+        if (!text) continue;
+        
+        const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+        
+        // Check if we need a new page
+        if (y + (lines.length * lineHeight) > pageHeight - bottomMargin) {
+          doc.addPage();
+          currentPage++;
+          doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+          doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+          y = topMargin + 10;
+        }
+        
+        doc.text(lines, sideMargin, y);
+        y += (lines.length * lineHeight) + paragraphSpacing;
       }
       
-      // Determine if this is a list item or regular paragraph
-      const isListItem = item.startsWith('•') || item.match(/^\d+\./);
-      
-      // Set appropriate font style
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(normalFontSize);
-      doc.setTextColor(0, 0, 0);
-      
-      // Determine indentation based on item type
-      const indent = isListItem ? listItemIndent : 0;
-      const effectiveWidth = pageWidth - (2 * sideMargin) - indent;
-      
-      // Split text to fit available width
-      const itemLines = doc.splitTextToSize(item, effectiveWidth);
-      
-      // Check if we need a page break
-      if (y + (itemLines.length * lineHeight) > pageHeight - bottomMargin) {
-        doc.addPage();
-        currentPage++;
-        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-        y = topMargin + 8;
+      // Process lists
+      else if (tagName === 'ul' || tagName === 'ol') {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(normalFontSize);
+        
+        const listItems = element.querySelectorAll('li');
+        const indent = 5; // Indent for list items
+        
+        for (const item of listItems) {
+          const itemText = item.textContent.trim();
+          if (!itemText) continue;
+          
+          // Format for bullet points
+          const bulletText = tagName === 'ul' ? '• ' + itemText : '  ' + itemText;
+          const lines = doc.splitTextToSize(bulletText, pageWidth - (2 * sideMargin) - indent);
+          
+          // Check if we need a new page
+          if (y + (lines.length * lineHeight) > pageHeight - bottomMargin) {
+            doc.addPage();
+            currentPage++;
+            doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+            doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+            y = topMargin + 10;
+          }
+          
+          doc.text(lines, sideMargin + indent, y);
+          y += (lines.length * lineHeight) + (paragraphSpacing/2);
+        }
+        
+        // Add space after the list
+        y += paragraphSpacing/2;
       }
-      
-      // Add the text with proper indentation
-      doc.text(itemLines, sideMargin + indent, y);
-      
-      // Move position down based on number of lines
-      y += (itemLines.length * lineHeight) + paragraphSpacing;
     }
     
-    // Add extra spacing between sections
+    // Add spacing between sections
     y += sectionSpacing - paragraphSpacing;
   }
   
+  // Process the signature section at the end
+  const signatureBlocks = htmlDoc.querySelectorAll('div[style*="margin-top:30pt"]');
+  
+  for (const signatureBlock of signatureBlocks) {
+    // Check if we need a new page
+    if (y > pageHeight - bottomMargin - 80) {
+      doc.addPage();
+      currentPage++;
+      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+      y = topMargin + 10;
+    }
+    
+    // Process paragraphs in signature block
+    const paragraphs = signatureBlock.querySelectorAll('p');
+    
+    for (const paragraph of paragraphs) {
+      const hasStrong = paragraph.querySelector('strong');
+      
+      doc.setFont("helvetica", hasStrong ? "bold" : "normal");
+      doc.setFontSize(normalFontSize);
+      
+      const text = paragraph.textContent.trim();
+      if (!text) continue;
+      
+      const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+      
+      doc.text(lines, sideMargin, y);
+      y += (lines.length * lineHeight) + (paragraphSpacing/2);
+    }
+    
+    // Add space for signature (represented by div with height)
+    const signatureSpace = signatureBlock.querySelector('div[style*="height"]');
+    if (signatureSpace) {
+      const heightStyle = signatureSpace.getAttribute('style');
+      const heightMatch = heightStyle.match(/height:(\d+)pt/);
+      if (heightMatch && heightMatch[1]) {
+        const height = parseInt(heightMatch[1]) / 2.83; // Convert pt to mm approximately
+        y += height;
+      } else {
+        y += 20; // Default signature space
+      }
+    }
+    
+    y += paragraphSpacing;
+  }
+  
   // Add footer to all pages
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  for (let i = 1; i <= doc.internal.getNumberOfPages(); i++) {
     doc.setPage(i);
     
     // Add footer image
@@ -214,9 +313,9 @@ async function generateProfessionalPDF(emp, personalizedHTML, headerImage, foote
     
     // Add page number
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(smallFontSize);
+    doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - sideMargin, pageHeight - 5, { align: 'right' });
+    doc.text(`Page ${i} of ${doc.internal.getNumberOfPages()}`, pageWidth - sideMargin, pageHeight - 5, { align: 'right' });
   }
   
   // Generate filename
