@@ -418,3 +418,8 @@ function cleanupWordContent(html) {
     .replace(/<!--StartFragment-->|<!--EndFragment-->/g, '') // Remove fragments
     .replace(/<span\s+style="[^"]*font-family:[^"]*Wingdings[^"]*"[^>]*>.<\/span>/g, '•'); // Replace wingdings bullets
 }
+
+// Make functions available everywhere
+window.updateEnhancedPDFPreview = updateEnhancedPDFPreview;
+window.generateEnhancedPDFLetters = generateEnhancedPDFLetters;
+window.loadImageWithFallback = loadImageWithFallback;
