@@ -257,12 +257,11 @@ async function generateProfessionalPDF(emp, personalizedHTML, headerImage, foote
     y += sectionSpacing - paragraphSpacing;
   }
   
-  // Process the signature section at the end
-  const signatureBlocks = htmlDoc.querySelectorAll('div[style*="margin-top:30pt"]');
-  
-  for (const signatureBlock of signatureBlocks) {
-    // Check if we need a new page
-    if (y > pageHeight - bottomMargin - 80) {
+  // Process the signature block section at the end
+  const signatureBlock = htmlDoc.querySelector('.signature-block');
+  if (signatureBlock) {
+    // Check if we need a new page for signatures
+    if (y > pageHeight - bottomMargin - 120) {
       doc.addPage();
       currentPage++;
       doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
@@ -270,38 +269,97 @@ async function generateProfessionalPDF(emp, personalizedHTML, headerImage, foote
       y = topMargin + 10;
     }
     
-    // Process paragraphs in signature block
-    const paragraphs = signatureBlock.querySelectorAll('p');
-    
-    for (const paragraph of paragraphs) {
-      const hasStrong = paragraph.querySelector('strong');
-      
-      doc.setFont("helvetica", hasStrong ? "bold" : "normal");
+    // First process the main signature title paragraph
+    const titlePara = signatureBlock.querySelector('p:first-child');
+    if (titlePara) {
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(normalFontSize);
       
-      const text = paragraph.textContent.trim();
-      if (!text) continue;
-      
+      const text = titlePara.textContent.trim();
       const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
       
       doc.text(lines, sideMargin, y);
-      y += (lines.length * lineHeight) + (paragraphSpacing/2);
+      y += (lines.length * lineHeight) + paragraphSpacing * 2;
     }
     
-    // Add space for signature (represented by div with height)
-    const signatureSpace = signatureBlock.querySelector('div[style*="height"]');
-    if (signatureSpace) {
-      const heightStyle = signatureSpace.getAttribute('style');
-      const heightMatch = heightStyle.match(/height:(\d+)pt/);
-      if (heightMatch && heightMatch[1]) {
-        const height = parseInt(heightMatch[1]) / 2.83; // Convert pt to mm approximately
-        y += height;
-      } else {
-        y += 20; // Default signature space
+    // Process company signature block
+    const companyDiv = signatureBlock.querySelector('div:nth-child(2)');
+    if (companyDiv) {
+      // Process paragraphs in company signature block
+      const companyParagraphs = companyDiv.querySelectorAll('p');
+      for (const paragraph of companyParagraphs) {
+        const hasStrong = paragraph.querySelector('strong');
+        
+        doc.setFont("helvetica", hasStrong ? "bold" : "normal");
+        doc.setFontSize(normalFontSize);
+        
+        const text = paragraph.textContent.trim();
+        if (!text) continue;
+        
+        const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+        
+        doc.text(lines, sideMargin, y);
+        y += (lines.length * lineHeight) + (paragraphSpacing/2);
+      }
+      
+      // Add space for signature (represented by div with height)
+      const signatureSpace = companyDiv.querySelector('div[style*="height"]');
+      if (signatureSpace) {
+        const heightStyle = signatureSpace.getAttribute('style');
+        const heightMatch = heightStyle.match(/height:(\d+)pt/);
+        if (heightMatch && heightMatch[1]) {
+          const height = parseInt(heightMatch[1]) / 2.83; // Convert pt to mm approximately
+          y += height;
+        } else {
+          y += 20; // Default signature space
+        }
       }
     }
     
-    y += paragraphSpacing;
+    // Add extra spacing between signature blocks
+    y += paragraphSpacing * 2;
+    
+    // Process employee signature block - Check if we need a new page
+    const employeeDiv = signatureBlock.querySelector('div:nth-child(3)');
+    if (employeeDiv) {
+      if (y > pageHeight - bottomMargin - 100) {
+        doc.addPage();
+        currentPage++;
+        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+        y = topMargin + 10;
+      }
+      
+      // Process paragraphs in employee signature block
+      const employeeParagraphs = employeeDiv.querySelectorAll('p');
+      for (const paragraph of employeeParagraphs) {
+        const hasStrong = paragraph.querySelector('strong');
+        
+        doc.setFont("helvetica", hasStrong ? "bold" : "normal");
+        doc.setFontSize(normalFontSize);
+        
+        const text = paragraph.textContent.trim();
+        if (!text) continue;
+        
+        const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+        
+        doc.text(lines, sideMargin, y);
+        y += (lines.length * lineHeight) + (paragraphSpacing/2);
+      }
+      
+      // Add space for signature (represented by div with height)
+      const signatureSpace = employeeDiv.querySelector('div[style*="height"]');
+      if (signatureSpace) {
+        const heightStyle = signatureSpace.getAttribute('style');
+        const heightMatch = heightStyle.match(/height:(\d+)pt/);
+        if (heightMatch && heightMatch[1]) {
+          const height = parseInt(heightMatch[1]) / 2.83; // Convert pt to mm approximately
+          y += height;
+        } else {
+          y += 20; // Default signature space
+        }
+      }
+    }
   }
   
   // Add footer to all pages
