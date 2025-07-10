@@ -1,6 +1,6 @@
 /**
  * Enhanced PDF Letter Generator for Nikagenyx
- * Preserves formatting from Word documents and properly applies letterhead
+ * Produces professional formatted documents with letterhead
  */
 
 // Prevent duplicate PDF generation
@@ -67,11 +67,9 @@ function initEnhancedTinyMCE() {
   });
 }
 
-// Create a direct-to-PDF approach without using HTML conversion
-async function generateDirectPDF(emp, personalizedHTML, headerImage, footerImage) {
-  // Generate unique timestamp for filename to identify duplicates
-  const timestamp = new Date().toISOString().replace(/[-:.]/g, "").substring(0, 14);
-  console.log(`Generating PDF at ${timestamp} for ${emp.name}`);
+// Improved PDF generation with professional layout
+async function generateProfessionalPDF(emp, personalizedHTML, headerImage, footerImage) {
+  console.log(`Generating professional PDF for ${emp.name}`);
   
   const { jsPDF } = window.jspdf;
   
@@ -89,6 +87,19 @@ async function generateDirectPDF(emp, personalizedHTML, headerImage, footerImage
   const bottomMargin = 30;
   const sideMargin = 20;
   
+  // Layout configuration
+  const lineHeight = 7;
+  const paragraphSpacing = 4; 
+  const headingSpacing = 7;
+  const sectionSpacing = 10;
+  const listItemIndent = 5;
+  
+  // Font sizes
+  const titleFontSize = 14;
+  const headingFontSize = 12;
+  const normalFontSize = 11;
+  const smallFontSize = 10;
+  
   // Add header to first page
   doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
   
@@ -96,94 +107,224 @@ async function generateDirectPDF(emp, personalizedHTML, headerImage, footerImage
   const parser = new DOMParser();
   const htmlDoc = parser.parseFromString(personalizedHTML, 'text/html');
   
-  // Extract all paragraphs, headings, lists and tables
-  const elements = htmlDoc.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, ul, ol, li, table');
+  // Current position
+  let y = topMargin + 8;
+  let currentPage = 1;
   
-  // Current Y position
-  let y = topMargin + 10;
-  
-  // Process each element
-  for (let element of elements) {
-    const nodeName = element.nodeName.toLowerCase();
-    let fontSize = 12;
-    let isBold = false;
-    let text = element.textContent.trim();
-    
-    // Skip empty elements
-    if (!text) continue;
-    
-    // Check for page breaks
-    if ((element.style && (element.style.pageBreakAfter === 'always' || element.style.breakAfter === 'page')) ||
-        (element.className && element.className.includes('page-break'))) {
-      doc.addPage();
-      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-      y = topMargin + 10;
-      continue;
-    }
-    
-    // Set text style based on element type
-    if (nodeName === 'h1') {
-      fontSize = 20;
-      isBold = true;
-    } else if (nodeName === 'h2') {
-      fontSize = 18;
-      isBold = true;
-    } else if (nodeName === 'h3') {
-      fontSize = 16;
-      isBold = true;
-    } else if (nodeName.match(/^h[4-6]$/)) {
-      fontSize = 14;
-      isBold = true;
-    } else if (nodeName === 'li') {
-      text = `• ${text}`;
-    }
-    
-    // Apply text formatting
-    doc.setFontSize(fontSize);
-    if (isBold) {
-      doc.setFont("helvetica", "bold");
-    } else {
-      doc.setFont("helvetica", "normal");
-    }
-    
-    // Always ensure text is black
+  // Process the document title if it exists (usually an H1)
+  const titleElement = htmlDoc.querySelector('h1');
+  if (titleElement && titleElement.textContent.trim()) {
+    // Add document title with centered bold text
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(titleFontSize);
     doc.setTextColor(0, 0, 0);
     
-    // Split text to fit width
-    const lines = doc.splitTextToSize(text, pageWidth - (2 * sideMargin));
+    const titleText = titleElement.textContent.trim();
+    const titleLines = doc.splitTextToSize(titleText, pageWidth - (2 * sideMargin));
     
-    // Check if we need to add a new page
-    if (y + (lines.length * (fontSize/2 + 2)) > pageHeight - bottomMargin) {
-      doc.addPage();
-      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
-      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
-      y = topMargin + 10;
+    // Center align the title
+    for (let i = 0; i < titleLines.length; i++) {
+      doc.text(titleLines[i], pageWidth / 2, y, { align: 'center' });
+      y += lineHeight;
     }
     
-    // Add the text
-    doc.text(lines, sideMargin, y);
-    y += (lines.length * (fontSize/2 + 2)) + 5;
+    // Add extra space after title
+    y += headingSpacing;
+  }
+  
+  // Extract sections and their content
+  const sections = extractDocumentSections(htmlDoc);
+  
+  // Process each section
+  for (const section of sections) {
+    // Check for page break before processing heading
+    if (section.heading && (y > pageHeight - bottomMargin - 100)) {
+      doc.addPage();
+      currentPage++;
+      doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+      doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+      y = topMargin + 8;
+    }
+    
+    // Process section heading if it exists
+    if (section.heading) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(headingFontSize);
+      doc.setTextColor(0, 0, 0);
+      
+      const headingLines = doc.splitTextToSize(section.heading, pageWidth - (2 * sideMargin));
+      doc.text(headingLines, sideMargin, y);
+      y += (headingLines.length * lineHeight) + paragraphSpacing;
+    }
+    
+    // Process paragraphs and list items in this section
+    for (const item of section.content) {
+      if (item === "<!-- PAGEBREAK -->") {
+        // Insert explicit page break
+        doc.addPage();
+        currentPage++;
+        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+        y = topMargin + 8;
+        continue;
+      }
+      
+      // Determine if this is a list item or regular paragraph
+      const isListItem = item.startsWith('•') || item.match(/^\d+\./);
+      
+      // Set appropriate font style
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(normalFontSize);
+      doc.setTextColor(0, 0, 0);
+      
+      // Determine indentation based on item type
+      const indent = isListItem ? listItemIndent : 0;
+      const effectiveWidth = pageWidth - (2 * sideMargin) - indent;
+      
+      // Split text to fit available width
+      const itemLines = doc.splitTextToSize(item, effectiveWidth);
+      
+      // Check if we need a page break
+      if (y + (itemLines.length * lineHeight) > pageHeight - bottomMargin) {
+        doc.addPage();
+        currentPage++;
+        doc.addImage(headerImage, "PNG", 0, 0, pageWidth, topMargin - 5);
+        doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
+        y = topMargin + 8;
+      }
+      
+      // Add the text with proper indentation
+      doc.text(itemLines, sideMargin + indent, y);
+      
+      // Move position down based on number of lines
+      y += (itemLines.length * lineHeight) + paragraphSpacing;
+    }
+    
+    // Add extra spacing between sections
+    y += sectionSpacing - paragraphSpacing;
   }
   
   // Add footer to all pages
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+    
+    // Add footer image
     doc.addImage(footerImage, "PNG", 0, pageHeight - bottomMargin, pageWidth, bottomMargin - 2);
     
-    // Add page numbers
-    doc.setFontSize(8);
+    // Add page number
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(smallFontSize);
     doc.setTextColor(100);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - sideMargin, pageHeight - 5, { align: 'right' });
   }
   
-  // Generate filename with timestamp to ensure uniqueness
+  // Generate filename
+  const timestamp = new Date().toISOString().replace(/[-:.]/g, "").substring(0, 14);
   const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
   const filename = `${cleanName}_${emp.emp_id}_${timestamp}.pdf`;
   
   // Save the PDF
   doc.save(filename);
+}
+
+// Helper function to extract structured content from HTML document
+function extractDocumentSections(htmlDoc) {
+  const sections = [];
+  let currentSection = { heading: "", content: [] };
+  
+  // Get all block elements that might contain content
+  const elements = Array.from(htmlDoc.body.children);
+  
+  // Skip the first h1 as it's the document title
+  let skipNextH1 = true;
+  
+  for (let element of elements) {
+    const tagName = element.tagName.toLowerCase();
+    const content = element.textContent.trim();
+    
+    // Skip empty elements
+    if (!content) continue;
+    
+    // Handle headings - start a new section
+    if (tagName.match(/^h[1-6]$/)) {
+      // Skip the first h1 if it exists
+      if (tagName === 'h1' && skipNextH1) {
+        skipNextH1 = false;
+        continue;
+      }
+      
+      // Save the previous section if it has any content
+      if (currentSection.heading || currentSection.content.length > 0) {
+        sections.push({ ...currentSection });
+      }
+      
+      // Start a new section
+      currentSection = { heading: content, content: [] };
+    } 
+    // Handle page breaks
+    else if ((element.className && element.className.includes('page-break')) ||
+             (element.style && (element.style.pageBreakAfter === 'always' || element.style.breakAfter === 'page'))) {
+      currentSection.content.push("<!-- PAGEBREAK -->");
+    }
+    // Process paragraph content
+    else if (tagName === 'p') {
+      currentSection.content.push(content);
+    }
+    // Handle lists
+    else if (tagName === 'ul' || tagName === 'ol') {
+      // Extract each list item
+      const items = Array.from(element.querySelectorAll('li')).map(li => {
+        // Prefix bullet for unordered lists
+        if (tagName === 'ul') {
+          return `• ${li.textContent.trim()}`;
+        } 
+        // For ordered lists, we'll rely on the browser's numbering
+        else {
+          return li.textContent.trim();
+        }
+      });
+      
+      // Add each item as separate paragraph for better formatting
+      currentSection.content.push(...items);
+    }
+    // Handle div containers (check for page breaks and content)
+    else if (tagName === 'div') {
+      if (element.style && (element.style.pageBreakAfter === 'always' || element.style.breakAfter === 'page')) {
+        currentSection.content.push("<!-- PAGEBREAK -->");
+      } else if (content) {
+        currentSection.content.push(content);
+      }
+    }
+  }
+  
+  // Add the final section if it has content
+  if (currentSection.heading || currentSection.content.length > 0) {
+    sections.push(currentSection);
+  }
+  
+  return sections;
+}
+
+// Preprocess HTML to improve formatting
+function enhanceHTMLForPDF(html) {
+  return html
+    // Fix headings
+    .replace(/<h1/gi, '<h1 style="text-align:center; font-size:16pt; font-weight:bold; margin-bottom:10pt;"')
+    .replace(/<h2/gi, '<h2 style="font-size:14pt; font-weight:bold; margin-top:15pt; margin-bottom:5pt;"')
+    .replace(/<h3/gi, '<h3 style="font-size:13pt; font-weight:bold; margin-top:10pt; margin-bottom:5pt;"')
+    
+    // Improve paragraph spacing
+    .replace(/<p>/gi, '<p style="margin-bottom:8pt;">')
+    
+    // Format lists better
+    .replace(/<ul>/gi, '<ul style="margin-left:20pt; margin-bottom:10pt;">')
+    .replace(/<ol>/gi, '<ol style="margin-left:20pt; margin-bottom:10pt;">')
+    .replace(/<li>/gi, '<li style="margin-bottom:5pt;">')
+    
+    // Ensure page breaks are standardized
+    .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break"></div>')
+    .replace(/<!-- pagebreak -->/gi, '<div class="page-break"></div>');
 }
 
 // Generate PDF with proper A4 dimensions and letterhead
@@ -227,9 +368,8 @@ async function generateEnhancedPDFLetters() {
     // Clean up Word-specific styling issues
     rawHTML = cleanupWordContent(rawHTML);
     
-    // Get font settings
-    const fontFamily = document.getElementById("pdfFont")?.value || "helvetica";
-    const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || "12");
+    // Enhance HTML for better PDF formatting
+    rawHTML = enhanceHTMLForPDF(rawHTML);
     
     // Get employee data
     const res = await fetch("/.netlify/functions/get_employees");
@@ -301,8 +441,8 @@ async function generateEnhancedPDFLetters() {
         return formatDate(date);
       });
       
-      // Use the direct PDF generation method for reliable output
-      await generateDirectPDF(emp, personalizedHTML, headerImage, footerImage);
+      // Use the professional PDF generation method for better layout
+      await generateProfessionalPDF(emp, personalizedHTML, headerImage, footerImage);
     }
     
     showToast(`Successfully generated ${employeeDetails.length} PDF(s)!`);
@@ -360,6 +500,8 @@ function updateEnhancedPDFPreview() {
   
   // Clean up Word content for preview
   content = cleanupWordContent(content);
+  // Enhance HTML formatting for preview
+  content = enhanceHTMLForPDF(content);
   
   if (!content.trim()) {
     preview.innerHTML = '<p class="text-gray-500 italic text-center">Add content to the editor to see preview</p>';
@@ -404,8 +546,7 @@ function updateEnhancedPDFPreview() {
           
           // Handle page breaks for preview (both formats)
           personalizedContent = personalizedContent
-            .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>')
-            .replace(/<!-- pagebreak -->/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>');
+            .replace(/<div class="page-break"><\/div>/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>');
           
           // Set preview content with letterhead
           preview.innerHTML = `
