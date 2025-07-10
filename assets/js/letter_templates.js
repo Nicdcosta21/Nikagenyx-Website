@@ -121,6 +121,122 @@ const LETTER_TEMPLATES = {
 <p><strong>Nik D'Costa</strong></p>
 <p>Chief Executive Officer</p>
 <p>Nikagenyx Vision Tech Private Limited</p>`
+
+// EMPLOYMENT AGREEMENT  Template
+
+LETTER_TEMPLATES.employment_agreement = `<h1 style="text-align:center; font-size:18pt; font-weight:bold; margin-bottom:15pt;">EMPLOYMENT AGREEMENT</h1>
+
+<p style="text-align:justify;">This EMPLOYMENT AGREEMENT ("Agreement") is made and entered into on ${new Date().toLocaleDateString('en-GB')}, by and between <strong>Nikagenyx Vision Tech Private Limited</strong>, a company incorporated under the Companies Act, 2013, having its registered office at Unit No. B-02, Navkaar 4 Building, Navsari, Gujarat 396445 (hereinafter referred to as the "Company") AND <strong>{{name}}</strong>, with Employee ID {{emp_id}} (hereinafter referred to as the "Employee").</p>
+
+<p style="text-align:center; font-weight:bold; margin-top:15pt;">TERMS AND CONDITIONS OF EMPLOYMENT</p>
+
+<ol style="text-align:justify;">
+  <li>
+    <strong>APPOINTMENT</strong>
+    <p>The Company hereby employs the Employee, and the Employee hereby accepts employment with the Company, as <strong>{{role}}</strong> in the <strong>{{department}}</strong> of the Company, upon the terms and conditions set forth herein.</p>
+  </li>
+
+  <li>
+    <strong>COMMENCEMENT AND TERM</strong>
+    <p>The employment under this Agreement shall commence on {{joining_date}} and shall continue until terminated pursuant to the terms of this Agreement.</p>
+  </li>
+
+  <li>
+    <strong>PROBATION</strong>
+    <p>The first 90 days of employment shall constitute a probationary period. During this period, the Company may terminate the employment without notice. After successful completion of the probation period, the Employee shall be confirmed in writing.</p>
+  </li>
+
+  <li>
+    <strong>DUTIES AND RESPONSIBILITIES</strong>
+    <p>The Employee shall perform all duties and accept all responsibilities incidental to the position or as may be assigned from time to time. The Employee agrees to devote full professional time, attention, and energies to the business of the Company during the term of this Agreement.</p>
+  </li>
+
+  <li>
+    <strong>COMPENSATION</strong>
+    <p>In consideration of the services to be rendered by the Employee, the Company shall pay the Employee a gross annual salary of INR {{base_salary}}/- (Indian Rupees Only), payable in equal monthly installments, subject to statutory deductions and withholdings.</p>
+  </li>
+
+  <!-- PAGEBREAK -->
+
+  <li>
+    <strong>WORK LOCATION AND HOURS</strong>
+    <p>The Employee shall primarily work remotely, but may be required to work at the Company's office or client locations as needed. Standard working hours shall be 9:00 AM to 6:00 PM, Monday through Friday, with a 60-minute break for lunch. The Employee may be required to work additional hours based on business needs.</p>
+  </li>
+
+  <li>
+    <strong>LEAVE ENTITLEMENT</strong>
+    <p>The Employee shall be entitled to the following leave benefits:</p>
+    <ul>
+      <li>Casual Leave: 12 days per annum</li>
+      <li>Sick Leave: 7 days per annum</li>
+      <li>National and Festival Holidays: As per Company policy</li>
+    </ul>
+    <p>Leave cannot be encashed or carried forward to the next year except as per Company policy.</p>
+  </li>
+
+  <li>
+    <strong>CONFIDENTIAL INFORMATION</strong>
+    <p>The Employee acknowledges that during the course of employment, the Employee will have access to confidential and proprietary information of the Company. The Employee agrees to maintain the confidentiality of such information during and after the term of employment.</p>
+  </li>
+
+  <li>
+    <strong>INTELLECTUAL PROPERTY</strong>
+    <p>Any invention, improvement, concept, discovery, work of authorship or other intellectual property, whether or not patentable or copyrightable, developed by the Employee during the term of employment that relates to the Company's business shall be the sole and exclusive property of the Company.</p>
+  </li>
+
+  <li>
+    <strong>NON-COMPETITION AND NON-SOLICITATION</strong>
+    <p>During the term of employment and for a period of one year thereafter, the Employee shall not:</p>
+    <ul>
+      <li>Engage in any business that competes with the Company</li>
+      <li>Solicit or attempt to solicit any employee or customer of the Company</li>
+      <li>Interfere with any business relationship of the Company</li>
+    </ul>
+  </li>
+
+  <!-- PAGEBREAK -->
+
+  <li>
+    <strong>TERMINATION</strong>
+    <p>This Agreement may be terminated:</p>
+    <ul>
+      <li>By the Company, with cause, effective immediately upon written notice to the Employee</li>
+      <li>By the Company, without cause, upon 30 days' written notice to the Employee</li>
+      <li>By the Employee, upon 30 days' written notice to the Company</li>
+    </ul>
+  </li>
+
+  <li>
+    <strong>GOVERNING LAW</strong>
+    <p>This Agreement shall be governed by and construed in accordance with the laws of India. Any dispute arising out of or in connection with this Agreement shall be referred to arbitration in accordance with the Arbitration and Conciliation Act, 1996.</p>
+  </li>
+
+  <li>
+    <strong>ENTIRE AGREEMENT</strong>
+    <p>This Agreement constitutes the entire understanding between the parties and supersedes all prior agreements, understandings, or negotiations.</p>
+  </li>
+</ol>
+
+<p style="margin-top:20pt;">IN WITNESS WHEREOF, the parties hereto have executed this Agreement as of the date first written above.</p>
+
+<div style="display:flex; justify-content:space-between; margin-top:40pt;">
+  <div style="width:45%;">
+    <p><strong>For Nikagenyx Vision Tech Private Limited</strong></p>
+    <div style="height:60pt;"></div>
+    <p>____________________________</p>
+    <p>Nik D'Costa</p>
+    <p>Chief Executive Officer</p>
+  </div>
+  
+  <div style="width:45%;">
+    <p><strong>Employee</strong></p>
+    <div style="height:60pt;"></div>
+    <p>____________________________</p>
+    <p>{{name}} ({{emp_id}})</p>
+  </div>
+</div>`
+
+  
 };
 
 // Function to load a template into the TinyMCE editor
