@@ -223,10 +223,10 @@
       </div>
 
       <!-- Loading Indicator -->
-      <div id="pdfLoading" class="hidden py-3 text-center">
-        <div class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600 mr-2"></div>
-        <span id="pdfStatus" class="text-black">Generating PDFs...</span>
-      </div>
+      <div id="globalPdfLoading" style="display: none; text-align: center; margin: 20px 0;">
+  <div class="loading-spinner"></div>
+  <p id="globalPdfStatus">Generating PDFs...</p>
+</div>
 
       <!-- Action Buttons -->
       <div class="flex justify-end mt-4 gap-4">
