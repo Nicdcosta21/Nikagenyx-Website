@@ -3,6 +3,24 @@
  * Preserves formatting from Word documents and properly applies letterhead
  */
 
+
+async function loadImageWithFallback(imageName) {
+  try {
+    // Try local path first
+    return await loadImageAsDataURL(getImagePath(imageName));
+  } catch (error) {
+    console.log("Couldn't load image locally, trying GitHub...");
+    // If local fails, try GitHub path
+    return await loadImageAsDataURL(`https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/${imageName}`);
+  }
+}
+
+// Helper to get the right image path
+function getImagePath(imageName) {
+  // Try the local path first, if that doesn't work use GitHub
+  return `/assets/${imageName}`;
+}
+
 // Initialize TinyMCE with better MS Word paste support
 function initEnhancedTinyMCE() {
   if (typeof tinymce === "undefined") {
@@ -88,13 +106,15 @@ async function generateEnhancedPDFLetters() {
     // Load header and footer images - try both relative and absolute paths
     let headerImage, footerImage;
     try {
-      headerImage = await loadImageAsDataURL("/assets/HEADER.png");
+      headerImage = await loadImageWithFallback("HEADER.png");
+
     } catch (err) {
       headerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png");
     }
     
     try {
-      footerImage = await loadImageAsDataURL("/assets/FOOTER.png");
+      footerImage = await loadImageWithFallback("FOOTER.png");
+
     } catch (err) {
       footerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png");
     }
