@@ -18,12 +18,12 @@ function initEnhancedTinyMCE() {
       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
       'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-      'paste'
+      'paste', 'pagebreak'
     ],
     toolbar: 'undo redo | formatselect | ' +
       'bold italic underline strikethrough | alignleft aligncenter ' +
       'alignright alignjustify | bullist numlist outdent indent | ' +
-      'removeformat | table | help',
+      'removeformat | table | pagebreak | help',
     paste_data_images: true,
     paste_word_valid_elements: "p,b,strong,i,em,h1,h2,h3,h4,h5,h6,table,tr,td,th,tbody,thead,tfoot,hr,br,a,ul,ol,li,span,div",
     paste_webkit_styles: true,
@@ -37,7 +37,7 @@ function initEnhancedTinyMCE() {
     `,
     setup: function(editor) {
       editor.on('input change paste', function() {
-        updatePDFPreview();
+        updateEnhancedPDFPreview(); // Use the enhanced preview function
       });
     }
   });
@@ -52,16 +52,21 @@ async function generateEnhancedPDFLetters() {
   }
 
   // Show loading indicator
-  document.getElementById("pdfLoading").style.display = "block";
-  document.getElementById("pdfStatus").textContent = `Preparing PDFs for ${selectedIds.length} employee(s)...`;
+  const pdfLoading = document.getElementById("pdfLoading");
+  const pdfStatus = document.getElementById("pdfStatus");
+  if (pdfLoading) pdfLoading.style.display = "block";
+  if (pdfStatus) pdfStatus.textContent = `Preparing PDFs for ${selectedIds.length} employee(s)...`;
   
   try {
     // Get content from TinyMCE
-    const rawHTML = tinymce.get("letterBody").getContent();
+    let rawHTML = tinymce.get("letterBody").getContent();
+    
+    // Clean up Word-specific styling issues
+    rawHTML = cleanupWordContent(rawHTML);
     
     // Get font settings
-    const fontFamily = document.getElementById("pdfFont").value || "helvetica";
-    const fontSize = parseInt(document.getElementById("pdfFontSize").value) || 12;
+    const fontFamily = document.getElementById("pdfFont")?.value || "helvetica";
+    const fontSize = parseInt(document.getElementById("pdfFontSize")?.value || "12");
     
     // Configure jsPDF for A4 size (210mm × 297mm = 595.28pt × 841.89pt)
     const { jsPDF } = window.jspdf;
@@ -80,17 +85,28 @@ async function generateEnhancedPDFLetters() {
     
     const employeeDetails = await Promise.all(employeeDetailsPromises);
     
-    // Load header and footer images
-    const headerImage = await loadImageAsDataURL("/assets/HEADER.png");
-    const footerImage = await loadImageAsDataURL("/assets/FOOTER.png");
+    // Load header and footer images - try both relative and absolute paths
+    let headerImage, footerImage;
+    try {
+      headerImage = await loadImageAsDataURL("/assets/HEADER.png");
+    } catch (err) {
+      headerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png");
+    }
+    
+    try {
+      footerImage = await loadImageAsDataURL("/assets/FOOTER.png");
+    } catch (err) {
+      footerImage = await loadImageAsDataURL("https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png");
+    }
     
     // Process each employee
     for (let i = 0; i < employeeDetails.length; i++) {
       const emp = employeeDetails[i];
       
       // Update status
-      document.getElementById("pdfStatus").textContent = 
-        `Generating PDF ${i + 1} of ${employeeDetails.length} for ${emp.name}...`;
+      if (pdfStatus) {
+        pdfStatus.textContent = `Generating PDF ${i + 1} of ${employeeDetails.length} for ${emp.name}...`;
+      }
       
       // Create new PDF document with A4 dimensions
       const doc = new jsPDF({
@@ -127,10 +143,10 @@ async function generateEnhancedPDFLetters() {
         const formattedValue = field === "dob" || field === "joining_date" 
           ? formatDate(value) 
           : value;
-        personalizedHTML = personalizedHTML.replace(
-          new RegExp(`{{${field}}}`, "gi"), 
-          formattedValue
-        );
+        
+        // Use global flag to replace all occurrences
+        const regex = new RegExp(`{{${field}}}`, "gi");
+        personalizedHTML = personalizedHTML.replace(regex, formattedValue);
       });
       
       // Format dates nicely if applicable
@@ -138,12 +154,32 @@ async function generateEnhancedPDFLetters() {
         return formatDate(date);
       });
       
+      // Handle page breaks properly - ensure this works for both formats
+      personalizedHTML = personalizedHTML
+        .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div style="page-break-after: always;"></div>')
+        .replace(/<!-- pagebreak -->/gi, '<div style="page-break-after: always;"></div>');
+      
       // Create HTML container for content
       const container = document.createElement("div");
       container.style.width = `${contentWidth}mm`;
       container.style.fontFamily = fontFamily;
       container.style.fontSize = `${fontSize}pt`;
-      container.innerHTML = personalizedHTML;
+      
+      // Add styles for the content
+      container.innerHTML = `
+        <style>
+          body { font-family: ${fontFamily}, Arial, sans-serif; font-size: ${fontSize}pt; line-height: 1.5; }
+          table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+          table td, table th { border: 1px solid #ccc; padding: 5pt; }
+          p { margin: 0 0 8pt 0; }
+          h1, h2, h3, h4, h5, h6 { margin: 12pt 0 8pt 0; }
+          ul, ol { margin: 0 0 8pt 0; padding-left: 20pt; }
+          .page-break { page-break-after: always; break-after: page; }
+        </style>
+        <div id="pdf-content">
+          ${personalizedHTML}
+        </div>
+      `;
       
       // Add the container to the document body temporarily
       container.style.position = "fixed";
@@ -170,8 +206,8 @@ async function generateEnhancedPDFLetters() {
             for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
               pdf.setPage(pageNum);
               
-              // Add header to every page
-              if (pageNum > 1) { // Already added to first page
+              // Add header to every page except the first (already added)
+              if (pageNum > 1) {
                 pdf.addImage(
                   headerImage, 
                   "PNG", 
@@ -217,8 +253,8 @@ async function generateEnhancedPDFLetters() {
         
         // Generate filename based on employee data
         const cleanName = emp.name?.replace(/[^\w]/g, "_") || "Employee";
-        const cleanDept = emp.department?.replace(/[^\w]/g, "_") || "Dept";
-        const filename = `${cleanName}_${emp.emp_id}_${cleanDept}.pdf`;
+        const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+        const filename = `${cleanName}_${emp.emp_id}_${date}.pdf`;
         
         // Save the PDF
         doc.save(filename);
@@ -228,14 +264,14 @@ async function generateEnhancedPDFLetters() {
       }
     }
     
-    showToast(`Successfully generated ${selectedEmployees.length} PDF(s)!`);
-    document.getElementById("pdfLoading").style.display = "none";
+    showToast(`Successfully generated ${employeeDetails.length} PDF(s)!`);
+    if (pdfLoading) pdfLoading.style.display = "none";
     closePDFLetterModal();
   } catch (error) {
     console.error("PDF Generation Error:", error);
-    document.getElementById("pdfStatus").textContent = "Error: " + error.message;
+    if (pdfStatus) pdfStatus.textContent = "Error: " + error.message;
     showToast("Error generating PDFs. See console for details.", "error");
-    document.getElementById("pdfLoading").style.display = "none";
+    if (pdfLoading) pdfLoading.style.display = "none";
   }
 }
 
@@ -243,6 +279,9 @@ async function generateEnhancedPDFLetters() {
 async function loadImageAsDataURL(url) {
   try {
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load image (${response.status}): ${url}`);
+    }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -268,7 +307,11 @@ function updateEnhancedPDFPreview() {
   }
   
   // Get content from TinyMCE
-  const content = tinymce.get("letterBody")?.getContent() || "";
+  let content = tinymce.get("letterBody")?.getContent() || "";
+  
+  // Clean up Word content for preview
+  content = cleanupWordContent(content);
+  
   if (!content.trim()) {
     preview.innerHTML = '<p class="text-gray-500 italic text-center">Add content to the editor to see preview</p>';
     return;
@@ -301,23 +344,22 @@ function updateEnhancedPDFPreview() {
             const formattedValue = field === "dob" || field === "joining_date" 
               ? formatDate(value) 
               : value;
-            personalizedContent = personalizedContent.replace(
-              new RegExp(`{{${field}}}`, "gi"), 
-              formattedValue
-            );
+            
+            // Use global flag to replace all occurrences
+            const regex = new RegExp(`{{${field}}}`, "gi");
+            personalizedContent = personalizedContent.replace(regex, formattedValue);
           });
           
-          // Handle page breaks for preview
-          personalizedContent = personalizedContent.replace(
-            /<!--\s*PAGEBREAK\s*-->/gi, 
-            '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>'
-          );
+          // Handle page breaks for preview (both formats)
+          personalizedContent = personalizedContent
+            .replace(/<!--\s*PAGEBREAK\s*-->/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>')
+            .replace(/<!-- pagebreak -->/gi, '<div class="page-break my-6 border-b-2 border-dashed border-gray-400 text-center text-xs text-gray-500 py-1">--- Page Break ---</div>');
           
           // Set preview content with letterhead
           preview.innerHTML = `
             <div class="letterhead-preview">
               <div class="header-preview mb-4">
-                <img src="/assets/HEADER.png" alt="Nikagenyx Header" style="width:100%; height:auto; max-height:80px">
+                <img src="/assets/HEADER.png" alt="Nikagenyx Header" style="width:100%; height:auto; max-height:80px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/HEADER.png'">
               </div>
               
               <div class="content-preview min-h-[200px]">
@@ -325,7 +367,7 @@ function updateEnhancedPDFPreview() {
               </div>
               
               <div class="footer-preview mt-4">
-                <img src="/assets/FOOTER.png" alt="Nikagenyx Footer" style="width:100%; height:auto; max-height:60px">
+                <img src="/assets/FOOTER.png" alt="Nikagenyx Footer" style="width:100%; height:auto; max-height:60px" onerror="this.src='https://raw.githubusercontent.com/Nicdcosta21/Nikagenyx-Website/main/assets/FOOTER.png'">
               </div>
             </div>
           `;
@@ -339,4 +381,20 @@ function updateEnhancedPDFPreview() {
       console.error("Error fetching employees:", err);
       preview.innerHTML = '<p class="text-red-500">Error loading employees</p>';
     });
+}
+
+// Clean up Word-specific styling issues
+function cleanupWordContent(html) {
+  if (!html) return '';
+  
+  return html
+    // Fix Word-specific style issues
+    .replace(/<!--[\s\S]*?-->/g, '') // Remove Word comments
+    .replace(/<o:p>\s*<\/o:p>/g, '') // Remove empty paragraphs
+    .replace(/\s+class="MsoNormal"/g, '') // Remove MsoNormal class
+    // Additional cleanups as needed
+    .replace(/<!\[if !supportLists\]>[\s\S]*?<!\[endif\]>/g, '') // Remove list supports
+    .replace(/style="[^"]*mso-[^"]*"/g, '') // Remove MSO specific styles
+    .replace(/<!--StartFragment-->|<!--EndFragment-->/g, '') // Remove fragments
+    .replace(/<span\s+style="[^"]*font-family:[^"]*Wingdings[^"]*"[^>]*>.<\/span>/g, '•'); // Replace wingdings bullets
 }
