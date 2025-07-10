@@ -74,7 +74,8 @@ function setupBulkActionListeners() {
   
   // Generate PDF button
   const generateBtn = document.getElementById("generatePDFLetter");
-  if (generateBtn) {
+  if (generateBtn && !window.useEnhancedPDFGenerator) {
+    // Only attach if enhanced generator isn't being used
     generateBtn.addEventListener("click", generatePDFLetters);
   }
 }
