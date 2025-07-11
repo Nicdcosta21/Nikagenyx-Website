@@ -5,6 +5,7 @@
 
 [build.processing]
   skip_processing = false
+
 [build.processing.images]
   compress = true
   quality = 85
@@ -22,31 +23,38 @@
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
 
-# API redirects
+#############################
+# 🔁 REDIRECTS
+#############################
+
+# API route for Netlify Functions
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
-# Application specific redirects
+# Static accounting module
 [[redirects]]
-from = "/account/app/*"
-to = "/account/app/:splat"
-status = 200
+  from = "/account/app/*"
+  to = "/account/app/:splat"
+  status = 200
 
-
-# Main page redirect
+# Default homepage redirect to accounting dashboard
 [[redirects]]
   from = "/"
   to = "/account/app"
   status = 301
   force = true
 
-# Fallback
+# Catch-all fallback to React app
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+#############################
+# 🛡 HEADERS
+#############################
 
 [[headers]]
   for = "/*"
