@@ -6,6 +6,8 @@
   <title>Services - Nikagenyx</title>
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://cdn.netlify.com">
+  <link rel="dns-prefetch" href="https://cdn.netlify.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -36,6 +38,17 @@
     .card-3d:hover {
       transform: translateY(-6px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+    
+    .image-placeholder {
+      background: linear-gradient(110deg, #1f2937 8%, #374151 18%, #1f2937 33%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
     }
   </style>
 </head>
@@ -111,26 +124,56 @@
     <div class="flex flex-wrap justify-center items-center gap-12">
 
       <!-- Colin Photography -->
-      <div class="w-32 h-32 flex items-center justify-center">
-        <img src="assets/img/clients/colin_photography.png" alt="Colin Photography" class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105" />
+      <div class="w-32 h-32 flex items-center justify-center image-placeholder rounded-md">
+        <img 
+          src="/.netlify/images?url=/assets/img/clients/colin_photography.png&fit=contain&w=128&h=64&format=webp" 
+          data-src="assets/img/clients/colin_photography.png"
+          alt="Colin Photography" 
+          loading="lazy"
+          width="128" 
+          height="64"
+          class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105"
+          onload="this.style.opacity='1'"
+          style="opacity: 0; transition: opacity 0.5s ease-in-out;"
+          onerror="this.onerror=null; this.src=this.getAttribute('data-src');"
+        />
       </div>
 
       <!-- Xalens Studio -->
-      <div class="w-32 h-32 flex items-center justify-center">
-        <img src="assets/img/clients/Xalens_Studio.png" alt="Xalens Studio" class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105" />
+      <div class="w-32 h-32 flex items-center justify-center image-placeholder rounded-md">
+        <img 
+          src="/.netlify/images?url=/assets/img/clients/Xalens_Studio.png&fit=contain&w=128&h=64&format=webp" 
+          data-src="assets/img/clients/Xalens_Studio.png"
+          alt="Xalens Studio" 
+          loading="lazy"
+          width="128" 
+          height="64"
+          class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105"
+          onload="this.style.opacity='1'"
+          style="opacity: 0; transition: opacity 0.5s ease-in-out;"
+          onerror="this.onerror=null; this.src=this.getAttribute('data-src');"
+        />
       </div>
 
       <!-- JD Photographers -->
-      <div class="w-32 h-32 flex items-center justify-center">
-        <img src="assets/img/clients/JD_photographers_logo.png" alt="JD Photographers" class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105" />
+      <div class="w-32 h-32 flex items-center justify-center image-placeholder rounded-md">
+        <img 
+          src="/.netlify/images?url=/assets/img/clients/JD_photographers_logo.png&fit=contain&w=128&h=64&format=webp" 
+          data-src="assets/img/clients/JD_photographers_logo.png"
+          alt="JD Photographers" 
+          loading="lazy"
+          width="128" 
+          height="64"
+          class="max-h-16 object-contain transition-transform duration-300 transform hover:scale-105"
+          onload="this.style.opacity='1'"
+          style="opacity: 0; transition: opacity 0.5s ease-in-out;"
+          onerror="this.onerror=null; this.src=this.getAttribute('data-src');"
+        />
       </div>
 
     </div>
   </div>
 </section>
-
-  
-
 
 </main>
 
@@ -146,6 +189,44 @@
   toggleBtn.addEventListener('click', () => {
     menu.classList.toggle('hidden');
   });
+</script>
+
+<!-- Image Loading Script -->
+<script>
+  // Check if browser supports IntersectionObserver
+  if ('IntersectionObserver' in window) {
+    const imgObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          
+          // Set the high-quality source if needed
+          if (img.dataset.src && !img.src.includes(img.dataset.src)) {
+            // Keep track of the Netlify image URL as a backup
+            const netlifyUrl = img.src;
+            
+            // Try to use the Netlify image URL first
+            img.onerror = function() {
+              console.log('Netlify image failed, using original');
+              this.onerror = null;
+              this.src = this.dataset.src;
+            };
+          }
+          
+          imgObserver.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    // Observe all lazy images
+    window.addEventListener('DOMContentLoaded', () => {
+      const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+      lazyImages.forEach(img => imgObserver.observe(img));
+    });
+  }
 </script>
 
 </body>
