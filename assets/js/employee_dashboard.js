@@ -775,22 +775,6 @@ function showToast(message, isError = false) {
   }, 3000);
 }
 
-// Add animation styles
-document.head.insertAdjacentHTML("beforeend", `
-  <style>
-    @keyframes fade-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fade-out {
-      from { opacity: 1; transform: translateY(0); }
-      to { opacity: 0; transform: translateY(10px); }
-    }
-    .animate-fade-in { animation: fade-in 0.3s ease-out; }
-    .animate-fade-out { animation: fade-out 0.3s ease-in; }
-  </style>
-`);
-
 // Dark mode toggler
 function toggleDarkMode() {
   const body = document.body;
