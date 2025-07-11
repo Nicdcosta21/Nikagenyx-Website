@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "./"
+  publish = "dist"
   functions = "netlify/functions"
 
 [functions]
@@ -18,7 +18,13 @@
   quality = 85
   metadata = "none"
 
-# Custom headers for better cache control
+# Route all SPA paths to index.html (important for React Router)
+[[redirects]]
+  from = "/account/app/*"
+  to = "/account/app/index.html"
+  status = 200
+
+# Prevent caching of serverless functions
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
@@ -26,5 +32,13 @@
     Pragma = "no-cache"
     Expires = "0"
 
+# Optional: Add CORS headers if needed
+#[[headers]]
+#  for = "/.netlify/functions/*"
+#  [headers.values]
+#    Access-Control-Allow-Origin = "*"
+#    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+
+# Add Lighthouse auditing
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
