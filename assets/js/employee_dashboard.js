@@ -20,8 +20,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // 2. Set employee name in header
-    document.getElementById("empName").textContent = empSession?.name || "Employee";
-
+document.getElementById("empName").textContent = empSession?.name || "Employee";
+// Set employee number in header
+document.getElementById("empNumber").textContent = empSession?.emp_number 
+  ? `(Employee #: ${empSession.emp_number})` 
+  : "";
+    
     // 3. Initialize clock system
     try {
       await window.ClockSystem.init(empId);
