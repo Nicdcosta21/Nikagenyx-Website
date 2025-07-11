@@ -8,6 +8,10 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
 
+  <!-- Preconnect for faster loading -->
+  <link rel="preconnect" href="https://cdn.netlify.com">
+  <link rel="dns-prefetch" href="https://cdn.netlify.com">
+  
   <!-- Fonts & Tailwind -->
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,6 +40,17 @@
 
     .custom-3d-shadow {
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.45), 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+    
+    .image-placeholder {
+      background: linear-gradient(110deg, #1f2937 8%, #374151 18%, #1f2937 33%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
     }
   </style>
 </head>
@@ -67,22 +82,34 @@
     <div class="md:w-1/2 text-center md:text-left">
       <h2 class="text-4xl md:text-5xl font-bold mb-6">About <span class="text-purple-400">Nikagenyx</span></h2>
       <p class="text-gray-300 text-lg leading-relaxed mb-4">
-        Nikagenyx Vision Tech Private Limited is an innovation-first software company committed to reshaping industries through intelligent automation, cutting-edge facial recognition, and advanced AI applications.
+        Nikagenyx Vision Tech Private Limited is an innovation-first software company committed to reshaping industries through intelligent automation, cutting-edge facial recognition, and advanced AI[...]
       </p>
       <p class="text-gray-400 text-md leading-relaxed mb-4">
-        We specialize in building robust AI-powered platforms that integrate biometric authentication, computer vision, voice interaction, and mobile-first design to power seamless, secure, and intelligent digital experiences.
+        We specialize in building robust AI-powered platforms that integrate biometric authentication, computer vision, voice interaction, and mobile-first design to power seamless, secure, and intell[...]
       </p>
       <p class="text-gray-400 text-md leading-relaxed mb-4">
-        Our portfolio includes enterprise software, mobile applications, event photography systems, photo matching solutions, and cloud-based digital galleries. We provide end-to-end services — from system design and R&D to deployment and support.
+        Our portfolio includes enterprise software, mobile applications, event photography systems, photo matching solutions, and cloud-based digital galleries. We provide end-to-end services — from[...]
       </p>
       <p class="text-gray-400 text-md leading-relaxed">
-        Whether you're looking to automate workflows, enhance guest experiences, or unlock the power of data-driven decision-making, Nikagenyx is your technology partner in building intelligent ecosystems that see, think, and evolve.
+        Whether you're looking to automate workflows, enhance guest experiences, or unlock the power of data-driven decision-making, Nikagenyx is your technology partner in building intelligent ecosys[...]
       </p>
     </div>
-    <!-- Image -->
-    <div class="md:w-1/2">
-      <img src="assets/about-illustration.png" alt="Nikagenyx 3D Illustration"
-           class="w-full max-w-md mx-auto rounded-xl custom-3d-shadow transform transition-transform duration-500 hover:scale-105 hover:-translate-y-1" />
+    <!-- Image - Optimized -->
+    <div class="md:w-1/2 relative">
+      <div class="w-full max-w-md mx-auto rounded-xl image-placeholder overflow-hidden" style="aspect-ratio: 16/10;">
+        <img 
+          src="/.netlify/images?url=/assets/about-illustration.png&fit=contain&w=600&format=webp" 
+          data-src="assets/about-illustration.png"
+          alt="Nikagenyx 3D Illustration"
+          loading="lazy"
+          width="600"
+          height="375"
+          class="w-full h-full object-cover rounded-xl custom-3d-shadow transform transition-transform duration-500 hover:scale-105 hover:-translate-y-1"
+          onload="this.style.opacity='1'; this.parentElement.classList.remove('image-placeholder');"
+          style="opacity: 0; transition: opacity 0.8s ease-in-out;"
+          onerror="this.onerror=null; this.src=this.getAttribute('data-src');"
+        />
+      </div>
     </div>
   </section>
 </main>
@@ -99,6 +126,48 @@
   toggleBtn.addEventListener('click', () => {
     menu.classList.toggle('hidden');
   });
+</script>
+
+<!-- Image Loading Script -->
+<script>
+  // Check if browser supports IntersectionObserver
+  if ('IntersectionObserver' in window) {
+    const imgObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          
+          // Set the high-quality source if needed
+          if (img.dataset.src && !img.src.includes(img.dataset.src)) {
+            // Keep track of the Netlify image URL as a backup
+            const netlifyUrl = img.src;
+            
+            // Try to use the Netlify image URL first
+            img.onerror = function() {
+              console.log('Netlify image failed, using original');
+              this.onerror = null;
+              this.src = this.dataset.src;
+              this.style.opacity = '1';
+              if (this.parentElement) {
+                this.parentElement.classList.remove('image-placeholder');
+              }
+            };
+          }
+          
+          imgObserver.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '200px',
+      threshold: 0.01
+    });
+
+    // Observe all lazy images
+    window.addEventListener('DOMContentLoaded', () => {
+      const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+      lazyImages.forEach(img => imgObserver.observe(img));
+    });
+  }
 </script>
 
 </body>
