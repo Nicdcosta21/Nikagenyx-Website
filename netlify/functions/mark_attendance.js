@@ -6,13 +6,21 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ message: "Method Not Allowed" }) };
+    return { 
+      statusCode: 405, 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Method Not Allowed" }) 
+    };
   }
 
   try {
     const { emp_id, type } = JSON.parse(event.body);
     if (!emp_id || !type) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Missing parameters" }) };
+      return { 
+        statusCode: 400, 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Missing parameters" }) 
+      };
     }
 
     const now = new Date();
@@ -28,6 +36,7 @@ exports.handler = async (event) => {
       if (existing.rows.length > 0 && existing.rows[0].clock_in) {
         return {
           statusCode: 200,
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: "Already clocked in.",
             timestamp: existing.rows[0].clock_in,
@@ -45,6 +54,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: "Clocked in successfully.",
           timestamp: timeNow,
@@ -57,6 +67,7 @@ exports.handler = async (event) => {
       if (existing.rows.length === 0 || existing.rows[0].clock_out) {
         return {
           statusCode: 200,
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: "Already clocked out or not clocked in yet.",
             timestamp: existing.rows[0]?.clock_out || null,
@@ -72,6 +83,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: "Clocked out successfully.",
           timestamp: timeNow,
@@ -82,6 +94,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: "Invalid action." })
     };
 
@@ -89,6 +102,7 @@ exports.handler = async (event) => {
     console.error("❌ Error in mark_attendance:", err);
     return {
       statusCode: 500,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: "Internal error", error: err.message })
     };
   }
