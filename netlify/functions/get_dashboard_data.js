@@ -76,7 +76,7 @@ exports.handler = async (event) => {
     const metrics = {
       attendance_days: parseInt(metricsRes.rows[0]?.attendance_days || 0),
       working_days: workingDays,
-      productivity: Math.round(Math.random() * 30) + 70 // Mock value between 70-100
+      productivity: 85 // Can be replaced with actual calculation
     };
     
     // Get recent activities
