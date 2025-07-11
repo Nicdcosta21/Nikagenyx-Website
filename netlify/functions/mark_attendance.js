@@ -8,7 +8,10 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { 
       statusCode: 405, 
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ message: "Method Not Allowed" }) 
     };
   }
@@ -18,7 +21,10 @@ exports.handler = async (event) => {
     if (!emp_id || !type) {
       return { 
         statusCode: 400, 
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate" 
+        },
         body: JSON.stringify({ message: "Missing parameters" }) 
       };
     }
@@ -36,7 +42,10 @@ exports.handler = async (event) => {
       if (existing.rows.length > 0 && existing.rows[0].clock_in) {
         return {
           statusCode: 200,
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+          },
           body: JSON.stringify({
             message: "Already clocked in.",
             timestamp: existing.rows[0].clock_in,
@@ -46,15 +55,18 @@ exports.handler = async (event) => {
       }
 
       await pool.query(
-        `INSERT INTO attendance (emp_id, date, clock_in) 
-         VALUES ($1, $2, $3)
-         ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3`,
+        `INSERT INTO attendance (emp_id, date, clock_in, created_at, updated_at) 
+         VALUES ($1, $2, $3, NOW(), NOW())
+         ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3, updated_at = NOW()`,
         [emp_id, today, timeNow]
       );
 
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        },
         body: JSON.stringify({
           message: "Clocked in successfully.",
           timestamp: timeNow,
@@ -67,7 +79,10 @@ exports.handler = async (event) => {
       if (existing.rows.length === 0 || existing.rows[0].clock_out) {
         return {
           statusCode: 200,
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+          },
           body: JSON.stringify({
             message: "Already clocked out or not clocked in yet.",
             timestamp: existing.rows[0]?.clock_out || null,
@@ -77,13 +92,16 @@ exports.handler = async (event) => {
       }
 
       await pool.query(
-        "UPDATE attendance SET clock_out = $1 WHERE emp_id = $2 AND date = $3",
+        "UPDATE attendance SET clock_out = $1, updated_at = NOW() WHERE emp_id = $2 AND date = $3",
         [timeNow, emp_id, today]
       );
 
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        },
         body: JSON.stringify({
           message: "Clocked out successfully.",
           timestamp: timeNow,
@@ -94,7 +112,10 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ message: "Invalid action." })
     };
 
@@ -102,7 +123,10 @@ exports.handler = async (event) => {
     console.error("❌ Error in mark_attendance:", err);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ message: "Internal error", error: err.message })
     };
   }
