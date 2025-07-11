@@ -27,9 +27,12 @@ function setupCSRFProtection() {
       options = options || {};
       options.headers = options.headers || {};
       options.headers['X-CSRF-Token'] = csrfToken;
+      
+      // Add this debugging line
+      console.log("Adding CSRF token to request:", url);
     }
     
-    return originalFetch(url, options);
+    return originalFetch.call(this, url, options);  // <-- FIXED THIS LINE
   };
   
   // Add token to forms
