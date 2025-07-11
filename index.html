@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nikagenyx Vision Tech</title>
   <link rel="icon" type="image/png" href="assets/Nikagenyx Vision Tech.png">
+  
+  <!-- Preconnect for faster resource loading -->
+  <link rel="preconnect" href="https://res.cloudinary.com">
+  <link rel="dns-prefetch" href="https://res.cloudinary.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  
   <link href="https://fonts.googleapis.com/css2?family=Questrial&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -38,6 +45,31 @@
       transform: translateY(-4px) scale(1.015);
       box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(255, 255, 255, 0.08);
     }
+    
+    /* Background image loading styles */
+    .bg-loading {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, #0f172a 25%, #1e293b 50%, #0f172a 75%);
+      background-size: 200% 200%;
+      animation: gradientAnimation 2s ease infinite;
+      z-index: 0;
+    }
+    
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .bg-image {
+      transition: opacity 1s ease-in-out;
+      opacity: 0;
+    }
+    
+    .bg-image.loaded {
+      opacity: 0.6;
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-white flex flex-col min-h-screen">
@@ -61,12 +93,30 @@
   </ul>
 </nav>
 
-<!-- Hero Section -->
+<!-- Hero Section with Optimized Background Image -->
 <main class="flex-grow fade-in">
   <section class="relative flex items-center justify-center text-center px-4 min-h-[calc(100vh-128px)] overflow-hidden">
-    <img src="https://res.cloudinary.com/dhgo8wahk/image/upload/v1751140689/steve-johnson-5g-eLjXHuck-unsplash_flcm7i.jpg" 
-         alt="Background Visual" 
-         class="absolute inset-0 w-full h-full object-cover blur-sm opacity-60 z-0" />
+    <!-- Loading placeholder for background -->
+    <div class="bg-loading"></div>
+    
+    <!-- Low quality placeholder first (tiny file, loads instantly) -->
+    <img 
+      src="https://res.cloudinary.com/dhgo8wahk/image/upload/w_20,e_blur:1000/v1751140689/steve-johnson-5g-eLjXHuck-unsplash_flcm7i.jpg" 
+      alt="" 
+      aria-hidden="true"
+      class="absolute inset-0 w-full h-full object-cover blur-sm z-0"
+      style="opacity: 0.3;"
+    />
+    
+    <!-- High quality image (optimized with Cloudinary) -->
+    <img 
+      src="https://res.cloudinary.com/dhgo8wahk/image/upload/f_auto,q_auto:good,w_1920/v1751140689/steve-johnson-5g-eLjXHuck-unsplash_flcm7i.jpg" 
+      alt="Background Visual" 
+      class="absolute inset-0 w-full h-full object-cover blur-sm z-0 bg-image"
+      loading="lazy"
+      onload="this.classList.add('loaded'); this.previousElementSibling.style.opacity='0'; this.previousElementSibling.previousElementSibling.style.opacity='0';"
+    />
+    
     <div class="relative z-10 bg-black bg-opacity-60 p-10 rounded-xl max-w-2xl mx-auto hero-3d">
       <h1 class="text-4xl md:text-6xl font-bold gradient-text mb-6 leading-snug"
           style="background: linear-gradient(to right, #00d4ff, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
@@ -94,6 +144,38 @@
   toggleBtn.addEventListener('click', () => {
     menu.classList.toggle('hidden');
   });
+</script>
+
+<!-- Image Loading Enhancement -->
+<script>
+  // Detect if IntersectionObserver is available for better performance
+  if ('IntersectionObserver' in window) {
+    const bgImageObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          
+          // Start loading the actual image
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+          }
+          
+          bgImageObserver.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '200px',
+      threshold: 0.01
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const bgImage = document.querySelector('.bg-image');
+      if (bgImage) {
+        bgImageObserver.observe(bgImage);
+      }
+    });
+  }
 </script>
 
 </body>
