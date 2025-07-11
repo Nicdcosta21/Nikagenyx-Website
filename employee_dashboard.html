@@ -135,7 +135,7 @@
     &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
   </footer>
 
-   <script>
+  <script>
     // ======================
     // MAIN DASHBOARD CONTROLLER
     // ======================
@@ -152,11 +152,13 @@
       // 2. Set employee name in header
       document.getElementById("empName").textContent = empSession?.name || "Employee";
 
-      // 3. Check birthday FIRST - before any other operations
+      // 3. Initialize clock system FIRST to ensure buttons are properly set
+      await initClockSystem(empId);
+      
+      // 4. Check birthday 
       await checkBirthday(empId, empSession.name);
 
-      // 4. Initialize all dashboard components after birthday check
-      initClockSystem(empId);
+      // 5. Initialize remaining dashboard components
       loadDashboardData(empId);
       setupAutoClockOutCheck(empId);
       setupEventListeners();
@@ -296,107 +298,180 @@
       }, 2000);
     }
     
-   // Function to close birthday modal
-window.closeBirthdayModal = function() {
-  const modal = document.getElementById('birthdayModal');
-  if (modal) {
-    // Add the animation style if it doesn't exist
-    if (!document.getElementById('fadeOutStyle')) {
-      document.head.insertAdjacentHTML("beforeend", `
-        <style id="fadeOutStyle">
-          @keyframes fade-out {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(10px); }
-          }
-          .fade-out {
-            animation: fade-out 0.5s ease-in forwards;
-          }
-        </style>
-      `);
-    }
-    
-    modal.classList.add('fade-out');
-    setTimeout(() => modal.remove(), 500);
-  }
-};
-
+    // Function to close birthday modal
+    window.closeBirthdayModal = function() {
+      const modal = document.getElementById('birthdayModal');
+      if (modal) {
+        // Add the animation style if it doesn't exist
+        if (!document.getElementById('fadeOutStyle')) {
+          document.head.insertAdjacentHTML("beforeend", `
+            <style id="fadeOutStyle">
+              @keyframes fade-out {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(10px); }
+              }
+              .fade-out {
+                animation: fade-out 0.5s ease-in forwards;
+              }
+            </style>
+          `);
+        }
+        
+        modal.classList.add('fade-out');
+        setTimeout(() => modal.remove(), 500);
+      }
+    };
 
     // ======================
-    // CLOCK IN/OUT SYSTEM
+    // CLOCK IN/OUT SYSTEM - IMPROVED FOR STATE PERSISTENCE
     // ======================
-    function initClockSystem(empId) {
+    async function initClockSystem(empId) {
       const clockInBtn = document.getElementById("clockInBtn");
       const clockOutBtn = document.getElementById("clockOutBtn");
       const status = document.getElementById("statusMessage");
-
-      // Check current clock status on load
-      checkClockStatus();
-
-      function checkClockStatus() {
-        fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`)
-          .then(res => {
-            if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-            return res.json();
-          })
-          .then(data => {
-            // Store the clock status in localStorage for persistence
-            localStorage.setItem("last_action", data.last_action);
-            
-            // If clocked in, update last_activity timestamp
-            if (data.last_action === "in" && !localStorage.getItem("last_activity")) {
-              localStorage.setItem("last_activity", Date.now());
-            }
-            
-            updateButtonState(data.last_action);
-            status.textContent = data.message || "Ready to clock in";
-          })
-          .catch(err => {
-            console.error("Error fetching clock status:", err);
-            
-            // Default to clocked out if there's an error
-            updateButtonState("out");
-            status.textContent = "Error checking status. Try refreshing.";
-          });
+      
+      // Disable both buttons initially until we know the state
+      clockInBtn.disabled = true;
+      clockOutBtn.disabled = true;
+      clockInBtn.classList.add("opacity-50");
+      clockOutBtn.classList.add("opacity-50");
+      
+      // Wait for clock status check to complete before continuing
+      try {
+        const data = await fetchClockStatus();
+        updateButtonState(data.last_action);
+        status.textContent = data.message || "Ready to clock in";
+      } catch (err) {
+        console.error("Failed to initialize clock system:", err);
+        status.textContent = "Error checking status. Try refreshing.";
+        updateButtonState("out"); // Default to allowing clock in if error
       }
 
+      // Function to fetch the current clock status
+      async function fetchClockStatus() {
+        try {
+          const res = await fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`);
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          // Store the clock status in localStorage for persistence
+          localStorage.setItem("last_action", data.last_action);
+          
+          // If clocked in, update last_activity timestamp
+          if (data.last_action === "in" && !localStorage.getItem("last_activity")) {
+            localStorage.setItem("last_activity", Date.now());
+          }
+          
+          return data;
+        } catch (err) {
+          console.error("Error fetching clock status:", err);
+          throw err;
+        }
+      }
+
+      // Update button state based on clock status
       function updateButtonState(lastAction) {
+        console.log("Updating button state to:", lastAction);
+        
+        // Set button disabled state
         clockInBtn.disabled = lastAction === "in";
         clockOutBtn.disabled = lastAction !== "in";
         
-        clockInBtn.classList.toggle("opacity-50", lastAction === "in");
-        clockOutBtn.classList.toggle("opacity-50", lastAction !== "in");
+        // Set visual state with opacity classes
+        if (lastAction === "in") {
+          clockInBtn.classList.add("opacity-50");
+          clockOutBtn.classList.remove("opacity-50");
+        } else {
+          clockInBtn.classList.remove("opacity-50");
+          clockOutBtn.classList.add("opacity-50");
+        }
       }
 
-      // Clock in/out handlers
-      window.clockIn = () => markAttendance("in");
-      window.clockOut = () => markAttendance("out");
-
-      function markAttendance(type) {
-        // Save the current action type for auto-clockout functionality
-        localStorage.setItem("last_action", type);
+      // Clock in handler - use async function with immediate UI feedback
+      window.clockIn = async () => {
+        // Update UI immediately for responsiveness
+        updateButtonState("in");
+        status.textContent = "Clocking in...";
+        
+        // Save state
+        localStorage.setItem("last_action", "in");
         localStorage.setItem("last_activity", Date.now());
         
-        fetch("/.netlify/functions/mark_attendance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ emp_id: empId, type })
-        })
-        .then(res => {
+        try {
+          const res = await fetch("/.netlify/functions/mark_attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emp_id: empId, type: "in" })
+          });
+          
           if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          status.textContent = data.message || `Successfully clocked ${type}`;
-          updateButtonState(type);
-          loadDashboardData(empId); // Refresh dashboard
-        })
-        .catch(err => {
-          console.error("Error marking attendance:", err);
-          status.textContent = `Error clocking ${type}. Please try again.`;
-          // Revert local storage on error
-          checkClockStatus();
-        });
-      }
+          
+          const data = await res.json();
+          status.textContent = data.message || "Successfully clocked in";
+          
+          // Refresh dashboard data
+          loadDashboardData(empId);
+        } catch (err) {
+          console.error("Error clocking in:", err);
+          status.textContent = "Error clocking in. Please try again.";
+          
+          // Revert button state by checking actual status
+          try {
+            const data = await fetchClockStatus();
+            updateButtonState(data.last_action);
+          } catch (statusErr) {
+            // If can't verify status, assume not clocked in
+            updateButtonState("out");
+          }
+        }
+      };
+      
+      // Clock out handler - use async function with immediate UI feedback
+      window.clockOut = async () => {
+        // Update UI immediately
+        updateButtonState("out");
+        status.textContent = "Clocking out...";
+        
+        // Save state
+        localStorage.setItem("last_action", "out");
+        
+        try {
+          const res = await fetch("/.netlify/functions/mark_attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emp_id: empId, type: "out" })
+          });
+          
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          
+          const data = await res.json();
+          status.textContent = data.message || "Successfully clocked out";
+          
+          // Refresh dashboard data
+          loadDashboardData(empId);
+        } catch (err) {
+          console.error("Error clocking out:", err);
+          status.textContent = "Error clocking out. Please try again.";
+          
+          // Revert button state by checking actual status
+          try {
+            const data = await fetchClockStatus();
+            updateButtonState(data.last_action);
+          } catch (statusErr) {
+            // If can't verify status, assume still clocked in
+            updateButtonState("in");
+          }
+        }
+      };
+      
+      // Export function for auto clock-out
+      window.updateClockButtonState = updateButtonState;
+      
+      return { updateButtonState, fetchClockStatus };
     }
 
     // ======================
@@ -470,7 +545,7 @@ window.closeBirthdayModal = function() {
     }
 
     // ======================
-    // DASHBOARD DATA LOADER - NO MOCK DATA
+    // DASHBOARD DATA LOADER
     // ======================
     async function loadDashboardData(empId) {
       document.getElementById('activityFeed').innerHTML = `<li class="text-center text-gray-400 py-4">Loading activities...</li>`;
