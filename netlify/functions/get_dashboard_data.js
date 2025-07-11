@@ -8,11 +8,15 @@ const pool = new Pool({
 exports.handler = async (event) => {
   // Extract employee ID from query parameters
   const empId = event.queryStringParameters?.emp_id;
+  const timestamp = event.queryStringParameters?._t || Date.now(); // For cache busting
   
   if (!empId) {
     return {
       statusCode: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ error: "Missing employee ID" })
     };
   }
@@ -79,59 +83,45 @@ exports.handler = async (event) => {
       productivity: 85 // Can be replaced with actual calculation
     };
     
-   // Get recent activities - PROPERLY FORMATTED for your frontend
-const activitiesRes = await pool.query(
-  `SELECT 
-    'clock' as type,
-    created_at AS timestamp,
-    CASE 
-      WHEN clock_in IS NOT NULL AND clock_out IS NULL THEN 'Clocked in at ' || clock_in
-      WHEN clock_out IS NOT NULL THEN 'Clocked out at ' || clock_out
-      ELSE 'Attendance recorded on ' || date
-    END as message
-   FROM attendance 
-   WHERE emp_id = $1 
-   ORDER BY date DESC, created_at DESC 
-   LIMIT 5`,
-  [empId]
-);
+    // Get recent activities - FIXED QUERY with direct mapping
+    const activitiesRes = await pool.query(
+      `SELECT 
+        'clock' as type,
+        created_at AS timestamp,
+        CASE 
+          WHEN clock_in IS NOT NULL AND clock_out IS NULL THEN 'Clocked in at ' || clock_in
+          WHEN clock_out IS NOT NULL THEN 'Clocked out at ' || clock_out
+          ELSE 'Attendance recorded on ' || date
+        END as message
+       FROM attendance 
+       WHERE emp_id = $1 
+       ORDER BY date DESC, created_at DESC 
+       LIMIT 5`,
+      [empId]
+    );
     
-    // Transform database results into activity format
-    const activities = [];
-    for (const row of activitiesRes.rows) {
-      // Add clock in activity if exists
-      if (row.clock_in) {
-        activities.push({
-          type: 'clock',
-          message: `Clocked in on ${new Date(row.date).toLocaleDateString()}`,
-          timestamp: row.timestamp || new Date(row.date).toISOString()
-        });
+    // Use the activities directly without reprocessing
+    const activities = activitiesRes.rows.length > 0 ? activitiesRes.rows : [
+      {
+        type: "profile",
+        message: "No recent activities",
+        timestamp: new Date().toISOString()
       }
-      
-      // Add clock out activity if exists
-      if (row.clock_out) {
-        activities.push({
-          type: 'clock',
-          message: `Clocked out on ${new Date(row.date).toLocaleDateString()}`,
-          timestamp: row.timestamp || new Date(row.date).toISOString()
-        });
-      }
-    }
+    ];
     
-    // Return all data
+    // Return all data with cache control headers
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache"
+      },
       body: JSON.stringify({
         today: todayData,
         metrics: metrics,
-        activities: activities.length ? activities : [
-          {
-            type: "profile",
-            message: "No recent activities",
-            timestamp: new Date().toISOString()
-          }
-        ]
+        activities: activities,
+        timestamp: timestamp // Include timestamp for frontend verification
       })
     };
     
@@ -140,7 +130,10 @@ const activitiesRes = await pool.query(
     
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ 
         error: "Server error", 
         message: error.message 
