@@ -9,3 +9,11 @@
 [functions."*"]
   memory = 1024
   timeout = 30
+
+# Add these new sections for image optimization
+[build.processing]
+  skip_processing = false
+[build.processing.images]
+  compress = true
+  quality = 85
+  metadata = "none"
