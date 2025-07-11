@@ -79,21 +79,22 @@ exports.handler = async (event) => {
       productivity: 85 // Can be replaced with actual calculation
     };
     
-    // Get recent activities - FIXED QUERY to match your actual schema
-    // Using clock_in and clock_out as activity indicators instead of "action"
-    const activitiesRes = await pool.query(
-      `SELECT 
-        emp_id, 
-        date, 
-        clock_in, 
-        clock_out, 
-        created_at AS timestamp
-       FROM attendance 
-       WHERE emp_id = $1 
-       ORDER BY date DESC, created_at DESC 
-       LIMIT 5`,
-      [empId]
-    );
+   // Get recent activities - PROPERLY FORMATTED for your frontend
+const activitiesRes = await pool.query(
+  `SELECT 
+    'clock' as type,
+    created_at AS timestamp,
+    CASE 
+      WHEN clock_in IS NOT NULL AND clock_out IS NULL THEN 'Clocked in at ' || clock_in
+      WHEN clock_out IS NOT NULL THEN 'Clocked out at ' || clock_out
+      ELSE 'Attendance recorded on ' || date
+    END as message
+   FROM attendance 
+   WHERE emp_id = $1 
+   ORDER BY date DESC, created_at DESC 
+   LIMIT 5`,
+  [empId]
+);
     
     // Transform database results into activity format
     const activities = [];
