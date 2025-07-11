@@ -30,7 +30,7 @@
   package = "@netlify/plugin-lighthouse"
 
 
-  [dev]
+[dev]
   command = "npm start"
   port = 8888
   targetPort = 3000
@@ -44,3 +44,17 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg-native"]
+
+[functions."*"]
+  included_files = ["assets/css/**"]
