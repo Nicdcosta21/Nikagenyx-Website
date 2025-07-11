@@ -79,26 +79,43 @@ exports.handler = async (event) => {
       productivity: 85 // Can be replaced with actual calculation
     };
     
-    // Get recent activities
+    // Get recent activities - FIXED QUERY to match your actual schema
+    // Using clock_in and clock_out as activity indicators instead of "action"
     const activitiesRes = await pool.query(
-      `SELECT action as type, timestamp, 
-       CASE 
-         WHEN action = 'clock_in' THEN 'Clocked in' 
-         WHEN action = 'clock_out' THEN 'Clocked out' 
-         ELSE action 
-       END as message 
+      `SELECT 
+        emp_id, 
+        date, 
+        clock_in, 
+        clock_out, 
+        created_at AS timestamp
        FROM attendance 
        WHERE emp_id = $1 
-       ORDER BY timestamp DESC 
+       ORDER BY date DESC, created_at DESC 
        LIMIT 5`,
       [empId]
     );
     
-    const activities = activitiesRes.rows.map(row => ({
-      type: row.type === 'clock_in' || row.type === 'clock_out' ? 'clock' : 'profile',
-      message: row.message,
-      timestamp: row.timestamp
-    }));
+    // Transform database results into activity format
+    const activities = [];
+    for (const row of activitiesRes.rows) {
+      // Add clock in activity if exists
+      if (row.clock_in) {
+        activities.push({
+          type: 'clock',
+          message: `Clocked in on ${new Date(row.date).toLocaleDateString()}`,
+          timestamp: row.timestamp || new Date(row.date).toISOString()
+        });
+      }
+      
+      // Add clock out activity if exists
+      if (row.clock_out) {
+        activities.push({
+          type: 'clock',
+          message: `Clocked out on ${new Date(row.date).toLocaleDateString()}`,
+          timestamp: row.timestamp || new Date(row.date).toISOString()
+        });
+      }
+    }
     
     // Return all data
     return {
