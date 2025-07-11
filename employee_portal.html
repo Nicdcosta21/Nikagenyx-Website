@@ -235,5 +235,24 @@
     }, 4000);
   }
 </script>
+
+  <!-- Security and date utilities -->
+<script src="assets/js/date-utils.js"></script>
+<script src="assets/js/security.js"></script>
+<script src="assets/js/modules/toast-manager.js"></script>
+
+<!-- Add CSRF protection to login form -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Set up CSRF protection
+    window.securityUtils.setupCSRFProtection();
+    
+    // Update date/time display if it exists
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+      dateElement.textContent = window.dateUtils.formatLocalDate(new Date());
+    }
+  });
+</script>
 </body>
 </html>
