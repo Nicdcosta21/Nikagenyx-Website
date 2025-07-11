@@ -125,4 +125,154 @@ exports.handler = async (event, context) => {
             completed_at,
             created_by
           )
-          VALUES ($1, $2, $3, 'completed',
+          VALUES ($1, $2, $3, 'completed', NOW(), NOW(), 'system')
+        `, [
+          report.id,
+          report.report_type,
+          report.format
+        ]);
+
+      } catch (error) {
+        console.error(`Error processing scheduled report ${report.id}:`, error);
+        
+        // Log failed execution
+        await client.query(`
+          INSERT INTO report_runs (
+            report_id,
+            report_type,
+            format,
+            status,
+            error_message,
+            started_at,
+            completed_at,
+            created_by
+          )
+          VALUES ($1, $2, $3, 'failed', $4, NOW(), NOW(), 'system')
+        `, [
+          report.id,
+          report.report_type,
+          report.format,
+          error.message
+        ]);
+        
+        // Send error notification to admin
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM,
+          to: process.env.ADMIN_EMAIL,
+          subject: `Scheduled Report Error: ${report.report_name}`,
+          html: `
+            <h2>Scheduled Report Processing Error</h2>
+            <p><strong>Report:</strong> ${report.report_name}</p>
+            <p><strong>ID:</strong> ${report.id}</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+          `
+        });
+      }
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Scheduled reports processed successfully',
+        processedCount: scheduledReports.rows.length
+      })
+    };
+
+  } catch (error) {
+    console.error('Error processing scheduled reports:', error);
+    
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Failed to process scheduled reports',
+        message: error.message
+      })
+    };
+  } finally {
+    client.release();
+  }
+};
+
+// Helper function to calculate next run date
+function calculateNextRunDate(schedule) {
+  const now = new Date();
+  let nextRun = new Date(now);
+  
+  // Parse schedule time
+  const [hours, minutes] = schedule.time.split(':').map(Number);
+  nextRun.setHours(hours, minutes, 0, 0);
+  
+  // If the calculated time is in the past, move to next occurrence
+  if (nextRun <= now) {
+    switch (schedule.frequency) {
+      case 'daily':
+        nextRun.setDate(nextRun.getDate() + 1);
+        break;
+        
+      case 'weekly':
+        const daysToAdd = (schedule.day - nextRun.getDay() + 7) % 7 || 7;
+        nextRun.setDate(nextRun.getDate() + daysToAdd);
+        break;
+        
+      case 'monthly':
+        nextRun.setMonth(nextRun.getMonth() + 1);
+        nextRun.setDate(Math.min(schedule.day, getDaysInMonth(nextRun)));
+        break;
+        
+      case 'quarterly':
+        const monthsToAdd = 3 - (nextRun.getMonth() % 3);
+        nextRun.setMonth(nextRun.getMonth() + monthsToAdd);
+        nextRun.setDate(Math.min(schedule.day, getDaysInMonth(nextRun)));
+        break;
+    }
+  }
+  
+  return nextRun;
+}
+
+// Helper function to get days in month
+function getDaysInMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+// Helper function to get content type
+function getContentType(format) {
+  switch (format.toLowerCase()) {
+    case 'pdf':
+      return 'application/pdf';
+    case 'excel':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'csv':
+      return 'text/csv';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+// Helper function to get period label
+function getPeriodLabel(schedule) {
+  const now = new Date();
+  
+  switch (schedule.frequency) {
+    case 'daily':
+      return now.toLocaleDateString();
+      
+    case 'weekly':
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      return `Week of ${weekStart.toLocaleDateString()}`;
+      
+    case 'monthly':
+      return now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      
+    case 'quarterly':
+      const quarter = Math.floor(now.getMonth() / 3) + 1;
+      return `Q${quarter} ${now.getFullYear()}`;
+      
+    default:
+      return 'Custom Period';
+  }
+}
