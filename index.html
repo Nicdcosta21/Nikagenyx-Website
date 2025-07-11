@@ -178,5 +178,22 @@
   }
 </script>
 
+  <!-- Utility scripts -->
+<script src="assets/js/date-utils.js"></script>
+<script src="assets/js/security.js"></script>
+<script src="assets/js/image-optimizer.js"></script>
+
+<!-- Service worker registration -->
+<script src="assets/js/sw-register.js"></script>
+
+<!-- Initialize image optimization -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.imageOptimizer) {
+      window.imageOptimizer.init();
+    }
+  });
+</script>
+
 </body>
 </html>
