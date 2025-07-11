@@ -213,9 +213,8 @@ For JWT or session issues:
 
 ## Contact Information
 
-- **Lead Developer:** Nicole D'Costa (nicole@nikagenyx.com)
-- **Technical Support:** dev-support@nikagenyx.com
-- **Internal Documentation:** [wiki.nikagenyx.com](https://wiki.nikagenyx.com)
+- **Lead Developer:** Nikolas D'Costa (n.dcosta@nikagenyx.com)
+- **Technical Support:** support@nikagenyx.com
 
 ---
 
