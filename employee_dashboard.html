@@ -296,14 +296,29 @@
       }, 2000);
     }
     
-    // Function to close birthday modal
-    window.closeBirthdayModal = function() {
-      const modal = document.getElementById('birthdayModal');
-      if (modal) {
-        modal.classList.add('fade-out');
-        setTimeout(() => modal.remove(), 500);
-      }
-    };
+   // Function to close birthday modal
+window.closeBirthdayModal = function() {
+  const modal = document.getElementById('birthdayModal');
+  if (modal) {
+    // Add the animation style if it doesn't exist
+    if (!document.getElementById('fadeOutStyle')) {
+      document.head.insertAdjacentHTML("beforeend", `
+        <style id="fadeOutStyle">
+          @keyframes fade-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+          }
+          .fade-out {
+            animation: fade-out 0.5s ease-in forwards;
+          }
+        </style>
+      `);
+    }
+    
+    modal.classList.add('fade-out');
+    setTimeout(() => modal.remove(), 500);
+  }
+};
 
 
     // ======================
