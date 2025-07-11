@@ -30,10 +30,10 @@
 
 # Application specific redirects
 [[redirects]]
-  from = "/account/app/*"
-  to = "/index.html"
-  status = 200
-  force = true
+from = "/account/app/*"
+to = "/account/app/:splat"
+status = 200
+
 
 # Main page redirect
 [[redirects]]
