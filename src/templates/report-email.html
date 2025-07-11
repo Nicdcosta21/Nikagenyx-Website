@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{reportName}} - Scheduled Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      max-width: 150px;
+      margin-bottom: 20px;
+    }
+    .title {
+      color: #2563eb;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #6b7280;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .content {
+      background-color: #f9fafb;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .message {
+      margin-bottom: 20px;
+    }
+    .attachment-info {
+      background-color: #e0e7ff;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .footer {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .button {
+      display: inline-block;
+      background-color: #2563eb;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
+    .button:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="{{logoUrl}}" alt="Company Logo" class="logo">
+      <h1 class="title">{{reportName}}</h1>
+      <p class="subtitle">Scheduled Report for {{periodLabel}}</p>
+    </div>
+
+    <div class="content">
+      <div class="message">
+        {{emailBody}}
+      </div>
+
+      <div class="attachment-info">
+        <p>📎 Attached report details:</p>
+        <ul>
+          <li>Report Type: {{reportType}}</li>
+          <li>Format: {{format}}</li>
+          <li>Generated: {{generatedDate}}</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="{{viewReportUrl}}" class="button">
+          View Report Online
+        </a>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated message from your financial reporting system.</p>
+      <p>To manage your report subscriptions, please visit your <a href="{{settingsUrl}}">notification settings</a>.</p>
+    </div>
+  </div>
+</body>
+</html>
