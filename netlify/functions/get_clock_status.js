@@ -7,16 +7,21 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   const empId = event.queryStringParameters?.emp_id;
+  const timestamp = event.queryStringParameters?._t || Date.now(); // Cache-busting
   
   if (!empId) {
     return {
       statusCode: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ error: "Missing employee ID" })
     };
   }
 
   try {
+    console.log(`Checking clock status for emp_id ${empId} at ${new Date().toISOString()}`);
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     
     const res = await pool.query(
@@ -27,10 +32,14 @@ exports.handler = async (event) => {
     if (res.rows.length === 0) {
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        },
         body: JSON.stringify({
           last_action: "out",
-          message: "Ready to clock in"
+          message: "Ready to clock in",
+          timestamp: timestamp
         })
       };
     }
@@ -40,28 +49,40 @@ exports.handler = async (event) => {
     if (row.clock_in && !row.clock_out) {
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate" 
+        },
         body: JSON.stringify({
           last_action: "in",
-          message: "You are currently clocked in"
+          message: "You are currently clocked in",
+          timestamp: timestamp
         })
       };
     } else if (row.clock_in && row.clock_out) {
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        },
         body: JSON.stringify({
           last_action: "out",
-          message: "You have completed your shift today"
+          message: "You have completed your shift today",
+          timestamp: timestamp
         })
       };
     } else {
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        },
         body: JSON.stringify({
           last_action: "out",
-          message: "Ready to clock in"
+          message: "Ready to clock in",
+          timestamp: timestamp
         })
       };
     }
@@ -70,11 +91,15 @@ exports.handler = async (event) => {
     
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
       body: JSON.stringify({ 
         error: "Server error", 
         message: error.message,
-        last_action: "out" // Default fallback
+        last_action: "out", // Default fallback
+        timestamp: timestamp
       })
     };
   }
