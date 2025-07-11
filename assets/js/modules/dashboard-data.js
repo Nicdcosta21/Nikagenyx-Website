@@ -6,17 +6,44 @@
 const DashboardData = (function() {
   // Private variables
   let empId = null;
+  let refreshInterval = null;
   
   // Initialize the module
   function init(employeeId) {
     empId = employeeId;
     setupEventListeners();
     loadData();
+    
+    // Set up auto refresh for when clocked in (every 15 seconds)
+    startAutoRefresh();
   }
   
   // Set up event listeners
   function setupEventListeners() {
     document.addEventListener('dashboard:refresh', loadData);
+    
+    // Listen for visibility changes to refresh when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    });
+  }
+  
+  // Start auto refresh for dashboard data
+  function startAutoRefresh() {
+    // Clear any existing interval
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+    }
+    
+    // Refresh every 15 seconds when clocked in
+    refreshInterval = setInterval(() => {
+      const lastAction = localStorage.getItem("last_action");
+      if (lastAction === "in") {
+        loadData();
+      }
+    }, 15000);
   }
   
   // Load dashboard data
@@ -25,7 +52,9 @@ const DashboardData = (function() {
     
     try {
       const timestamp = Date.now();
-      const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}&_t=${timestamp}`, {
+      const clientDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}&_t=${timestamp}&client_date=${clientDate}`, {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           "Pragma": "no-cache",
@@ -52,7 +81,7 @@ const DashboardData = (function() {
       updateActivityFeed(data.activities);
     } catch (err) {
       console.error("Dashboard data error:", err);
-      window.ToastManager.show("Error loading dashboard data. Please refresh.", true);
+      window.ToastManager?.show?.("Error loading dashboard data. Please refresh.", true);
       
       // Show error in activity feed
       document.getElementById('activityFeed').innerHTML = 
@@ -70,10 +99,14 @@ const DashboardData = (function() {
     // Set status with color coding
     const statusElem = document.getElementById('todayStatus');
     statusElem.textContent = todayData.status || '-';
+    
+    // Apply appropriate color based on status
     statusElem.className = "font-bold text-xl mt-1 " + (
+      todayData.status === "Working" ? "text-blue-400" :
+      todayData.status === "Present" ? "text-green-400" :
       todayData.status === "Late" ? "text-yellow-400" :
-      todayData.status === "Absent" ? "text-red-400" :
-      "text-green-400"
+      todayData.status === "Partial" ? "text-orange-400" :
+      "text-red-400"
     );
   }
   
@@ -123,18 +156,39 @@ const DashboardData = (function() {
   }
   
   function formatActivityTime(timestamp) {
-    const now = new Date();
-    const activityDate = new Date(timestamp);
-    const diffHours = Math.floor((now - activityDate) / (1000 * 60 * 60));
+    if (!timestamp) return "Unknown time";
     
-    if (diffHours < 1) {
-      return "Just now";
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    } else if (diffHours < 48) {
-      return "Yesterday";
-    } else {
-      return activityDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    try {
+      const now = new Date();
+      const activityDate = new Date(timestamp);
+      
+      // Check if it's a time string (HH:MM:SS)
+      if (typeof timestamp === 'string' && timestamp.includes(':') && !timestamp.includes('T')) {
+        // It's a time string without date, assume today
+        const [hours, minutes, seconds] = timestamp.split(':');
+        activityDate.setHours(parseInt(hours, 10));
+        activityDate.setMinutes(parseInt(minutes, 10));
+        activityDate.setSeconds(parseInt(seconds, 10) || 0);
+      }
+      
+      const diffMs = now - activityDate;
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      
+      if (diffMins < 1) {
+        return "Just now";
+      } else if (diffMins < 60) {
+        return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+      } else if (diffMins < 24 * 60) {
+        const hours = Math.floor(diffMins / 60);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      } else if (diffMins < 48 * 60) {
+        return "Yesterday";
+      } else {
+        return activityDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch (e) {
+      console.error("Error formatting activity time:", e);
+      return String(timestamp);
     }
   }
   
