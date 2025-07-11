@@ -55,13 +55,14 @@ exports.handler = async (event) => {
         };
       }
 
-      await pool.query(
+      // Assign result to dbResult, then log it
+      const dbResult = await pool.query(
         `INSERT INTO attendance (emp_id, date, clock_in, created_at, updated_at) 
          VALUES ($1, $2, $3, NOW(), NOW())
          ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3, updated_at = NOW()`,
         [emp_id, today, timeNow]
       );
-        console.log("Database operation result:", JSON.stringify(dbResult));
+      console.log("Database operation result:", JSON.stringify(dbResult));
 
       return {
         statusCode: 200,
