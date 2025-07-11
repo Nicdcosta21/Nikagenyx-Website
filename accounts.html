@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nikagenyx Accounting System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/assets/Nikagenyx Vision Tech.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Questrial', sans-serif; }
+    .fade-in { animation: fadeInUp 0.6s ease-out; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-gray-800 p-4 flex items-center justify-between shadow-md">
+    <a href="/index.html" class="flex items-center gap-3">
+      <img src="/assets/Nikagenyx Vision Tech.png" alt="Nikagenyx Logo" class="h-10" />
+      <span class="text-xl font-bold tracking-wide">NIKAGENYX VISION TECH</span>
+    </a>
+    <nav>
+      <a href="/admin_dashboard.html" class="text-sm text-blue-400 hover:text-white">↩ Admin Dashboard</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-8 max-w-5xl mx-auto fade-in">
+    <h1 class="text-4xl font-bold text-center mb-4">Nikagenyx Accounting Suite</h1>
+    <p class="text-center text-gray-300 mb-8">
+      Smart, simple, and secure accounting inspired by Tally. Designed for modern businesses and tailored for cruise-based operations.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-semibold mb-3">📘 Key Features</h2>
+        <ul class="list-disc pl-6 text-gray-300 space-y-1">
+          <li>Ledger-based double-entry accounting</li>
+          <li>GST-compliant invoicing</li>
+          <li>Vendor & customer tracking</li>
+          <li>Multi-user access with permissions</li>
+          <li>Balance sheet, P&L, and journal reports</li>
+        </ul>
+      </section>
+
+      <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-semibold mb-3">💡 Why Choose Nikagenyx?</h2>
+        <ul class="list-disc pl-6 text-gray-300 space-y-1">
+          <li>Modern interface with mobile-friendly access</li>
+          <li>Custom modules for photography business</li>
+          <li>Integration with employee payroll</li>
+          <li>Secure cloud storage (Netlify + PostgreSQL)</li>
+          <li>Reports exported in Excel & PDF formats</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="text-center mt-10">
+      <a href="/account/app" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-full font-semibold text-white transition">
+        🚀 Launch Accounting App
+      </a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-center text-gray-400 text-sm p-4">
+    © 2025 Nikagenyx Vision Tech Pvt. Ltd. All rights reserved.
+  </footer>
+</body>
+</html>
