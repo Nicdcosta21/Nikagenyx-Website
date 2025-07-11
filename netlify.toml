@@ -1,66 +1,30 @@
 [build]
   command = "npm run build"
-  publish = "build"
+  publish = "./"
   functions = "netlify/functions"
 
+[functions]
+  node_bundler = "esbuild"
+
+[functions."*"]
+  memory = 1024
+  timeout = 30
+
+# Image optimization settings
 [build.processing]
   skip_processing = false
-
 [build.processing.images]
   compress = true
   quality = 85
   metadata = "none"
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["pg-native"]
-
-[functions."*"]
-  memory = 1024
-  timeout = 30
-  included_files = ["assets/css/**"]
+# Custom headers for better cache control
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
 
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
-
-#############################
-# 🔁 REDIRECTS
-#############################
-
-# API route for Netlify Functions
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-# Static accounting module
-[[redirects]]
-  from = "/account/app/*"
-  to = "/account/app/:splat"
-  status = 200
-
-# Default homepage redirect to accounting dashboard
-[[redirects]]
-  from = "/"
-  to = "/account/app"
-  status = 301
-  force = true
-
-# Catch-all fallback to React app
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-#############################
-# 🛡 HEADERS
-#############################
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"

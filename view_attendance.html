@@ -54,44 +54,6 @@
       border-radius: 3px;
       margin-right: 4px;
     }
-    
-    .session-row {
-      display: none;
-    }
-    
-    .session-row.show {
-      display: table-row;
-    }
-    
-    .session-toggle {
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    
-    .session-toggle.rotated {
-      transform: rotate(180deg);
-    }
-    
-    /* Status colors */
-    .status-P { color: #22c55e; }
-    .status-L { color: #facc15; }
-    .status-A { color: #ef4444; }
-    
-    /* Loading spinner */
-    .loader {
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top: 3px solid #6366f1;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      animation: spin 1s linear infinite;
-      display: inline-block;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -107,112 +69,62 @@
 
   <!-- Main Content -->
   <main class="flex-grow p-6">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
-      
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div class="bg-gray-800 p-4 rounded-lg shadow">
-          <h3 class="text-xs uppercase text-gray-400">Total Hours</h3>
-          <p id="summaryTotalHours" class="text-2xl font-bold">0h</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-lg shadow">
-          <h3 class="text-xs uppercase text-gray-400">Present Days</h3>
-          <p id="summaryPresentDays" class="text-2xl font-bold status-P">0</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-lg shadow">
-          <h3 class="text-xs uppercase text-gray-400">Late Days</h3>
-          <p id="summaryLateDays" class="text-2xl font-bold status-L">0</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-lg shadow">
-          <h3 class="text-xs uppercase text-gray-400">Partial Days</h3>
-          <p id="summaryPartialDays" class="text-2xl font-bold text-orange-400">0</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-lg shadow">
-          <h3 class="text-xs uppercase text-gray-400">Absent Days</h3>
-          <p id="summaryAbsentDays" class="text-2xl font-bold status-A">0</p>
-        </div>
-      </div>
-      
-      <!-- Month and Date Selectors -->
-      <div class="bg-gray-800 p-4 rounded-lg mb-6">
-        <div id="monthSelector" class="flex flex-wrap justify-center mb-3">
-          <div class="w-full text-center mb-2">
-            <span class="loader mr-2"></span>
-            <span>Loading months...</span>
+    <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
+    
+    <!-- Month and Date Selectors -->
+    <div class="bg-gray-800 p-4 rounded-lg mb-6">
+      <div id="monthSelector" class="flex flex-wrap justify-center mb-3"></div>
+      <div id="dateSelector" class="flex flex-wrap justify-center"></div>
+    </div>
+    
+    <!-- Day View with Time Blocks -->
+    <div class="bg-gray-800 p-4 rounded-lg mb-6">
+      <h3 class="text-lg font-semibold mb-2">Daily Time Log</h3>
+      <div class="mb-3">
+        <h4 id="selectedDateDisplay" class="text-md text-gray-300 mb-2"></h4>
+        
+        <!-- Legend -->
+        <div class="flex flex-wrap mb-3">
+          <div class="legend-item">
+            <div class="legend-box P"></div>
+            <span>Present</span>
           </div>
-        </div>
-        <div id="dateSelector" class="flex flex-wrap justify-center"></div>
-      </div>
-      
-      <!-- Day View with Time Blocks -->
-      <div class="bg-gray-800 p-4 rounded-lg mb-6">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-lg font-semibold">Daily Time Log</h3>
-          <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
-            Refresh
-          </button>
+          <div class="legend-item">
+            <div class="legend-box L"></div>
+            <span>Leave</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box A"></div>
+            <span>Absent</span>
+          </div>
         </div>
         
-        <div class="mb-3">
-          <h4 id="selectedDateDisplay" class="text-md text-gray-300 mb-2">Select a date</h4>
-          
-          <!-- Legend -->
-          <div class="flex flex-wrap mb-3">
-            <div class="legend-item">
-              <div class="legend-box P"></div>
-              <span>Present</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-box L"></div>
-              <span>Leave</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-box A"></div>
-              <span>Absent</span>
-            </div>
-          </div>
-          
-          <div id="clockSessionsContainer" class="mb-3">
-            <h5 class="text-sm font-medium text-gray-300 mb-1">Clock Sessions:</h5>
-            <div id="clockSessions" class="text-sm text-gray-400">No sessions for selected date</div>
-          </div>
-          
-          <div id="timeBlocksContainer" class="block-wrap"></div>
-          <div id="dayTotalHours" class="text-sm text-gray-300 mt-1"></div>
-        </div>
+        <div id="timeBlocksContainer" class="block-wrap"></div>
+        <div id="dayTotalHours" class="text-sm text-gray-300 mt-1"></div>
       </div>
-      
-      <!-- Monthly Table -->
-      <div class="bg-gray-800 p-4 rounded-lg overflow-x-auto">
-        <h3 class="text-lg font-semibold mb-2">Monthly Summary</h3>
-        <table class="w-full text-left text-sm rounded">
-          <thead class="bg-gray-700 text-gray-300">
-            <tr>
-              <th class="p-3">Date</th>
-              <th class="p-3">First In</th>
-              <th class="p-3">Last Out</th>
-              <th class="p-3">Hours</th>
-              <th class="p-3">Status</th>
-              <th class="p-3">Details</th>
-            </tr>
-          </thead>
-          <tbody id="attendanceTableBody">
-            <tr>
-              <td colspan="6" class="text-center p-4">
-                <div class="loader mr-2"></div>
-                <span>Loading attendance data...</span>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="bg-gray-700 text-white text-sm">
-              <td colspan="3" class="p-3 font-bold">Monthly Total</td>
-              <td colspan="3" id="monthlyTotal" class="p-3">0 hours</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+    </div>
+    
+    <!-- Monthly Table -->
+    <div class="bg-gray-800 p-4 rounded-lg">
+      <h3 class="text-lg font-semibold mb-2">Monthly Summary</h3>
+      <table class="w-full text-left text-sm rounded">
+        <thead class="bg-gray-700 text-gray-300">
+          <tr>
+            <th class="p-2">Date</th>
+            <th class="p-2">Clock In</th>
+            <th class="p-2">Clock Out</th>
+            <th class="p-2">Hours</th>
+            <th class="p-2">Status</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceTableBody"></tbody>
+        <tfoot>
+          <tr class="bg-gray-700 text-white text-sm">
+            <td colspan="3" class="p-2 font-bold">Monthly Total</td>
+            <td colspan="2" id="monthlyTotal" class="p-2"></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   </main>
 
@@ -223,7 +135,6 @@
 
   <!-- Script -->
   <script>
-    // Session check
     const session = JSON.parse(localStorage.getItem("emp_session"));
     if (!session?.emp_id) window.location.href = "employee_portal.html";
 
@@ -233,44 +144,27 @@
     let currentYear = today.getFullYear();
     let selectedDate = today.getDate();
     let attendanceData = [];
-    let summaryData = {};
-    let isLoading = false;
     
     function logout() {
       localStorage.removeItem("emp_session");
       window.location.href = "employee_portal.html";
     }
 
-    function formatTimeDisplay(timeStr) {
-      if (!timeStr) return "--:--";
-      
-      // If time already has seconds, format to HH:MM:SS
-      if (timeStr.includes(':')) {
-        const parts = timeStr.split(':');
-        if (parts.length === 3) {
-          return `${parts[0]}:${parts[1]}:${parts[2]}`;
-        }
-        if (parts.length === 2) {
-          return `${parts[0]}:${parts[1]}:00`;
-        }
-      }
-      
-      return timeStr;
-    }
-    
-    function formatDuration(seconds) {
-      if (!seconds) return "0h 0m";
-      
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      return `${hours}h ${minutes}m`;
-    }
-    
-    function getStatus(seconds) {
-      if (!seconds) return { label: "Absent", code: "A" };
-      if (seconds >= 25200) return { label: "Present", code: "P" }; // 7 hours
-      if (seconds >= 18000) return { label: "Late", code: "L" }; // 5 hours
-      return { label: "Partial", code: "P" };
+    function timeDiff(clockIn, clockOut) {
+      if (!clockIn || !clockOut) return { label: "-", hours: 0, status: "NA" };
+
+      const [h1, m1, s1] = clockIn.split(":").map(Number);
+      const [h2, m2, s2] = clockOut.split(":").map(Number);
+      const inSecs = h1 * 3600 + m1 * 60 + s1;
+      const outSecs = h2 * 3600 + m2 * 60 + s2;
+      const total = outSecs - inSecs;
+      if (total <= 0) return { label: "-", hours: 0, status: "NA" };
+
+      const hrs = Math.floor(total / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      const hoursFloat = total / 3600;
+      const status = hoursFloat < 5 ? "A" : hoursFloat < 7 ? "L" : "P";
+      return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
     }
 
     function daysInMonth(month, year) {
@@ -283,17 +177,6 @@
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
       return `${formattedHour}:${minute} ${ampm}`;
-    }
-    
-    function formatDate(dateStr) {
-      if (!dateStr) return "";
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
     }
 
     function renderMonthSelector() {
@@ -317,30 +200,10 @@
     function renderDateSelector() {
       const container = document.getElementById("dateSelector");
       container.innerHTML = "";
-      
-      if (isLoading) {
-        container.innerHTML = `
-          <div class="w-full text-center py-2">
-            <span class="loader mr-2"></span>
-            <span>Loading dates...</span>
-          </div>
-        `;
-        return;
-      }
-      
       for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
         const btn = document.createElement("button");
         btn.textContent = d;
-        
-        // Check if we have data for this date
-        const hasData = attendanceData.some(entry => {
-          const entryDate = new Date(entry.date);
-          return entryDate.getDate() === d && 
-                 entryDate.getMonth() === currentMonth &&
-                 entryDate.getFullYear() === currentYear;
-        });
-        
-        btn.className = `date-btn ${d === selectedDate ? "active" : ""} ${hasData ? "" : "opacity-40"}`;
+        btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
         btn.onclick = () => { 
           selectedDate = d; 
           renderDateSelector(); 
@@ -354,7 +217,6 @@
       const dateDisplay = document.getElementById("selectedDateDisplay");
       const blocksContainer = document.getElementById("timeBlocksContainer");
       const dayTotalDisplay = document.getElementById("dayTotalHours");
-      const clockSessionsContainer = document.getElementById("clockSessions");
       
       const dateObj = new Date(currentYear, currentMonth, selectedDate);
       const formattedDate = dateObj.toLocaleDateString('en-US', {
@@ -374,25 +236,6 @@
                entryDate.getMonth() === currentMonth &&
                entryDate.getFullYear() === currentYear;
       });
-      
-      // Display clock sessions
-      if (dayData && dayData.sessions && dayData.sessions.length > 0) {
-        let sessionsHtml = '';
-        dayData.sessions.forEach((session, idx) => {
-          sessionsHtml += `
-            <div class="bg-gray-700 p-2 rounded mb-1">
-              <span class="font-medium">Session ${idx + 1}:</span> 
-              <span class="text-green-400">${formatTimeDisplay(session.in)}</span> - 
-              <span class="text-yellow-400">${formatTimeDisplay(session.out || 'In progress')}</span>
-              ${session.duration ? 
-                `<span class="ml-2 text-blue-400">(${formatDuration(session.duration)})</span>` : ''}
-            </div>
-          `;
-        });
-        clockSessionsContainer.innerHTML = sessionsHtml;
-      } else {
-        clockSessionsContainer.textContent = "No clock sessions for this date";
-      }
       
       // If we have blocks data for this day
       let blocks = [];
@@ -416,30 +259,14 @@
       });
       
       // Calculate and display the total hours
-      const totalHours = summary.P * 0.5 + summary.L * 0.5;
+      const totalHours = summary.P * 0.5;
       dayTotalDisplay.textContent = `Present: ${summary.P} blocks | Leave: ${summary.L} blocks | Absent: ${summary.A} blocks → Total: ${totalHours.toFixed(2)} hours`;
     }
 
     function loadAttendance() {
-      isLoading = true;
-      renderDateSelector(); // Show loading state
-      
-      const attendanceTableBody = document.getElementById("attendanceTableBody");
-      attendanceTableBody.innerHTML = `
-        <tr>
-          <td colspan="6" class="text-center p-4">
-            <div class="loader mr-2"></div>
-            <span>Loading attendance data...</span>
-          </td>
-        </tr>
-      `;
-      
       fetch("/.netlify/functions/get_employee_attendance", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           emp_id: session.emp_id,
           month: currentMonth + 1,
@@ -448,160 +275,92 @@
       })
       .then(res => res.json())
       .then(data => {
-        isLoading = false;
         attendanceData = data.attendance || [];
-        summaryData = data.summary || {};
-        
-        // Update summary cards
-        updateSummaryCards();
-        
-        // Render attendance table
-        renderAttendanceTable();
-        
-        // Update date selector to show active dates
-        renderDateSelector();
-        
-        // Update the day view for the selected date
+        const tbody = document.getElementById("attendanceTableBody");
+        tbody.innerHTML = "";
+        let totalHours = 0;
+
+        if (Array.isArray(attendanceData)) {
+          // Sort attendance by date (newest first)
+          attendanceData.sort((a, b) => {
+            return new Date(b.date) - new Date(a.date);
+          });
+          
+          attendanceData.forEach(entry => {
+            const result = timeDiff(entry.clock_in, entry.clock_out);
+            totalHours += result.hours;
+
+            const row = document.createElement("tr");
+            row.className = "border-t border-gray-700";
+            row.innerHTML = `
+              <td class="p-2">${entry.date}</td>
+              <td class="p-2">${entry.clock_in || '-'}</td>
+              <td class="p-2">${entry.clock_out || '-'}</td>
+              <td class="p-2">${result.label}</td>
+              <td class="p-2">
+                <span class="px-2 py-1 rounded text-xs ${
+                  result.status === 'P' ? 'bg-green-700' :
+                  result.status === 'L' ? 'bg-yellow-700' :
+                  result.status === 'A' ? 'bg-red-700' : 'bg-gray-700'
+                }">
+                  ${result.status}
+                </span>
+              </td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+
+        document.getElementById("monthlyTotal").textContent = `${totalHours.toFixed(2)} hours`;
         renderDayView();
       })
       .catch(error => {
-        isLoading = false;
         console.error("Error fetching attendance:", error);
-        attendanceTableBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center p-4 text-red-400">
-              Error loading attendance data. Please try again.
-            </td>
-          </tr>
-        `;
-        renderDateSelector();
       });
     }
-    
-    function updateSummaryCards() {
-      if (summaryData) {
-        document.getElementById("summaryTotalHours").textContent = 
-          `${summaryData.total_hours?.toFixed(2) || 0}h`;
-        document.getElementById("summaryPresentDays").textContent = 
-          summaryData.present_days || 0;
-        document.getElementById("summaryLateDays").textContent = 
-          summaryData.late_days || 0;
-        document.getElementById("summaryPartialDays").textContent = 
-          summaryData.partial_days || 0;
-        document.getElementById("summaryAbsentDays").textContent = 
-          summaryData.absent_days || 0;
-      }
-    }
-    
-    function renderAttendanceTable() {
-      const tbody = document.getElementById("attendanceTableBody");
-      tbody.innerHTML = "";
-      
-      if (!attendanceData.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center p-4 text-gray-400">
-              No attendance records found for this month.
-            </td>
-          </tr>
-        `;
-        document.getElementById("monthlyTotal").textContent = "0 hours";
-        return;
-      }
-      
-      let totalHours = 0;
-      let tableHtml = '';
-      
-      // Sort by date descending
-      const sortedData = [...attendanceData].sort((a, b) => {
-        return new Date(b.date) - new Date(a.date);
-      });
-      
-      sortedData.forEach((entry, index) => {
-        const totalSeconds = entry.total_seconds || 0;
-        const status = getStatus(totalSeconds);
-        const hours = totalSeconds / 3600;
-        totalHours += hours;
-        
-        const dateObj = new Date(entry.date);
-        const formattedDate = dateObj.toLocaleDateString('en-US', {
-          month: 'short', 
-          day: 'numeric',
-          year: 'numeric'
-        });
-        
-        const hasSessions = entry.sessions && entry.sessions.length > 1;
-        
-        tableHtml += `
-          <tr class="border-t border-gray-700">
-            <td class="p-3">${formattedDate}</td>
-            <td class="p-3">${formatTimeDisplay(entry.clock_in)}</td>
-            <td class="p-3">${formatTimeDisplay(entry.clock_out)}</td>
-            <td class="p-3">${formatDuration(totalSeconds)}</td>
-            <td class="p-3">
-              <span class="status-${status.code}">${status.label}</span>
-            </td>
-            <td class="p-3">
-              ${hasSessions ? 
-                `<button class="session-toggle text-blue-400 hover:text-blue-300"
-                         onclick="toggleSessions('session-${index}')">
-                  ▼ ${entry.sessions.length} sessions
-                </button>` : 
-                '-'
-              }
-            </td>
-          </tr>
-        `;
-        
-        // Add detail rows for sessions
-        if (hasSessions) {
-          tableHtml += `
-            <tr id="session-${index}" class="session-row border-t border-gray-700 bg-gray-900">
-              <td colspan="6" class="p-0">
-                <div class="p-2">
-                  <table class="w-full text-sm">
-                    <thead class="text-gray-400">
-                      <tr>
-                        <th class="p-2 text-left">Clock In</th>
-                        <th class="p-2 text-left">Clock Out</th>
-                        <th class="p-2 text-left">Duration</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${entry.sessions.map(session => `
-                        <tr class="border-t border-gray-800">
-                          <td class="p-2 text-green-400">${formatTimeDisplay(session.in)}</td>
-                          <td class="p-2 text-yellow-400">${formatTimeDisplay(session.out || 'In progress')}</td>
-                          <td class="p-2">${session.duration ? formatDuration(session.duration) : '-'}</td>
-                        </tr>
-                      `).join('')}
-                    </tbody>
-                  </table>
-                </div>
-              </td>
-            </tr>
-          `;
+
+    // Additional fetch to get the blocks data
+    function loadBlocksData() {
+      fetch(`/.netlify/functions/get_attendance_blocks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          emp_id: session.emp_id,
+          month: currentMonth + 1,
+          year: currentYear,
+          day: selectedDate
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.blocks) {
+          // Update attendance data with blocks information
+          const dayIndex = attendanceData.findIndex(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate.getDate() === selectedDate && 
+                  entryDate.getMonth() === currentMonth &&
+                  entryDate.getFullYear() === currentYear;
+          });
+          
+          if (dayIndex !== -1) {
+            attendanceData[dayIndex].blocks = data.blocks;
+          } else {
+            // Create a new entry if one doesn't exist
+            attendanceData.push({
+              date: new Date(currentYear, currentMonth, selectedDate).toISOString().split('T')[0],
+              blocks: data.blocks
+            });
+          }
+          
+          renderDayView();
         }
+      })
+      .catch(error => {
+        console.error("Error fetching blocks data:", error);
       });
-      
-      tbody.innerHTML = tableHtml;
-      document.getElementById("monthlyTotal").textContent = `${totalHours.toFixed(2)} hours`;
     }
-    
-    // Toggle session details
-    window.toggleSessions = function(id) {
-      const row = document.getElementById(id);
-      if (row) {
-        row.classList.toggle('show');
-        const toggleBtn = row.previousElementSibling.querySelector('.session-toggle');
-        if (toggleBtn) {
-          toggleBtn.classList.toggle('rotated');
-        }
-      }
-    };
-    
+
     // Initialize the page
-    document.getElementById('refreshBtn').addEventListener('click', loadAttendance);
     renderMonthSelector();
     renderDateSelector();
     loadAttendance();

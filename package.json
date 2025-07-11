@@ -1,56 +1,28 @@
 {
   "name": "nikagenyx-site",
   "version": "1.0.0",
-  "private": true,
   "scripts": {
     "prebuild": "mkdir -p assets/css",
-    "build": "npm run build:css && npm run build:app",
-    "build:css": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify",
-    "build:app": "react-scripts build",
-    "start": "react-scripts start",
-    "dev": "netlify dev",
+    "build": "tailwindcss -i ./input.css -o ./assets/css/style.css --minify",
     "postinstall": "npx update-browserslist-db@latest || exit 0"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.17",
-    "@heroicons/react": "^2.1.1",
-    "@tinymce/tinymce-react": "^4.3.2",
-    "busboy": "^1.6.0",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "exceljs": "^4.3.0",
-    "formik": "^2.4.5",
+    "formidable": "^3.5.0",
     "jsonwebtoken": "^9.0.2",
     "multiparty": "^4.2.2",
     "node-fetch": "^2.6.7",
     "nodemailer": "^6.9.8",
     "pg": "^8.11.0",
     "qrcode": "^1.5.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
     "speakeasy": "^2.0.0",
     "tailwindcss": "^3.4.1",
     "twilio": "^4.20.0",
-    "yup": "^1.3.3"
+    "busboy": "^1.6.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.1.5",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/user-event": "^14.5.1",
-    "netlify-cli": "^22.2.1",
-    "react-scripts": "5.0.1"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "netlify-cli": "^22.2.1"
   }
 }

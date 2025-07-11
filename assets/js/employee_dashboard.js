@@ -1,7 +1,6 @@
 /**
  * Nikagenyx Employee Dashboard
  * Main controller that integrates all dashboard modules
- * Updated with real-time dashboard updates
  */
 
 // ======================
@@ -20,22 +19,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // 2. Set employee name and ID in header
-    document.getElementById("empName").textContent = empSession?.name || "Employee";
-    document.getElementById("empIdDisplay").textContent = empId ? `(ID: ${empId})` : "";
+    // 2. Set employee name in header
+document.getElementById("empName").textContent = empSession?.name || "Employee";
+// Set employee ID in header
+document.getElementById("empIdDisplay").textContent = empId
+  ? `(ID: ${empId})`
+  : "";
     
-    // 3. Initialize real-time dashboard update system
-    initializeRealTimeUpdates();
-    
-    // 4. Initialize clock system
+    // 3. Initialize clock system
     try {
-      window.clockSystemInstance = await window.ClockSystem.init(empId);
+      await window.ClockSystem.init(empId);
     } catch (clockError) {
       console.error("Clock system initialization error:", clockError);
       window.ToastManager.show("Error initializing clock system. Some features may not work correctly.", true);
     }
     
-    // 5. Check birthday 
+    // 4. Check birthday 
     try {
       await checkBirthday(empId, empSession.name);
     } catch (birthdayError) {
@@ -43,17 +42,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Non-critical error, continue initialization
     }
 
-    // 6. Initialize dashboard data
-    window.dashboardInstance = window.DashboardData.init(empId);
+    // 5. Initialize dashboard data
+    window.DashboardData.init(empId);
     
-    // 7. Setup auto-clockout
+    // 6. Setup auto-clockout
     setupAutoClockOutCheck(empId);
     
-    // 8. Setup event listeners
+    // 7. Setup event listeners
     setupEventListeners();
-    
-    // 9. Start the background timer for clocked-in time if needed
-    startRealTimeClockIfNeeded();
     
     console.log("Dashboard initialization complete");
   } catch (error) {
@@ -88,160 +84,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // ======================
-// REAL-TIME UPDATE SYSTEM
-// ======================
-function initializeRealTimeUpdates() {
-  // Initialize variables for real-time timer
-  window.realTimeData = {
-    clockInTime: null,
-    clockOutTime: null,
-    timerInterval: null,
-    isClockRunning: false,
-    secondsWorked: 0
-  };
-  
-  // Listen for clock events
-  document.addEventListener('clock:in', handleClockInEvent);
-  document.addEventListener('clock:out', handleClockOutEvent);
-  
-  // Verify if already clocked in when page loads
-  const lastAction = localStorage.getItem("last_action");
-  if (lastAction === "in") {
-    console.log("Already clocked in on page load");
-    window.realTimeData.isClockRunning = true;
-  }
-}
-
-function handleClockInEvent(event) {
-  console.log("Clock in event detected:", event.detail);
-  
-  // Extract timestamp
-  let clockInTime = event.detail?.timestamp;
-  if (!clockInTime) {
-    const now = new Date();
-    clockInTime = now.toTimeString().split(' ')[0];
-  }
-  
-  // Update UI immediately
-  document.getElementById('todayClockIn').textContent = clockInTime;
-  document.getElementById('todayStatus').textContent = "Working";
-  document.getElementById('todayStatus').className = "font-bold text-xl mt-1 text-blue-400";
-  
-  // Set up time tracking
-  startRealTimeClock(clockInTime);
-  
-  // Mark as clocked in
-  window.realTimeData.isClockRunning = true;
-  
-  // Refresh dashboard data
-  if (window.dashboardInstance) {
-    window.dashboardInstance.loadData();
-  }
-}
-
-function handleClockOutEvent(event) {
-  console.log("Clock out event detected:", event.detail);
-  
-  // Extract timestamp
-  let clockOutTime = event.detail?.timestamp;
-  if (!clockOutTime) {
-    const now = new Date();
-    clockOutTime = now.toTimeString().split(' ')[0];
-  }
-  
-  // Update UI immediately
-  document.getElementById('todayClockOut').textContent = clockOutTime;
-  
-  // Stop real-time clock
-  stopRealTimeClock();
-  
-  // Mark as clocked out
-  window.realTimeData.isClockRunning = false;
-  
-  // Refresh dashboard data
-  if (window.dashboardInstance) {
-    window.dashboardInstance.loadData();
-  }
-}
-
-function startRealTimeClockIfNeeded() {
-  const lastAction = localStorage.getItem("last_action");
-  if (lastAction === "in") {
-    // Get clock-in time from UI
-    const clockInTime = document.getElementById('todayClockIn').textContent;
-    if (clockInTime && clockInTime !== "--:--") {
-      startRealTimeClock(clockInTime);
-    } else {
-      // If no clock-in time is displayed yet, use the current time as a fallback
-      startRealTimeClock(new Date().toTimeString().split(' ')[0]);
-    }
-  }
-}
-
-function startRealTimeClock(clockInTimeStr) {
-  console.log("Starting real-time clock from:", clockInTimeStr);
-  
-  // Stop any existing timer
-  stopRealTimeClock();
-  
-  // Parse the clock-in time
-  const [hours, minutes, seconds] = clockInTimeStr.split(':').map(Number);
-  const clockInDate = new Date();
-  clockInDate.setHours(hours, minutes, seconds || 0);
-  
-  // Store the clock-in time
-  window.realTimeData.clockInTime = clockInDate;
-  
-  // Calculate seconds worked so far
-  const now = new Date();
-  let diffMs = now - clockInDate;
-  
-  // Handle overnight shifts
-  if (diffMs < 0) {
-    diffMs += 24 * 60 * 60 * 1000;
-  }
-  
-  window.realTimeData.secondsWorked = Math.floor(diffMs / 1000);
-  
-  // Update the UI immediately
-  updateTimeDisplay();
-  
-  // Set interval to update every second
-  window.realTimeData.timerInterval = setInterval(updateTimeDisplay, 1000);
-}
-
-function stopRealTimeClock() {
-  if (window.realTimeData.timerInterval) {
-    clearInterval(window.realTimeData.timerInterval);
-    window.realTimeData.timerInterval = null;
-  }
-}
-
-function updateTimeDisplay() {
-  // Increment seconds worked
-  window.realTimeData.secondsWorked++;
-  
-  // Calculate hours, minutes, seconds
-  const totalSeconds = window.realTimeData.secondsWorked;
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  
-  // Format and update the display
-  const hoursElement = document.getElementById('todayHours');
-  if (hoursElement) {
-    hoursElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
-  }
-  
-  // Also update status to Working
-  const statusElement = document.getElementById('todayStatus');
-  if (statusElement && statusElement.textContent !== "Working") {
-    statusElement.textContent = "Working";
-    statusElement.className = "font-bold text-xl mt-1 text-blue-400";
-  }
-}
-
-// ======================
 // BIRTHDAY CELEBRATION
 // ======================
 async function checkBirthday(empId, fallbackName) {
@@ -251,30 +93,25 @@ async function checkBirthday(empId, fallbackName) {
     return; // Don't show again today
   }
   
-  try {
-    // Fetch employee profile to get date of birth
-    const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
-    if (!res.ok) throw new Error("Failed to fetch profile");
-    
-    const profile = await res.json();
-    const dob = profile.dob;
-    const name = profile.name || fallbackName || "Employee";
-    
-    if (!dob) return; // No birthday set
-    
-    // Check if today matches the birth date (ignoring year)
-    const todayDate = new Date();
-    const birthDate = new Date(dob);
-    
-    // Compare month and day
-    if (todayDate.getMonth() === birthDate.getMonth() && 
-        todayDate.getDate() === birthDate.getDate()) {
-      // It's their birthday! Show celebration
-      showBirthdayCelebration(name);
-    }
-  } catch (error) {
-    console.warn("Birthday check error:", error);
-    // Non-critical, so just log and continue
+  // Fetch employee profile to get date of birth
+  const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+  if (!res.ok) throw new Error("Failed to fetch profile");
+  
+  const profile = await res.json();
+  const dob = profile.dob;
+  const name = profile.name || fallbackName || "Employee";
+  
+  if (!dob) return; // No birthday set
+  
+  // Check if today matches the birth date (ignoring year)
+  const todayDate = new Date();
+  const birthDate = new Date(dob);
+  
+  // Compare month and day
+  if (todayDate.getMonth() === birthDate.getMonth() && 
+      todayDate.getDate() === birthDate.getDate()) {
+    // It's their birthday! Show celebration
+    showBirthdayCelebration(name);
   }
 }
 
@@ -466,7 +303,7 @@ function setupAutoClockOutCheck(empId) {
               if (!res.ok) throw new Error(`Auto-clockout server error: ${res.status}`);
               return res.json();
             })
-            .then((data) => {
+            .then(() => {
               localStorage.setItem("last_action", "out");
               const statusMsg = document.getElementById("statusMessage");
               if (statusMsg) {
@@ -491,25 +328,7 @@ function setupAutoClockOutCheck(empId) {
                 }
               }
               
-              // Stop real-time clock
-              stopRealTimeClock();
-              
-              // Update Today's Summary
-              document.getElementById('todayClockOut').textContent = data.timestamp || new Date().toTimeString().split(' ')[0];
-              document.getElementById('todayStatus').textContent = "Partial";
-              document.getElementById('todayStatus').className = "font-bold text-xl mt-1 text-orange-400";
-              
-              // Show notification
               window.ToastManager.show("You've been automatically clocked out due to 5 minutes of inactivity", true);
-              
-              // Dispatch clock:out event
-              document.dispatchEvent(new CustomEvent('clock:out', {
-                detail: {
-                  timestamp: data.timestamp,
-                  message: "Auto clocked out due to inactivity",
-                  auto: true
-                }
-              }));
               
               // Refresh dashboard data
               document.dispatchEvent(new CustomEvent('dashboard:refresh'));
@@ -540,30 +359,6 @@ function setupAutoClockOutCheck(empId) {
 // EVENT LISTENERS
 // ======================
 function setupEventListeners() {
-  // Window unload event - cleanup timers
-  window.addEventListener('beforeunload', () => {
-    // Stop any timers
-    if (window.realTimeData?.timerInterval) {
-      clearInterval(window.realTimeData.timerInterval);
-    }
-    if (window.inactivityInterval) {
-      clearInterval(window.inactivityInterval);
-    }
-  });
-  
-  // Visibility change - refresh data when tab becomes visible again
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      // Verify clock status when tab becomes visible
-      if (window.clockSystemFunctions?.verifyClockStatus) {
-        window.clockSystemFunctions.verifyClockStatus();
-      }
-      
-      // Refresh dashboard data
-      document.dispatchEvent(new CustomEvent('dashboard:refresh'));
-    }
-  });
-
   // Leave Application Modal
   window.showLeaveModal = () => {
     try {
@@ -703,14 +498,6 @@ function setupEventListeners() {
       
       document.getElementById("confirmLogout").addEventListener("click", async () => {
         try {
-          // Stop all timers
-          if (window.realTimeData?.timerInterval) {
-            clearInterval(window.realTimeData.timerInterval);
-          }
-          if (window.inactivityInterval) {
-            clearInterval(window.inactivityInterval);
-          }
-          
           // Try to call the logout endpoint
           await fetch("/.netlify/functions/logout");
         } catch (error) {
@@ -764,13 +551,5 @@ function setupEventListeners() {
   if (storedDarkMode === 'light') {
     // Toggle from default dark to light
     window.toggleDarkMode();
-  }
-  
-  // Dashboard refresh button (optional - add to UI if needed)
-  const refreshBtn = document.getElementById('refreshDashboardBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('dashboard:refresh'));
-    });
   }
 }
