@@ -23,12 +23,14 @@ function App() {
 
           {/* Protected app routes */}
           <Route path="/account/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="schedules" element={<Schedules />} />
-            <Route path="templates" element={<Templates />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+  <Route index element={<Dashboard />} />
+  <Route path="reports" element={<Reports />} />
+  <Route path="schedules" element={<Schedules />} />
+  <Route path="templates" element={<Templates />} />
+  <Route path="settings" element={<Settings />} />
+  <Route path="chart-of-accounts" element={<ChartOfAccounts />} /> {/* ✅ NEW */}
+</Route>
+
 
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
