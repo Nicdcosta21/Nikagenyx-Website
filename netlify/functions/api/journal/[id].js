@@ -115,4 +115,200 @@ exports.handler = async (event, context) => {
         // Combine the results
         const journalEntry = {
           ...entryResult.rows[0],
-          items: itemsResult
+          items: itemsResult.rows
+        };
+        
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(journalEntry)
+        };
+        
+      case 'PUT':
+        // Update journal entry
+        const data = JSON.parse(event.body);
+        const user = verifyToken(event.headers.authorization);
+        
+        // Start a transaction
+        await client.query('BEGIN');
+        
+        try {
+          // Validate required fields
+          if (!data.entryNumber || !data.date || !data.status || !data.items || !data.items.length) {
+            return {
+              statusCode: 400,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                error: 'Missing required fields. Entry number, date, status, and items are required.' 
+              })
+            };
+          }
+          
+          // Calculate total debit and credit amounts
+          let totalDebit = 0;
+          let totalCredit = 0;
+          
+          data.items.forEach(item => {
+            if (item.type === 'debit') {
+              totalDebit += parseFloat(item.amount);
+            } else {
+              totalCredit += parseFloat(item.amount);
+            }
+          });
+          
+          // Check if the entry is balanced
+          if (Math.abs(totalDebit - totalCredit) > 0.01) {
+            return {
+              statusCode: 400,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                error: 'Journal entry must be balanced. Debits must equal credits.' 
+              })
+            };
+          }
+          
+          // Update the journal entry
+          await client.query(`
+            UPDATE journal_entries
+            SET 
+              entry_number = $1,
+              date = $2,
+              description = $3,
+              reference = $4,
+              status = $5,
+              amount = $6,
+              updated_by = $7,
+              updated_at = NOW()
+            WHERE id = $8
+          `, [
+            data.entryNumber,
+            data.date,
+            data.description || '',
+            data.reference || '',
+            data.status,
+            totalDebit, // Using debit amount as the total amount
+            user.sub,
+            id
+          ]);
+          
+          // Delete existing items
+          await client.query('DELETE FROM journal_entry_items WHERE journal_entry_id = $1', [id]);
+          
+          // Insert new items
+          for (const item of data.items) {
+            await client.query(`
+              INSERT INTO journal_entry_items (
+                id,
+                journal_entry_id,
+                account_id,
+                description,
+                type,
+                amount
+              ) VALUES (
+                uuid_generate_v4(),
+                $1,
+                $2,
+                $3,
+                $4,
+                $5
+              )
+            `, [
+              id,
+              item.accountId,
+              item.description || '',
+              item.type,
+              parseFloat(item.amount)
+            ]);
+          }
+          
+          // Commit the transaction
+          await client.query('COMMIT');
+          
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              message: 'Journal entry updated successfully',
+              id
+            })
+          };
+        } catch (error) {
+          // Rollback the transaction in case of error
+          await client.query('ROLLBACK');
+          throw error;
+        }
+        
+      case 'DELETE':
+        // Check if the journal entry can be deleted (e.g., not referenced by other records)
+        const user = verifyToken(event.headers.authorization);
+        
+        // Start a transaction
+        await client.query('BEGIN');
+        
+        try {
+          // Delete journal entry items first (due to foreign key constraints)
+          await client.query('DELETE FROM journal_entry_items WHERE journal_entry_id = $1', [id]);
+          
+          // Delete the journal entry
+          await client.query('DELETE FROM journal_entries WHERE id = $1', [id]);
+          
+          // Log the deletion in audit logs
+          await client.query(`
+            INSERT INTO audit_logs (
+              id, 
+              user_id, 
+              action, 
+              entity_type, 
+              entity_id, 
+              changes,
+              ip_address,
+              created_at
+            ) VALUES (
+              uuid_generate_v4(),
+              $1,
+              'delete',
+              'journal_entry',
+              $2,
+              $3,
+              $4,
+              NOW()
+            )
+          `, [
+            user.sub,
+            id,
+            JSON.stringify({ id }),
+            event.headers['client-ip'] || ''
+          ]);
+          
+          // Commit the transaction
+          await client.query('COMMIT');
+          
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'Journal entry deleted successfully' })
+          };
+        } catch (error) {
+          // Rollback the transaction in case of error
+          await client.query('ROLLBACK');
+          throw error;
+        }
+        
+      default:
+        return { 
+          statusCode: 405, 
+          body: 'Method Not Allowed' 
+        };
+    }
+  } catch (error) {
+    console.error(`Error handling journal entry ID ${id}:`, error);
+    
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: error.message })
+    };
+  } finally {
+    client.release();
+  }
+};
