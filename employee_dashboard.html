@@ -235,23 +235,29 @@
     // ======================
     async function loadDashboardData(empId) {
       try {
-        // First try to load from the API
+        // Show loading indicator
+        document.getElementById('activityFeed').innerHTML = `<li class="text-center text-gray-400 py-4">Loading activities...</li>`;
+        
         let data;
         try {
+          // First try to load from the API
           const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}`);
           
-          // Check if response is OK and of type JSON
-          if (!res.ok) throw new Error("Failed to fetch data");
+          // Check if response is OK
+          if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`);
           
+          // Check if response is actually JSON
           const contentType = res.headers.get("content-type");
           if (!contentType || !contentType.includes("application/json")) {
+            console.warn("Non-JSON response received");
             throw new Error("Invalid response format");
           }
           
           data = await res.json();
-        } catch (error) {
-          console.warn("API error, using mock data:", error);
-          // If API fails, use mock data
+          console.log("API data loaded successfully:", data);
+        } catch (apiError) {
+          console.warn("API error, using mock data:", apiError);
+          // Use mock data as fallback
           data = generateMockDashboardData(empId);
         }
         
