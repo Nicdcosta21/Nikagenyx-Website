@@ -5,8 +5,56 @@
   <title>My Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="/assets/js/auth-gate.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .half-hour-box {
+      width: 12px;
+      height: 24px;
+      margin: 1px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .P { background-color: #22c55e; }
+    .A { background-color: #ef4444; }
+    .L { background-color: #facc15; }
+
+    .block-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .month-btn, .date-btn {
+      background-color: #1e293b;
+      color: #e0e7ff;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .month-btn.active, .date-btn.active {
+      background-color: #6366f1;
+      color: white;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+    
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      margin-right: 4px;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -19,24 +67,62 @@
   <!-- Main Content -->
   <main class="flex-grow p-6">
     <h2 class="text-2xl font-semibold mb-4">My Attendance</h2>
-    <table class="w-full text-left text-sm bg-gray-800 rounded">
-      <thead class="bg-gray-700 text-gray-300">
-        <tr>
-          <th class="p-2">Date</th>
-          <th class="p-2">Clock In</th>
-          <th class="p-2">Clock Out</th>
-          <th class="p-2">Hours</th>
-          <th class="p-2">Status</th>
-        </tr>
-      </thead>
-      <tbody id="attendanceTableBody"></tbody>
-      <tfoot>
-        <tr class="bg-gray-700 text-white text-sm">
-          <td colspan="3" class="p-2 font-bold">Weekly Total</td>
-          <td colspan="2" id="weeklyTotal" class="p-2"></td>
-        </tr>
-      </tfoot>
-    </table>
+    
+    <!-- Month and Date Selectors -->
+    <div class="bg-gray-800 p-4 rounded-lg mb-6">
+      <div id="monthSelector" class="flex flex-wrap justify-center mb-3"></div>
+      <div id="dateSelector" class="flex flex-wrap justify-center"></div>
+    </div>
+    
+    <!-- Day View with Time Blocks -->
+    <div class="bg-gray-800 p-4 rounded-lg mb-6">
+      <h3 class="text-lg font-semibold mb-2">Daily Time Log</h3>
+      <div class="mb-3">
+        <h4 id="selectedDateDisplay" class="text-md text-gray-300 mb-2"></h4>
+        
+        <!-- Legend -->
+        <div class="flex flex-wrap mb-3">
+          <div class="legend-item">
+            <div class="legend-box P"></div>
+            <span>Present</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box L"></div>
+            <span>Leave</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box A"></div>
+            <span>Absent</span>
+          </div>
+        </div>
+        
+        <div id="timeBlocksContainer" class="block-wrap"></div>
+        <div id="dayTotalHours" class="text-sm text-gray-300 mt-1"></div>
+      </div>
+    </div>
+    
+    <!-- Monthly Table -->
+    <div class="bg-gray-800 p-4 rounded-lg">
+      <h3 class="text-lg font-semibold mb-2">Monthly Summary</h3>
+      <table class="w-full text-left text-sm rounded">
+        <thead class="bg-gray-700 text-gray-300">
+          <tr>
+            <th class="p-2">Date</th>
+            <th class="p-2">Clock In</th>
+            <th class="p-2">Clock Out</th>
+            <th class="p-2">Hours</th>
+            <th class="p-2">Status</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceTableBody"></tbody>
+        <tfoot>
+          <tr class="bg-gray-700 text-white text-sm">
+            <td colspan="3" class="p-2 font-bold">Monthly Total</td>
+            <td colspan="2" id="monthlyTotal" class="p-2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </main>
 
   <!-- Footer -->
@@ -49,6 +135,13 @@
     const session = JSON.parse(localStorage.getItem("emp_session"));
     if (!session?.emp_id) window.location.href = "employee_portal.html";
 
+    const months = [...Array(12)].map((_, i) => new Date(0, i).toLocaleString('default', { month: 'long' }));
+    const today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+    let selectedDate = today.getDate();
+    let attendanceData = [];
+    
     function logout() {
       localStorage.removeItem("emp_session");
       window.location.href = "employee_portal.html";
@@ -71,35 +164,203 @@
       return { label: `${hrs}h ${mins}m`, hours: hoursFloat, status };
     }
 
-    fetch("/.netlify/functions/get_employee_attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emp_id: session.emp_id })
-    })
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("attendanceTableBody");
-      let totalHours = 0;
+    function daysInMonth(month, year) {
+      return new Date(year, month + 1, 0).getDate();
+    }
 
-      if (Array.isArray(data.attendance)) {
-        data.attendance.forEach(entry => {
-          const result = timeDiff(entry.clock_in, entry.clock_out);
-          totalHours += result.hours;
+    function formatAMPM(index) {
+      const hour = Math.floor(index / 2);
+      const minute = index % 2 === 0 ? '00' : '30';
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${formattedHour}:${minute} ${ampm}`;
+    }
 
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td class="p-2">${entry.date}</td>
-            <td class="p-2">${entry.clock_in || '-'}</td>
-            <td class="p-2">${entry.clock_out || '-'}</td>
-            <td class="p-2">${result.label}</td>
-            <td class="p-2">${result.status}</td>
-          `;
-          tbody.appendChild(row);
-        });
+    function renderMonthSelector() {
+      const container = document.getElementById("monthSelector");
+      container.innerHTML = "";
+      months.forEach((m, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = `${m} ${currentYear}`;
+        btn.className = `month-btn ${i === currentMonth ? "active" : ""}`;
+        btn.onclick = () => {
+          currentMonth = i; 
+          selectedDate = 1;
+          renderMonthSelector(); 
+          renderDateSelector();
+          loadAttendance();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderDateSelector() {
+      const container = document.getElementById("dateSelector");
+      container.innerHTML = "";
+      for (let d = 1; d <= daysInMonth(currentMonth, currentYear); d++) {
+        const btn = document.createElement("button");
+        btn.textContent = d;
+        btn.className = `date-btn ${d === selectedDate ? "active" : ""}`;
+        btn.onclick = () => { 
+          selectedDate = d; 
+          renderDateSelector(); 
+          renderDayView();
+        };
+        container.appendChild(btn);
       }
+    }
 
-      document.getElementById("weeklyTotal").textContent = `${totalHours.toFixed(2)} hours`;
-    });
+    function renderDayView() {
+      const dateDisplay = document.getElementById("selectedDateDisplay");
+      const blocksContainer = document.getElementById("timeBlocksContainer");
+      const dayTotalDisplay = document.getElementById("dayTotalHours");
+      
+      const dateObj = new Date(currentYear, currentMonth, selectedDate);
+      const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+      });
+      
+      dateDisplay.textContent = formattedDate;
+      blocksContainer.innerHTML = "";
+      
+      // Find the specific day's attendance data
+      const dayData = attendanceData.find(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate.getDate() === selectedDate && 
+               entryDate.getMonth() === currentMonth &&
+               entryDate.getFullYear() === currentYear;
+      });
+      
+      // If we have blocks data for this day
+      let blocks = [];
+      let summary = { P: 0, A: 0, L: 0 };
+      
+      if (dayData && dayData.blocks) {
+        blocks = dayData.blocks;
+      } else {
+        blocks = Array(48).fill("A"); // Default to all absent
+      }
+      
+      // Render the blocks
+      blocks.forEach((state, i) => {
+        const finalState = ["P", "L", "A"].includes(state) ? state : "A";
+        summary[finalState] = (summary[finalState] || 0) + 1;
+        
+        const box = document.createElement("div");
+        box.className = `half-hour-box ${finalState}`;
+        box.title = formatAMPM(i);
+        blocksContainer.appendChild(box);
+      });
+      
+      // Calculate and display the total hours
+      const totalHours = summary.P * 0.5;
+      dayTotalDisplay.textContent = `Present: ${summary.P} blocks | Leave: ${summary.L} blocks | Absent: ${summary.A} blocks → Total: ${totalHours.toFixed(2)} hours`;
+    }
+
+    function loadAttendance() {
+      fetch("/.netlify/functions/get_employee_attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          emp_id: session.emp_id,
+          month: currentMonth + 1,
+          year: currentYear 
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        attendanceData = data.attendance || [];
+        const tbody = document.getElementById("attendanceTableBody");
+        tbody.innerHTML = "";
+        let totalHours = 0;
+
+        if (Array.isArray(attendanceData)) {
+          // Sort attendance by date (newest first)
+          attendanceData.sort((a, b) => {
+            return new Date(b.date) - new Date(a.date);
+          });
+          
+          attendanceData.forEach(entry => {
+            const result = timeDiff(entry.clock_in, entry.clock_out);
+            totalHours += result.hours;
+
+            const row = document.createElement("tr");
+            row.className = "border-t border-gray-700";
+            row.innerHTML = `
+              <td class="p-2">${entry.date}</td>
+              <td class="p-2">${entry.clock_in || '-'}</td>
+              <td class="p-2">${entry.clock_out || '-'}</td>
+              <td class="p-2">${result.label}</td>
+              <td class="p-2">
+                <span class="px-2 py-1 rounded text-xs ${
+                  result.status === 'P' ? 'bg-green-700' :
+                  result.status === 'L' ? 'bg-yellow-700' :
+                  result.status === 'A' ? 'bg-red-700' : 'bg-gray-700'
+                }">
+                  ${result.status}
+                </span>
+              </td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+
+        document.getElementById("monthlyTotal").textContent = `${totalHours.toFixed(2)} hours`;
+        renderDayView();
+      })
+      .catch(error => {
+        console.error("Error fetching attendance:", error);
+      });
+    }
+
+    // Additional fetch to get the blocks data
+    function loadBlocksData() {
+      fetch(`/.netlify/functions/get_attendance_blocks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          emp_id: session.emp_id,
+          month: currentMonth + 1,
+          year: currentYear,
+          day: selectedDate
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.blocks) {
+          // Update attendance data with blocks information
+          const dayIndex = attendanceData.findIndex(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate.getDate() === selectedDate && 
+                  entryDate.getMonth() === currentMonth &&
+                  entryDate.getFullYear() === currentYear;
+          });
+          
+          if (dayIndex !== -1) {
+            attendanceData[dayIndex].blocks = data.blocks;
+          } else {
+            // Create a new entry if one doesn't exist
+            attendanceData.push({
+              date: new Date(currentYear, currentMonth, selectedDate).toISOString().split('T')[0],
+              blocks: data.blocks
+            });
+          }
+          
+          renderDayView();
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching blocks data:", error);
+      });
+    }
+
+    // Initialize the page
+    renderMonthSelector();
+    renderDateSelector();
+    loadAttendance();
   </script>
 
 </body>
