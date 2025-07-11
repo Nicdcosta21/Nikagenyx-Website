@@ -557,4 +557,45 @@ const Gstr1 = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('b2c')}
-                  
+                  className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                    activeTab === 'b2c' 
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  B2C Invoices
+                </button>
+                <button
+                  onClick={() => setActiveTab('hsn')}
+                  className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                    activeTab === 'hsn' 
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  HSN Summary
+                </button>
+                <button
+                  onClick={() => setActiveTab('summary')}
+                  className={`w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                    activeTab === 'summary' 
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Summary
+                </button>
+              </nav>
+            </div>
+
+            <div className="px-4 py-5 sm:p-6">
+              {renderTabContent()}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Gstr1;
