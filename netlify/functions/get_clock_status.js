@@ -14,7 +14,9 @@ exports.handler = async (event) => {
       statusCode: 400,
       headers: { 
         "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate"
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
       },
       body: JSON.stringify({ error: "Missing employee ID" })
     };
@@ -34,7 +36,9 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate"
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
         body: JSON.stringify({
           last_action: "out",
@@ -51,7 +55,9 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate" 
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
         body: JSON.stringify({
           last_action: "in",
@@ -64,7 +70,9 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate"
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
         body: JSON.stringify({
           last_action: "out",
@@ -77,7 +85,9 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate"
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
         },
         body: JSON.stringify({
           last_action: "out",
@@ -93,7 +103,9 @@ exports.handler = async (event) => {
       statusCode: 500,
       headers: { 
         "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate"
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
       },
       body: JSON.stringify({ 
         error: "Server error", 
