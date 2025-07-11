@@ -8,6 +8,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Add Canvas Confetti Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    /* Button styles */
+    .btn-enabled {
+      opacity: 1 !important;
+      cursor: pointer;
+    }
+    
+    .btn-disabled {
+      opacity: 0.5 !important;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -20,7 +32,9 @@
   <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
     <div class="text-xl font-bold">Nikagenyx</div>
     <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
-      
+      <a href="update_profile.html">Update Profile</a>
+      <a href="view_attendance.html">My Attendance</a>
+      <a href="payroll_portal.html">Payroll</a>
       <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
     </div>
   </nav>
@@ -36,10 +50,10 @@
       <div class="bg-gray-800 rounded-xl p-6">
         <h2 class="text-xl font-bold mb-6 text-center">Clock In / Clock Out</h2>
         <div class="space-y-4">
-          <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg disabled:opacity-50 text-lg font-medium">
+          <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-lg font-medium">
             Clock In
           </button>
-          <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-lg disabled:opacity-50 text-lg font-medium">
+          <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-lg text-lg font-medium">
             Clock Out
           </button>
         </div>
@@ -185,8 +199,12 @@
         if (today.getMonth() === birthDate.getMonth() && 
             today.getDate() === birthDate.getDate()) {
           
-          // It's their birthday! Show celebration IMMEDIATELY
-          showBirthdayCelebration(name);
+          // Check if we've already shown the birthday modal today
+          const birthdayShown = localStorage.getItem("birthday_shown_" + today.toISOString().split('T')[0]);
+          if (!birthdayShown) {
+            // It's their birthday! Show celebration IMMEDIATELY
+            showBirthdayCelebration(name);
+          }
         }
       } catch (err) {
         console.warn("Could not check birthday:", err);
@@ -321,31 +339,31 @@
     };
 
     // ======================
-    // CLOCK IN/OUT SYSTEM - IMPROVED FOR STATE PERSISTENCE
+    // CLOCK IN/OUT SYSTEM - FIXED IMPLEMENTATION
     // ======================
     async function initClockSystem(empId) {
       const clockInBtn = document.getElementById("clockInBtn");
       const clockOutBtn = document.getElementById("clockOutBtn");
       const status = document.getElementById("statusMessage");
       
-      // Disable both buttons initially until we know the state
-      clockInBtn.disabled = true;
-      clockOutBtn.disabled = true;
-      clockInBtn.classList.add("opacity-50");
-      clockOutBtn.classList.add("opacity-50");
-      
-      // Wait for clock status check to complete before continuing
-      try {
-        const data = await fetchClockStatus();
-        updateButtonState(data.last_action);
-        status.textContent = data.message || "Ready to clock in";
-      } catch (err) {
-        console.error("Failed to initialize clock system:", err);
-        status.textContent = "Error checking status. Try refreshing.";
-        updateButtonState("out"); // Default to allowing clock in if error
+      // Helper function for button states
+      function setButtonState(button, isEnabled) {
+        if (isEnabled) {
+          button.disabled = false;
+          button.classList.remove("btn-disabled");
+          button.classList.add("btn-enabled");
+        } else {
+          button.disabled = true;
+          button.classList.remove("btn-enabled");
+          button.classList.add("btn-disabled");
+        }
       }
-
-      // Function to fetch the current clock status
+      
+      // Initially disable both buttons until we know the state
+      setButtonState(clockInBtn, false);
+      setButtonState(clockOutBtn, false);
+      
+      // Fetch current clock status
       async function fetchClockStatus() {
         try {
           const res = await fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`);
@@ -371,28 +389,35 @@
         }
       }
 
-      // Update button state based on clock status
-      function updateButtonState(lastAction) {
-        console.log("Updating button state to:", lastAction);
+      // Update UI based on clock status
+      function updateClockUI(clockStatus) {
+        const isClockIn = clockStatus.last_action === "in";
         
-        // Set button disabled state
-        clockInBtn.disabled = lastAction === "in";
-        clockOutBtn.disabled = lastAction !== "in";
+        // Update buttons
+        setButtonState(clockInBtn, !isClockIn);
+        setButtonState(clockOutBtn, isClockIn);
         
-        // Set visual state with opacity classes
-        if (lastAction === "in") {
-          clockInBtn.classList.add("opacity-50");
-          clockOutBtn.classList.remove("opacity-50");
-        } else {
-          clockInBtn.classList.remove("opacity-50");
-          clockOutBtn.classList.add("opacity-50");
-        }
+        // Update status message
+        status.textContent = clockStatus.message || 
+          (isClockIn ? "Currently clocked in" : "Ready to clock in");
       }
 
-      // Clock in handler - use async function with immediate UI feedback
+      try {
+        const clockStatus = await fetchClockStatus();
+        updateClockUI(clockStatus);
+      } catch (err) {
+        console.error("Failed to initialize clock system:", err);
+        status.textContent = "Error checking status. Try refreshing.";
+        // Default to allowing clock in if error
+        setButtonState(clockInBtn, true);
+        setButtonState(clockOutBtn, false);
+      }
+      
+      // Clock in handler
       window.clockIn = async () => {
-        // Update UI immediately for responsiveness
-        updateButtonState("in");
+        // Update UI immediately
+        setButtonState(clockInBtn, false);
+        setButtonState(clockOutBtn, false);
         status.textContent = "Clocking in...";
         
         // Save state
@@ -411,27 +436,33 @@
           const data = await res.json();
           status.textContent = data.message || "Successfully clocked in";
           
+          // Update button states
+          setButtonState(clockInBtn, false);
+          setButtonState(clockOutBtn, true);
+          
           // Refresh dashboard data
           loadDashboardData(empId);
         } catch (err) {
           console.error("Error clocking in:", err);
           status.textContent = "Error clocking in. Please try again.";
           
-          // Revert button state by checking actual status
+          // Verify actual status
           try {
-            const data = await fetchClockStatus();
-            updateButtonState(data.last_action);
-          } catch (statusErr) {
-            // If can't verify status, assume not clocked in
-            updateButtonState("out");
+            const clockStatus = await fetchClockStatus();
+            updateClockUI(clockStatus);
+          } catch (e) {
+            // Default to allowing clock in
+            setButtonState(clockInBtn, true);
+            setButtonState(clockOutBtn, false);
           }
         }
       };
       
-      // Clock out handler - use async function with immediate UI feedback
+      // Clock out handler
       window.clockOut = async () => {
         // Update UI immediately
-        updateButtonState("out");
+        setButtonState(clockInBtn, false);
+        setButtonState(clockOutBtn, false);
         status.textContent = "Clocking out...";
         
         // Save state
@@ -449,27 +480,31 @@
           const data = await res.json();
           status.textContent = data.message || "Successfully clocked out";
           
+          // Update button states
+          setButtonState(clockInBtn, true);
+          setButtonState(clockOutBtn, false);
+          
           // Refresh dashboard data
           loadDashboardData(empId);
         } catch (err) {
           console.error("Error clocking out:", err);
           status.textContent = "Error clocking out. Please try again.";
           
-          // Revert button state by checking actual status
+          // Verify actual status
           try {
-            const data = await fetchClockStatus();
-            updateButtonState(data.last_action);
-          } catch (statusErr) {
-            // If can't verify status, assume still clocked in
-            updateButtonState("in");
+            const clockStatus = await fetchClockStatus();
+            updateClockUI(clockStatus);
+          } catch (e) {
+            // Default to allowing clock out
+            setButtonState(clockInBtn, false);
+            setButtonState(clockOutBtn, true);
           }
         }
       };
       
       // Export function for auto clock-out
-      window.updateClockButtonState = updateButtonState;
-      
-      return { updateButtonState, fetchClockStatus };
+      window.updateClockUI = updateClockUI;
+      window.fetchClockStatus = fetchClockStatus;
     }
 
     // ======================
@@ -507,13 +542,21 @@
                   document.getElementById("statusMessage").textContent = 
                     "Auto clocked out due to 5 minutes of inactivity";
                   
-                  // Update button states
-                  const clockInBtn = document.getElementById("clockInBtn");
-                  const clockOutBtn = document.getElementById("clockOutBtn");
-                  clockInBtn.disabled = false;
-                  clockOutBtn.disabled = true;
-                  clockInBtn.classList.remove("opacity-50");
-                  clockOutBtn.classList.add("opacity-50");
+                  // Update button states using our helper functions
+                  if (window.updateClockUI) {
+                    window.updateClockUI({ last_action: "out", message: "Auto clocked out due to inactivity" });
+                  } else {
+                    // Fallback if updateClockUI isn't available
+                    const clockInBtn = document.getElementById("clockInBtn");
+                    const clockOutBtn = document.getElementById("clockOutBtn");
+                    
+                    clockInBtn.disabled = false;
+                    clockOutBtn.disabled = true;
+                    clockInBtn.classList.remove("btn-disabled");
+                    clockInBtn.classList.add("btn-enabled");
+                    clockOutBtn.classList.remove("btn-enabled");
+                    clockOutBtn.classList.add("btn-disabled");
+                  }
                   
                   showToast("You've been automatically clocked out due to 5 minutes of inactivity", true);
                   
