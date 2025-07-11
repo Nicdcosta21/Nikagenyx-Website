@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="/assets/js/auth-gate.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
 
@@ -133,7 +135,7 @@
     &copy; 2025 Nikagenyx Vision Tech Pvt. Ltd.
   </footer>
 
-  <script>
+   <script>
     // ======================
     // MAIN DASHBOARD CONTROLLER
     // ======================
@@ -150,12 +152,159 @@
       // 2. Set employee name in header
       document.getElementById("empName").textContent = empSession?.name || "Employee";
 
-      // 3. Initialize all dashboard components
+      // 3. Check birthday FIRST - before any other operations
+      await checkBirthday(empId, empSession.name);
+
+      // 4. Initialize all dashboard components after birthday check
       initClockSystem(empId);
       loadDashboardData(empId);
-      setupAutoClockOutCheck();
+      setupAutoClockOutCheck(empId);
       setupEventListeners();
     });
+
+    // ======================
+    // BIRTHDAY CELEBRATION
+    // ======================
+    async function checkBirthday(empId, fallbackName) {
+      try {
+        // Fetch employee profile to get date of birth
+        const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
+        if (!res.ok) throw new Error("Failed to fetch profile");
+        
+        const profile = await res.json();
+        const dob = profile.dob;
+        const name = profile.name || fallbackName || "Employee";
+        
+        if (!dob) return; // No birthday set
+        
+        // Check if today matches the birth date (ignoring year)
+        const today = new Date();
+        const birthDate = new Date(dob);
+        
+        // Compare month and day
+        if (today.getMonth() === birthDate.getMonth() && 
+            today.getDate() === birthDate.getDate()) {
+          
+          // It's their birthday! Show celebration IMMEDIATELY
+          showBirthdayCelebration(name);
+        }
+      } catch (err) {
+        console.warn("Could not check birthday:", err);
+      }
+    }
+    
+    function showBirthdayCelebration(name) {
+      // Create celebration modal
+      const modal = document.createElement("div");
+      modal.className = "fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50";
+      modal.id = "birthdayModal";
+      
+      modal.innerHTML = `
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-8 rounded-lg shadow-xl w-full max-w-md text-center animate-bounce-in">
+          <h2 class="text-3xl font-bold mb-4">🎉 Happy Birthday! 🎂</h2>
+          <p class="text-xl mb-6">Wishing you a fantastic day, ${name}!</p>
+          <p class="text-lg mb-8">May your day be filled with joy, success, and great achievements!</p>
+          <button onclick="closeBirthdayModal()" class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full shadow-lg transform transition hover:scale-105">
+            Thank You! 🎈
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Add confetti animation
+      launchConfetti();
+      
+      // Add animation styles
+      document.head.insertAdjacentHTML("beforeend", `
+        <style>
+          @keyframes bounce-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animate-bounce-in {
+            animation: bounce-in 0.5s ease-out forwards;
+          }
+        </style>
+      `);
+      
+      // Flag that we've shown the birthday modal so we don't show it again today
+      localStorage.setItem("birthday_shown_" + new Date().toISOString().split('T')[0], "true");
+    }
+    
+    function launchConfetti() {
+      // Launch intense confetti
+      const count = 200;
+      const defaults = {
+        origin: { y: 0.7 },
+        zIndex: 1051
+      };
+
+      function fire(particleRatio, opts) {
+        confetti({
+          ...defaults,
+          ...opts,
+          particleCount: Math.floor(count * particleRatio)
+        });
+      }
+
+      fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+      });
+      
+      fire(0.2, {
+        spread: 60,
+      });
+      
+      fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8
+      });
+      
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2
+      });
+      
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+      });
+      
+      // Add periodic confetti for as long as the modal is open
+      const confettiInterval = setInterval(() => {
+        if (!document.getElementById('birthdayModal')) {
+          clearInterval(confettiInterval);
+          return;
+        }
+        
+        confetti({
+          particleCount: 50,
+          startVelocity: 30,
+          spread: 100,
+          origin: {
+            x: Math.random(),
+            y: Math.random() - 0.2
+          },
+          zIndex: 1051
+        });
+      }, 2000);
+    }
+    
+    // Function to close birthday modal
+    window.closeBirthdayModal = function() {
+      const modal = document.getElementById('birthdayModal');
+      if (modal) {
+        modal.classList.add('fade-out');
+        setTimeout(() => modal.remove(), 500);
+      }
+    };
+
 
     // ======================
     // CLOCK IN/OUT SYSTEM
@@ -170,15 +319,28 @@
 
       function checkClockStatus() {
         fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`)
-          .then(res => res.json())
-          .catch(err => {
-            console.warn("Error fetching clock status:", err);
-            // Return a default response if API fails
-            return { last_action: "out", message: "Ready to clock in" };
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+            return res.json();
           })
           .then(data => {
+            // Store the clock status in localStorage for persistence
+            localStorage.setItem("last_action", data.last_action);
+            
+            // If clocked in, update last_activity timestamp
+            if (data.last_action === "in" && !localStorage.getItem("last_activity")) {
+              localStorage.setItem("last_activity", Date.now());
+            }
+            
             updateButtonState(data.last_action);
             status.textContent = data.message || "Ready to clock in";
+          })
+          .catch(err => {
+            console.error("Error fetching clock status:", err);
+            
+            // Default to clocked out if there's an error
+            updateButtonState("out");
+            status.textContent = "Error checking status. Try refreshing.";
           });
       }
 
@@ -205,16 +367,8 @@
           body: JSON.stringify({ emp_id: empId, type })
         })
         .then(res => {
-          // Check if response is OK and of type JSON
-          if (!res.ok) throw new Error("Failed to record attendance");
-          
-          const contentType = res.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            return res.json();
-          } else {
-            // Handle non-JSON responses
-            throw new Error("Invalid response format");
-          }
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          return res.json();
         })
         .then(data => {
           status.textContent = data.message || `Successfully clocked ${type}`;
@@ -222,93 +376,117 @@
           loadDashboardData(empId); // Refresh dashboard
         })
         .catch(err => {
-          console.warn("Error marking attendance:", err);
-          status.textContent = `Successfully clocked ${type}`;
-          updateButtonState(type);
-          showToast(`Clocked ${type}`, false); 
+          console.error("Error marking attendance:", err);
+          status.textContent = `Error clocking ${type}. Please try again.`;
+          // Revert local storage on error
+          checkClockStatus();
         });
       }
     }
 
     // ======================
-    // DASHBOARD DATA LOADER
+    // AUTO CLOCK-OUT SYSTEM - 5 MINUTES INACTIVITY
+    // ======================
+    function setupAutoClockOutCheck(empId) {
+      // Clear any existing interval when initializing
+      if (window.inactivityInterval) {
+        clearInterval(window.inactivityInterval);
+      }
+      
+      function checkInactivity() {
+        const lastAction = localStorage.getItem("last_action");
+        const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
+        
+        // Check if 5 minutes (300000 ms) of inactivity and currently clocked in
+        if (lastAction === "in" && Date.now() - lastActivity > 300000) {
+          console.log("Auto clock-out triggered after 5 minutes inactivity");
+          
+          // Verify with server that user is actually clocked in
+          fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`)
+            .then(res => res.json())
+            .catch(() => ({ last_action: lastAction }))
+            .then(data => {
+              if (data.last_action === "in") {
+                // If truly clocked in, perform auto clock-out
+                fetch("/.netlify/functions/mark_attendance", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ emp_id: empId, type: "out" })
+                })
+                .then(res => res.json())
+                .then(() => {
+                  localStorage.setItem("last_action", "out");
+                  document.getElementById("statusMessage").textContent = 
+                    "Auto clocked out due to 5 minutes of inactivity";
+                  
+                  // Update button states
+                  const clockInBtn = document.getElementById("clockInBtn");
+                  const clockOutBtn = document.getElementById("clockOutBtn");
+                  clockInBtn.disabled = false;
+                  clockOutBtn.disabled = true;
+                  clockInBtn.classList.remove("opacity-50");
+                  clockOutBtn.classList.add("opacity-50");
+                  
+                  showToast("You've been automatically clocked out due to 5 minutes of inactivity", true);
+                  
+                  // Refresh dashboard data
+                  loadDashboardData(empId);
+                })
+                .catch(err => {
+                  console.error("Error auto-clocking out:", err);
+                });
+              }
+            });
+        }
+      }
+
+      // Track user activity - mouse, keyboard, touch
+      ['mousemove', 'keydown', 'click', 'touchstart', 'touchmove'].forEach(event => {
+        document.addEventListener(event, () => {
+          // Only update if currently clocked in
+          if (localStorage.getItem("last_action") === "in") {
+            localStorage.setItem("last_activity", Date.now());
+          }
+        });
+      });
+
+      // Check every 30 seconds
+      window.inactivityInterval = setInterval(checkInactivity, 30000);
+    }
+
+    // ======================
+    // DASHBOARD DATA LOADER - NO MOCK DATA
     // ======================
     async function loadDashboardData(empId) {
+      document.getElementById('activityFeed').innerHTML = `<li class="text-center text-gray-400 py-4">Loading activities...</li>`;
+      
       try {
-        // Show loading indicator
-        document.getElementById('activityFeed').innerHTML = `<li class="text-center text-gray-400 py-4">Loading activities...</li>`;
+        const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}`);
         
-        let data;
-        try {
-          // First try to load from the API
-          const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}`);
-          
-          // Check if response is OK
-          if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`);
-          
-          // Check if response is actually JSON
-          const contentType = res.headers.get("content-type");
-          if (!contentType || !contentType.includes("application/json")) {
-            console.warn("Non-JSON response received");
-            throw new Error("Invalid response format");
-          }
-          
-          data = await res.json();
-          console.log("API data loaded successfully:", data);
-        } catch (apiError) {
-          console.warn("API error, using mock data:", apiError);
-          // Use mock data as fallback
-          data = generateMockDashboardData(empId);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch data: ${res.status}`);
         }
         
-        // Update the UI with either real or mock data
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Invalid response format");
+        }
+        
+        const data = await res.json();
+        console.log("Dashboard data loaded:", data);
+        
+        // Update UI with actual data
         updateTodaySummary(data.today);
         updatePerformanceMetrics(data.metrics);
         updateActivityFeed(data.activities);
-        
       } catch (err) {
-        console.error("Dashboard error:", err);
-        showToast("Using offline data", true);
+        console.error("Dashboard data error:", err);
+        showToast("Error loading dashboard data. Please refresh.", true);
         
-        // Use mock data as last resort
-        const mockData = generateMockDashboardData(empId);
-        updateTodaySummary(mockData.today);
-        updatePerformanceMetrics(mockData.metrics);
-        updateActivityFeed(mockData.activities);
+        // Show error in activity feed
+        document.getElementById('activityFeed').innerHTML = 
+          `<li class="text-center text-red-400 py-4">Failed to load activities. Please refresh.</li>`;
       }
-    }
-
-    // Generate mock data function for fallback
-    function generateMockDashboardData(empId) {
-      const now = new Date();
-      const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      
-      return {
-        today: {
-          clock_in: time,
-          clock_out: "--:--",
-          hours_worked: "0h 0m",
-          status: "Present"
-        },
-        metrics: {
-          attendance_days: 15,
-          working_days: 22,
-          productivity: 85
-        },
-        activities: [
-          {
-            type: "clock",
-            message: `Clocked in on ${today}`,
-            timestamp: now.toISOString()
-          },
-          {
-            type: "profile",
-            message: "Viewed profile information",
-            timestamp: new Date(now - 86400000).toISOString() // Yesterday
-          }
-        ]
-      };
     }
 
     function updateTodaySummary(todayData) {
@@ -352,6 +530,7 @@
     
     function updateActivityFeed(activities) {
       const feed = document.getElementById('activityFeed');
+      
       if (!activities?.length) {
         feed.innerHTML = `<li class="text-center text-gray-400 py-4">No recent activities</li>`;
         return;
@@ -389,28 +568,6 @@
       } else {
         return activityDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
       }
-    }
-
-    function setupAutoClockOutCheck() {
-      function checkInactivity() {
-        const lastAction = localStorage.getItem("last_action");
-        const lastActivity = parseInt(localStorage.getItem("last_activity"), 10) || 0;
-        
-        if (lastAction === "in" && Date.now() - lastActivity > 1800000) { // 30 minutes
-          markAttendance("out");
-          document.getElementById("statusMessage").textContent = "Auto clocked out due to inactivity";
-        }
-      }
-
-      // Track user activity
-      ['mousemove', 'keydown', 'click'].forEach(event => {
-        document.addEventListener(event, () => {
-          localStorage.setItem("last_activity", Date.now());
-        });
-      });
-
-      // Check every minute
-      setInterval(checkInactivity, 60000);
     }
 
     // ======================
@@ -480,49 +637,20 @@
               })
             });
             
-            // Handle non-JSON responses
-            let result;
-            try {
-              result = await res.json();
-            } catch (err) {
-              console.warn("Non-JSON response:", err);
-              result = { message: "Leave application submitted successfully" };
-            }
+            if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
             
+            const result = await res.json();
             showToast(result.message || "Leave application submitted");
             modal.remove();
-            loadDashboardData(JSON.parse(localStorage.getItem("emp_session")).emp_id);
+            
+            // Refresh dashboard to show new activity
+            const empSession = JSON.parse(localStorage.getItem("emp_session"));
+            loadDashboardData(empSession.emp_id);
+            
           } catch (err) {
-            console.warn("Leave application error:", err);
-            showToast("Leave application submitted successfully", false);
+            console.error("Leave application error:", err);
+            showToast("Error submitting leave application", true);
             modal.remove();
-            
-            // Add a fake activity
-            const activities = document.getElementById('activityFeed');
-            const now = new Date();
-            const formattedDate = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-            
-            if (!activities.innerHTML.includes("No recent activities")) {
-              activities.innerHTML = `
-                <li class="flex items-start gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors">
-                  <div class="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-yellow-500"></div>
-                  <div class="flex-grow">
-                    <p class="text-sm">Submitted leave application</p>
-                    <p class="text-xs text-gray-400">Just now</p>
-                  </div>
-                </li>
-              ` + activities.innerHTML;
-            } else {
-              activities.innerHTML = `
-                <li class="flex items-start gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors">
-                  <div class="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-yellow-500"></div>
-                  <div class="flex-grow">
-                    <p class="text-sm">Submitted leave application</p>
-                    <p class="text-xs text-gray-400">Just now</p>
-                  </div>
-                </li>
-              `;
-            }
           }
         });
       };
@@ -530,6 +658,8 @@
       // Logout function
       window.logout = () => {
         localStorage.removeItem("emp_session");
+        localStorage.removeItem("last_action");
+        localStorage.removeItem("last_activity");
         window.location.href = "employee_portal.html";
       };
     }
@@ -577,6 +707,5 @@
       body.classList.toggle('text-black');
     }
   </script>
-
 </body>
 </html>
