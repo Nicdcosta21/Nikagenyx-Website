@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     );
 
     if (type === "in") {
+      console.log("Processing clock-in for employee:", emp_id
       if (existing.rows.length > 0 && existing.rows[0].clock_in) {
         return {
           statusCode: 200,
@@ -60,6 +61,7 @@ exports.handler = async (event) => {
          ON CONFLICT (emp_id, date) DO UPDATE SET clock_in = $3, updated_at = NOW()`,
         [emp_id, today, timeNow]
       );
+        console.log("Database operation result:", JSON.stringify(dbResult));
 
       return {
         statusCode: 200,
