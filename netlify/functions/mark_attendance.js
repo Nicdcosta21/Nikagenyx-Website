@@ -39,7 +39,7 @@ exports.handler = async (event) => {
     );
 
     if (type === "in") {
-      console.log("Processing clock-in for employee:", emp_id
+      console.log("Processing clock-in for employee:", emp_id);
       if (existing.rows.length > 0 && existing.rows[0].clock_in) {
         return {
           statusCode: 200,
