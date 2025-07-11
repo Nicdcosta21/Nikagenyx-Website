@@ -79,18 +79,53 @@ exports.handler = async (event, context) => {
         )
         
         SELECT
-          ab.account_id,
-          ab.account_code,
-          ab.account_name,
-          ab.account_type,
-          ab.account_subtype,
+          ab.account_id AS "accountId",
+          ab.account_code AS "accountCode",
+          ab.account_name AS "accountName",
+          ab.account_type AS "accountType",
+          ab.account_subtype AS "accountSubtype",
           CASE 
             WHEN ab.balance > 0 AND ab.account_type IN ('Asset', 'Expense') THEN ab.balance
             WHEN ab.balance < 0 AND ab.account_type IN ('Liability', 'Equity', 'Revenue') THEN -ab.balance
             ELSE 0
-          END AS debit_balance,
+          END AS "debitBalance",
           CASE 
             WHEN ab.balance < 0 AND ab.account_type IN ('Asset', 'Expense') THEN -ab.balance
             WHEN ab.balance > 0 AND ab.account_type IN ('Liability', 'Equity', 'Revenue') THEN ab.balance
             ELSE 0
-          END
+          END AS "creditBalance"
+        FROM 
+          AccountBalances ab
+        WHERE
+          ab.balance <> 0
+        ORDER BY
+          ab.account_type, ab.account_code
+      `;
+      
+      const result = await client.query(query, [
+        startDate || '2000-01-01',
+        endDate || new Date().toISOString().split('T')[0]
+      ]);
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(result.rows)
+      };
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error generating trial balance:', error);
+    
+    return {
+      statusCode: error.message.includes('token') ? 401 : 500,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+};
