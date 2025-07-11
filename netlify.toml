@@ -3,14 +3,6 @@
   publish = "build"
   functions = "netlify/functions"
 
-[functions]
-  node_bundler = "esbuild"
-
-[functions."*"]
-  memory = 1024
-  timeout = 30
-
-# Image optimization settings
 [build.processing]
   skip_processing = false
 [build.processing.images]
@@ -18,22 +10,22 @@
   quality = 85
   metadata = "none"
 
-# Custom headers for better cache control
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    Expires = "0"
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg-native"]
 
-[[plugins]]
-  package = "@netlify/plugin-lighthouse"
-
+[functions."*"]
+  memory = 1024
+  timeout = 30
+  included_files = ["assets/css/**"]
 
 [dev]
   command = "npm start"
   port = 8888
   targetPort = 3000
+
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
 
 [[redirects]]
   from = "/api/*"
@@ -51,10 +43,3 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
     Expires = "0"
-
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["pg-native"]
-
-[functions."*"]
-  included_files = ["assets/css/**"]
