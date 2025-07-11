@@ -6,17 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="/assets/js/auth-gate.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Add Canvas Confetti Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
-    /* Button styles */
-    .btn-enabled {
+    /* Explicit styles for button states */
+    .clock-btn-active {
       opacity: 1 !important;
       cursor: pointer;
+      pointer-events: auto;
     }
     
-    .btn-disabled {
+    .clock-btn-disabled {
       opacity: 0.5 !important;
+      cursor: not-allowed;
       pointer-events: none;
     }
   </style>
@@ -32,7 +33,9 @@
   <nav class="bg-gray-800 p-4 flex flex-wrap justify-between items-center text-sm">
     <div class="text-xl font-bold">Nikagenyx</div>
     <div class="flex gap-4 flex-wrap mt-2 sm:mt-0">
-
+      <a href="update_profile.html">Update Profile</a>
+      <a href="view_attendance.html">My Attendance</a>
+      <a href="payroll_portal.html">Payroll</a>
       <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
     </div>
   </nav>
@@ -48,15 +51,15 @@
       <div class="bg-gray-800 rounded-xl p-6">
         <h2 class="text-xl font-bold mb-6 text-center">Clock In / Clock Out</h2>
         <div class="space-y-4">
-          <button id="clockInBtn" onclick="clockIn()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-lg font-medium">
+          <button id="clockInBtn" class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-lg font-medium clock-btn-active">
             Clock In
           </button>
-          <button id="clockOutBtn" onclick="clockOut()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-lg text-lg font-medium">
+          <button id="clockOutBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-lg text-lg font-medium clock-btn-disabled">
             Clock Out
           </button>
         </div>
         <p id="statusMessage" class="text-center text-gray-400 mt-4">
-          Already clocked out or not clocked in yet.
+          Checking clock status...
         </p>
       </div>
 
@@ -150,6 +153,8 @@
     // MAIN DASHBOARD CONTROLLER
     // ======================
     document.addEventListener("DOMContentLoaded", async () => {
+      console.log("Initializing dashboard...");
+      
       // 1. Check session and get employee ID
       const empSession = JSON.parse(localStorage.getItem("emp_session"));
       const empId = empSession?.emp_id;
@@ -172,13 +177,249 @@
       loadDashboardData(empId);
       setupAutoClockOutCheck(empId);
       setupEventListeners();
+      
+      console.log("Dashboard initialization complete");
     });
+
+    // ======================
+    // FIXED CLOCK IN/OUT SYSTEM WITH CACHE BUSTING
+    // ======================
+    async function initClockSystem(empId) {
+      console.log("Initializing clock system for employee:", empId);
+      
+      const clockInBtn = document.getElementById("clockInBtn");
+      const clockOutBtn = document.getElementById("clockOutBtn");
+      const statusMsg = document.getElementById("statusMessage");
+      
+      // Remove onclick handlers and use proper event listeners
+      clockInBtn.removeAttribute("onclick");
+      clockOutBtn.removeAttribute("onclick");
+      
+      // Setup click handlers once to avoid duplications
+      clockInBtn.addEventListener("click", handleClockIn);
+      clockOutBtn.addEventListener("click", handleClockOut);
+      
+      // Initially disable both buttons until we check the actual status
+      disableButton(clockInBtn);
+      disableButton(clockOutBtn);
+      statusMsg.textContent = "Checking your clock status...";
+      
+      // Determine initial state from server with cache busting
+      try {
+        const timestamp = Date.now();
+        const response = await fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}&_t=${timestamp}`, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache"
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Clock status response:", data);
+        
+        // Update localStorage and UI based on server response
+        updateClockState(data.last_action);
+        statusMsg.textContent = data.message || "Ready to clock in";
+        
+      } catch (error) {
+        console.error("Error checking clock status:", error);
+        statusMsg.textContent = "Error checking status. Please refresh.";
+        
+        // Default to allowing clock in if there's an error
+        enableButton(clockInBtn);
+        disableButton(clockOutBtn);
+      }
+      
+      // Helper function to update clock state
+      function updateClockState(state) {
+        console.log("Setting clock state to:", state);
+        localStorage.setItem("last_action", state);
+        
+        if (state === "in") {
+          disableButton(clockInBtn);
+          enableButton(clockOutBtn);
+          if (!localStorage.getItem("last_activity")) {
+            localStorage.setItem("last_activity", Date.now());
+          }
+        } else {
+          enableButton(clockInBtn);
+          disableButton(clockOutBtn);
+        }
+      }
+      
+      // Helper functions for button state
+      function enableButton(button) {
+        button.disabled = false;
+        button.classList.remove("clock-btn-disabled");
+        button.classList.add("clock-btn-active");
+      }
+      
+      function disableButton(button) {
+        button.disabled = true;
+        button.classList.remove("clock-btn-active");
+        button.classList.add("clock-btn-disabled");
+      }
+      
+      // Handler for Clock In
+      async function handleClockIn() {
+        if (clockInBtn.disabled) return;
+        
+        // Disable both buttons during operation
+        disableButton(clockInBtn);
+        disableButton(clockOutBtn);
+        statusMsg.textContent = "Clocking in...";
+        
+        try {
+          const timestamp = Date.now();
+          const response = await fetch("/.netlify/functions/mark_attendance", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache"
+            },
+            body: JSON.stringify({ 
+              emp_id: empId, 
+              type: "in",
+              timestamp: timestamp // Include timestamp for cache busting
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log("Clock in result:", data);
+          
+          // Update state
+          localStorage.setItem("last_action", "in");
+          localStorage.setItem("last_activity", Date.now());
+          
+          // Update UI
+          disableButton(clockInBtn);
+          enableButton(clockOutBtn);
+          statusMsg.textContent = data.message || "Successfully clocked in";
+          
+          // Refresh dashboard data
+          loadDashboardData(empId);
+        } catch (error) {
+          console.error("Error clocking in:", error);
+          statusMsg.textContent = "Error clocking in. Please try again.";
+          
+          // Verify with server to get true state
+          verifyClockStatus();
+        }
+      }
+      
+      // Handler for Clock Out
+      async function handleClockOut() {
+        if (clockOutBtn.disabled) return;
+        
+        // Disable both buttons during operation
+        disableButton(clockInBtn);
+        disableButton(clockOutBtn);
+        statusMsg.textContent = "Clocking out...";
+        
+        try {
+          const timestamp = Date.now();
+          const response = await fetch("/.netlify/functions/mark_attendance", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache"
+            },
+            body: JSON.stringify({ 
+              emp_id: empId, 
+              type: "out",
+              timestamp: timestamp // Include timestamp for cache busting
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log("Clock out result:", data);
+          
+          // Update state
+          localStorage.setItem("last_action", "out");
+          
+          // Update UI
+          enableButton(clockInBtn);
+          disableButton(clockOutBtn);
+          statusMsg.textContent = data.message || "Successfully clocked out";
+          
+          // Refresh dashboard data
+          loadDashboardData(empId);
+        } catch (error) {
+          console.error("Error clocking out:", error);
+          statusMsg.textContent = "Error clocking out. Please try again.";
+          
+          // Verify with server to get true state
+          verifyClockStatus();
+        }
+      }
+      
+      // Verification function
+      async function verifyClockStatus() {
+        try {
+          const timestamp = Date.now();
+          const response = await fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}&_t=${timestamp}`, {
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Pragma": "no-cache"
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log("Verified clock status:", data);
+          
+          // Update state based on verification
+          updateClockState(data.last_action);
+          statusMsg.textContent = data.message || "Status verified";
+          
+        } catch (error) {
+          console.error("Error verifying clock status:", error);
+          
+          // Fallback to localStorage state if verification fails
+          const lastAction = localStorage.getItem("last_action") || "out";
+          updateClockState(lastAction);
+        }
+      }
+      
+      // Make handlers available globally for button onclick
+      window.clockIn = handleClockIn;
+      window.clockOut = handleClockOut;
+      
+      // Export functions for auto-clockout
+      window.clockSystemFunctions = {
+        updateClockState,
+        enableButton,
+        disableButton,
+        verifyClockStatus
+      };
+    }
 
     // ======================
     // BIRTHDAY CELEBRATION
     // ======================
     async function checkBirthday(empId, fallbackName) {
       try {
+        // Check if we've already shown the birthday modal today
+        const today = new Date().toISOString().split('T')[0];
+        if (localStorage.getItem("birthday_shown_" + today)) {
+          return; // Don't show again today
+        }
+        
         // Fetch employee profile to get date of birth
         const res = await fetch(`/.netlify/functions/get_employee_profile?emp_id=${empId}`);
         if (!res.ok) throw new Error("Failed to fetch profile");
@@ -190,19 +431,14 @@
         if (!dob) return; // No birthday set
         
         // Check if today matches the birth date (ignoring year)
-        const today = new Date();
+        const todayDate = new Date();
         const birthDate = new Date(dob);
         
         // Compare month and day
-        if (today.getMonth() === birthDate.getMonth() && 
-            today.getDate() === birthDate.getDate()) {
-          
-          // Check if we've already shown the birthday modal today
-          const birthdayShown = localStorage.getItem("birthday_shown_" + today.toISOString().split('T')[0]);
-          if (!birthdayShown) {
-            // It's their birthday! Show celebration IMMEDIATELY
-            showBirthdayCelebration(name);
-          }
+        if (todayDate.getMonth() === birthDate.getMonth() && 
+            todayDate.getDate() === birthDate.getDate()) {
+          // It's their birthday! Show celebration
+          showBirthdayCelebration(name);
         }
       } catch (err) {
         console.warn("Could not check birthday:", err);
@@ -245,7 +481,7 @@
         </style>
       `);
       
-      // Flag that we've shown the birthday modal so we don't show it again today
+      // Flag that we've shown the birthday modal today
       localStorage.setItem("birthday_shown_" + new Date().toISOString().split('T')[0], "true");
     }
     
@@ -337,175 +573,6 @@
     };
 
     // ======================
-    // CLOCK IN/OUT SYSTEM - FIXED IMPLEMENTATION
-    // ======================
-    async function initClockSystem(empId) {
-      const clockInBtn = document.getElementById("clockInBtn");
-      const clockOutBtn = document.getElementById("clockOutBtn");
-      const status = document.getElementById("statusMessage");
-      
-      // Helper function for button states
-      function setButtonState(button, isEnabled) {
-        if (isEnabled) {
-          button.disabled = false;
-          button.classList.remove("btn-disabled");
-          button.classList.add("btn-enabled");
-        } else {
-          button.disabled = true;
-          button.classList.remove("btn-enabled");
-          button.classList.add("btn-disabled");
-        }
-      }
-      
-      // Initially disable both buttons until we know the state
-      setButtonState(clockInBtn, false);
-      setButtonState(clockOutBtn, false);
-      
-      // Fetch current clock status
-      async function fetchClockStatus() {
-        try {
-          const res = await fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`);
-          
-          if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-          }
-          
-          const data = await res.json();
-          
-          // Store the clock status in localStorage for persistence
-          localStorage.setItem("last_action", data.last_action);
-          
-          // If clocked in, update last_activity timestamp
-          if (data.last_action === "in" && !localStorage.getItem("last_activity")) {
-            localStorage.setItem("last_activity", Date.now());
-          }
-          
-          return data;
-        } catch (err) {
-          console.error("Error fetching clock status:", err);
-          throw err;
-        }
-      }
-
-      // Update UI based on clock status
-      function updateClockUI(clockStatus) {
-        const isClockIn = clockStatus.last_action === "in";
-        
-        // Update buttons
-        setButtonState(clockInBtn, !isClockIn);
-        setButtonState(clockOutBtn, isClockIn);
-        
-        // Update status message
-        status.textContent = clockStatus.message || 
-          (isClockIn ? "Currently clocked in" : "Ready to clock in");
-      }
-
-      try {
-        const clockStatus = await fetchClockStatus();
-        updateClockUI(clockStatus);
-      } catch (err) {
-        console.error("Failed to initialize clock system:", err);
-        status.textContent = "Error checking status. Try refreshing.";
-        // Default to allowing clock in if error
-        setButtonState(clockInBtn, true);
-        setButtonState(clockOutBtn, false);
-      }
-      
-      // Clock in handler
-      window.clockIn = async () => {
-        // Update UI immediately
-        setButtonState(clockInBtn, false);
-        setButtonState(clockOutBtn, false);
-        status.textContent = "Clocking in...";
-        
-        // Save state
-        localStorage.setItem("last_action", "in");
-        localStorage.setItem("last_activity", Date.now());
-        
-        try {
-          const res = await fetch("/.netlify/functions/mark_attendance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emp_id: empId, type: "in" })
-          });
-          
-          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-          
-          const data = await res.json();
-          status.textContent = data.message || "Successfully clocked in";
-          
-          // Update button states
-          setButtonState(clockInBtn, false);
-          setButtonState(clockOutBtn, true);
-          
-          // Refresh dashboard data
-          loadDashboardData(empId);
-        } catch (err) {
-          console.error("Error clocking in:", err);
-          status.textContent = "Error clocking in. Please try again.";
-          
-          // Verify actual status
-          try {
-            const clockStatus = await fetchClockStatus();
-            updateClockUI(clockStatus);
-          } catch (e) {
-            // Default to allowing clock in
-            setButtonState(clockInBtn, true);
-            setButtonState(clockOutBtn, false);
-          }
-        }
-      };
-      
-      // Clock out handler
-      window.clockOut = async () => {
-        // Update UI immediately
-        setButtonState(clockInBtn, false);
-        setButtonState(clockOutBtn, false);
-        status.textContent = "Clocking out...";
-        
-        // Save state
-        localStorage.setItem("last_action", "out");
-        
-        try {
-          const res = await fetch("/.netlify/functions/mark_attendance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emp_id: empId, type: "out" })
-          });
-          
-          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-          
-          const data = await res.json();
-          status.textContent = data.message || "Successfully clocked out";
-          
-          // Update button states
-          setButtonState(clockInBtn, true);
-          setButtonState(clockOutBtn, false);
-          
-          // Refresh dashboard data
-          loadDashboardData(empId);
-        } catch (err) {
-          console.error("Error clocking out:", err);
-          status.textContent = "Error clocking out. Please try again.";
-          
-          // Verify actual status
-          try {
-            const clockStatus = await fetchClockStatus();
-            updateClockUI(clockStatus);
-          } catch (e) {
-            // Default to allowing clock out
-            setButtonState(clockInBtn, false);
-            setButtonState(clockOutBtn, true);
-          }
-        }
-      };
-      
-      // Export function for auto clock-out
-      window.updateClockUI = updateClockUI;
-      window.fetchClockStatus = fetchClockStatus;
-    }
-
-    // ======================
     // AUTO CLOCK-OUT SYSTEM - 5 MINUTES INACTIVITY
     // ======================
     function setupAutoClockOutCheck(empId) {
@@ -523,7 +590,13 @@
           console.log("Auto clock-out triggered after 5 minutes inactivity");
           
           // Verify with server that user is actually clocked in
-          fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}`)
+          const timestamp = Date.now();
+          fetch(`/.netlify/functions/get_clock_status?emp_id=${empId}&_t=${timestamp}`, {
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache"
+            }
+          })
             .then(res => res.json())
             .catch(() => ({ last_action: lastAction }))
             .then(data => {
@@ -531,8 +604,16 @@
                 // If truly clocked in, perform auto clock-out
                 fetch("/.netlify/functions/mark_attendance", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ emp_id: empId, type: "out" })
+                  headers: { 
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache"
+                  },
+                  body: JSON.stringify({ 
+                    emp_id: empId, 
+                    type: "out",
+                    auto: true,
+                    timestamp: Date.now()
+                  })
                 })
                 .then(res => res.json())
                 .then(() => {
@@ -541,19 +622,19 @@
                     "Auto clocked out due to 5 minutes of inactivity";
                   
                   // Update button states using our helper functions
-                  if (window.updateClockUI) {
-                    window.updateClockUI({ last_action: "out", message: "Auto clocked out due to inactivity" });
+                  if (window.clockSystemFunctions) {
+                    window.clockSystemFunctions.updateClockState("out");
                   } else {
-                    // Fallback if updateClockUI isn't available
+                    // Fallback if clock system functions aren't available
                     const clockInBtn = document.getElementById("clockInBtn");
                     const clockOutBtn = document.getElementById("clockOutBtn");
                     
                     clockInBtn.disabled = false;
                     clockOutBtn.disabled = true;
-                    clockInBtn.classList.remove("btn-disabled");
-                    clockInBtn.classList.add("btn-enabled");
-                    clockOutBtn.classList.remove("btn-enabled");
-                    clockOutBtn.classList.add("btn-disabled");
+                    clockInBtn.classList.remove("clock-btn-disabled");
+                    clockInBtn.classList.add("clock-btn-active");
+                    clockOutBtn.classList.remove("clock-btn-active");
+                    clockOutBtn.classList.add("clock-btn-disabled");
                   }
                   
                   showToast("You've been automatically clocked out due to 5 minutes of inactivity", true);
@@ -584,13 +665,19 @@
     }
 
     // ======================
-    // DASHBOARD DATA LOADER
+    // DASHBOARD DATA LOADER WITH CACHE BUSTING
     // ======================
     async function loadDashboardData(empId) {
       document.getElementById('activityFeed').innerHTML = `<li class="text-center text-gray-400 py-4">Loading activities...</li>`;
       
       try {
-        const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}`);
+        const timestamp = Date.now();
+        const res = await fetch(`/.netlify/functions/get_dashboard_data?emp_id=${empId}&_t=${timestamp}`, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache"
+          }
+        });
         
         if (!res.ok) {
           throw new Error(`Failed to fetch data: ${res.status}`);
@@ -759,7 +846,10 @@
           try {
             const res = await fetch("/.netlify/functions/apply_leave", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache"
+              },
               body: JSON.stringify({
                 emp_id: JSON.parse(localStorage.getItem("emp_session")).emp_id,
                 ...Object.fromEntries(formData)
