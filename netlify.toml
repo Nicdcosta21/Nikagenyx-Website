@@ -22,11 +22,27 @@
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
 
+# API redirects
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
+# Application specific redirects
+[[redirects]]
+  from = "/account/app/*"
+  to = "/index.html"
+  status = 200
+  force = true
+
+# Main page redirect
+[[redirects]]
+  from = "/"
+  to = "/account/app"
+  status = 301
+  force = true
+
+# Fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -35,20 +51,8 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # Security headers
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    # Allow Cloudflare
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "X-Requested-With, Content-Type, Authorization"
-
-# Redirect from Netlify domain to custom domain
-[[redirects]]
-  from = "https://gorgeous-centoid-25f6aa.netlify.app/*"
-  to = "https://www.nikagenyx.com/:splat"
-  status = 301
-  force = true
