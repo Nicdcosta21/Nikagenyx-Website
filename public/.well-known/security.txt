@@ -1,0 +1,4 @@
+Contact: mailto:support@nikagenyx.com
+Expires: 2026-07-11T15:24:26.000Z
+Preferred-Languages: en
+Canonical: https://www.nikagenyx.com/.well-known/security.txt
