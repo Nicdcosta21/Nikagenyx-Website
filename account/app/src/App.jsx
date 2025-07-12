@@ -9,6 +9,11 @@ import Header from './components/Header';
 import './index.css';
 
 function App() {
+  const session = localStorage.getItem('emp_session');
+  if (!session) {
+    window.location.href = '/employee_portal.html';
+  }
+
   return (
     <Router>
       <div className="flex min-h-screen bg-gray-100">
