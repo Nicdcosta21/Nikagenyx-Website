@@ -1,7 +1,7 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
-  functions = "netlify/functions"
+  command = "cd account/app && npm install && npm run build"
+  publish = "account/app/dist"
+  functions = "account/app/netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
@@ -10,21 +10,19 @@
   memory = 1024
   timeout = 30
 
-# Image optimization settings
 [build.processing]
   skip_processing = false
+
 [build.processing.images]
   compress = true
   quality = 85
   metadata = "none"
 
-# Route all SPA paths to index.html (important for React Router)
 [[redirects]]
   from = "/account/app/*"
   to = "/account/app/index.html"
   status = 200
 
-# Prevent caching of serverless functions
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
@@ -32,13 +30,5 @@
     Pragma = "no-cache"
     Expires = "0"
 
-# Optional: Add CORS headers if needed
-#[[headers]]
-#  for = "/.netlify/functions/*"
-#  [headers.values]
-#    Access-Control-Allow-Origin = "*"
-#    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-
-# Add Lighthouse auditing
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
